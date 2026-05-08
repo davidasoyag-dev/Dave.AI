@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dave.AI — Sign in</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#090e1c;color:#eef2ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(79,114,196,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,114,196,0.05) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;}
+.bg-glow{position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(79,114,196,0.12) 0%,transparent 70%);pointer-events:none;}
+.wrap{position:relative;z-index:1;width:100%;max-width:420px;}
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px;}
+.logo-icon{width:44px;height:44px;background:#4f72c4;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,114,196,0.5);}
+.logo-name{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#eef2ff;}
+.logo-name em{color:#7aaaf8;font-style:normal;}
+.success-badge{background:rgba(60,180,100,0.1);border:1px solid rgba(60,180,100,0.25);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+.success-badge svg{flex-shrink:0;}
+.success-badge-text{font-size:13px;color:rgba(140,220,170,0.9);line-height:1.5;}
+.success-badge-text b{color:#80e0a0;display:block;margin-bottom:2px;}
+.card{background:#111a2e;border:1px solid rgba(79,114,196,0.25);border-radius:20px;padding:36px 32px 32px;box-shadow:0 24px 64px rgba(0,0,0,0.5);}
+.title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-.02em;}
+.sub{font-size:12px;color:rgba(200,216,255,0.5);text-align:center;margin-bottom:28px;line-height:1.6;}
+.field{margin-bottom:16px;}
+label{display:block;font-size:10px;font-weight:600;letter-spacing:.09em;color:rgba(200,216,255,0.45);text-transform:uppercase;margin-bottom:6px;}
+input{width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(79,114,196,0.22);border-radius:10px;color:#eef2ff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:all .2s;}
+input::placeholder{color:rgba(200,216,255,0.25);}
+input:focus{border-color:#7aaaf8;background:rgba(79,114,196,0.06);box-shadow:0 0 0 3px rgba(79,114,196,0.12);}
+.err{font-size:11px;color:#e05a50;margin-top:10px;text-align:center;display:none;padding:10px;background:rgba(224,90,80,0.08);border-radius:8px;border:1px solid rgba(224,90,80,0.2);}
+.btn{width:100%;padding:14px;background:#4f72c4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:8px;}
+.btn:hover{background:#3d60b8;box-shadow:0 6px 20px rgba(79,114,196,0.4);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.footnote{font-size:11px;color:rgba(200,216,255,0.25);text-align:center;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+        <rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/>
+        <rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/>
+        <rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/>
+        <path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <line x1="4" y1="8" x2="1.5" y2="8" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="1.5" cy="8" r=".8" fill="white"/>
+        <line x1="4" y1="12" x2="1.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="1.5" cy="12" r=".8" fill="white"/>
+        <circle cx="20.5" cy="12" r="1" fill="white"/>
+        <line x1="20.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">Dave<em>.AI</em></span>
+  </div>
+
+  <div class="success-badge" id="success-badge" style="display:none">
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" stroke="#3cb464" stroke-width="1.8"/>
+      <polyline points="9 12 11 14 15 10" stroke="#3cb464" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="success-badge-text">
+      <b>Payment successful!</b>
+      Sign in below to access your dashboard.
+    </div>
+  </div>
+
+  <div class="card">
+    <h1 class="title">Sign in to Dave.AI</h1>
+    <p class="sub">Enter the email and password you used to sign up.</p>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="email" placeholder="david@chambers.co.uk" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+    <div class="err" id="err">Incorrect email or password. Please try again.</div>
+    <button class="btn" id="btn" onclick="doLogin()">Sign in to Dave.AI →</button>
+    <p class="footnote">Your account is secure · UK GDPR compliant</p>
+  </div>
+</div>
+
+<script>
+// Check if coming from Stripe payment
+(function(){
+  var qs = window.location.search;
+  if(qs.indexOf('payment=success') !== -1){
+    document.getElementById('success-badge').style.display = 'flex';
+    // Save session from URL
+    try{
+      var params = new URLSearchParams(qs);
+      var raw = params.get('session');
+      if(raw){
+        var s = JSON.parse(decodeURIComponent(raw));
+        s.planActive = true;
+        localStorage.setItem('dave_session', JSON.stringify(s));
+        // Pre-fill email
+        if(s.email) document.getElementById('email').value = s.email;
+      }
+    }catch(e){}
+    history.replaceState({}, '', window.location.pathname);
+  }
+  // Pre-fill from existing session
+  var session = JSON.parse(localStorage.getItem('dave_session') || '{}');
+  if(session.email && !document.getElementById('email').value){
+    document.getElementById('email').value = session.email;
+  }
+  // Focus password if email is filled
+  if(document.getElementById('email').value){
+    document.getElementById('pass').focus();
+  }
+})();
+
+function doLogin(){
+  var email = document.getElementById('email').value.trim();
+  var pass  = document.getElementById('pass').value;
+  var err   = document.getElementById('err');
+  var btn   = document.getElementById('btn');
+
+  err.style.display = 'none';
+
+  if(!email || !pass){
+    err.textContent = 'Please enter your email and password.';
+    err.style.display = 'block';
+    return;
+  }
+
+  var session = JSON.parse(localStorage.getItem('dave_session') || '{}');
+  var emailMatch = session.email && session.email.toLowerCase() === email.toLowerCase();
+  var passOk = pass.length >= 8;
+
+  if(!emailMatch || !passOk){
+    err.textContent = 'Incorrect email or password. Please try again.';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+
+  session.planActive = true;
+  localStorage.setItem('dave_session', JSON.stringify(session));
+
+  // Redirect to main app with welcome flag
+  localStorage.setItem('dave_show_welcome', '1');
+  window.location.href = 'dashboard.html';
+}
+</script>
+</body>
+</html>
