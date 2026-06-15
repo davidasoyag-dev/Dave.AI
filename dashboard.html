@@ -836,6 +836,15 @@ function rvTab(t,btn){ document.querySelectorAll('#rv-upload,#rv-paste').forEach
 function rvDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) rvLoad(e.dataTransfer.files[0]); }
 function rvFileSelect(inp){ if(inp.files[0]) rvLoad(inp.files[0]); }
 function rvLoad(f){ var r=new FileReader(); r.onload=function(e){rvFileText=e.target.result;}; r.readAsText(f); document.getElementById('rv-fname').textContent=''+f.name; document.getElementById('rv-fname').style.display='block'; }
+// Robustly pull a JSON object out of the model's reply, tolerating code
+// fences or any stray prose before/after the object.
+function parseReviewJSON(raw){
+  try { return JSON.parse(raw); } catch(e) {}
+  var s = (raw || '').replace(/```json|```/g, '').trim();
+  var a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if(a !== -1 && b > a){ s = s.slice(a, b + 1); }
+  return JSON.parse(s);
+}
 async function doReview(){
   var text = rvFileText || (document.getElementById('rv-text')?document.getElementById('rv-text').value:'');
   if(!text.trim()){ alert('Please upload or paste a contract first.'); return; }
@@ -846,11 +855,12 @@ async function doReview(){
   var rvTimer=setInterval(function(){ rvi=(rvi+1)%rvSteps.length; var el=document.getElementById('rv-status'); if(el){ el.style.opacity='0'; setTimeout(function(){ if(el){ el.textContent=rvSteps[rvi]; el.style.opacity='1'; } },220); } },1900);
   try{
     var raw = await callAI(
-      'You are a senior UK solicitor reviewing contracts. Return ONLY valid JSON, no markdown, no text outside the JSON object: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation and suggested amendment"}],"recommendation":"one sentence action"}',
-      'Review this contract and identify key risks:\n\n'+text.slice(0,4000)
+      'You are a senior UK solicitor reviewing contracts. Respond with ONLY a single valid JSON object and nothing else: no markdown, no code fences, no commentary before or after. Begin your reply with { and end with }. Schema: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation and suggested amendment"}],"recommendation":"one sentence action"}',
+      'Review this contract and identify key risks:\n\n'+text.slice(0,4000),
+      1600
     );
     clearInterval(rvTimer);
-    var d; try{d=JSON.parse(raw);}catch(e){d=JSON.parse(raw.replace(/```json|```/g,''));}
+    var d = parseReviewJSON(raw);
     document.getElementById('rv-res').innerHTML='<div class="card">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Analysis complete</div>' +
       '<div style="font-size:12px;color:var(--muted);line-height:1.65;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:16px">'+d.summary+'</div>' +
