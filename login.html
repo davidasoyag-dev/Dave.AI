@@ -1,42 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Dave.AI — Sign in</title>
+<title>Dave.AI — Sign In | AI Legal Software for UK Solicitors</title>
+<link rel="canonical" href="https://daveai.law/login.html"/>
+<meta name="description" content="Sign in to Dave.AI — AI-powered legal software for UK solicitors and law firms."/>
+<meta name="robots" content="noindex, follow"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#090e1c;color:#eef2ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(79,114,196,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,114,196,0.05) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;}
-.bg-glow{position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(79,114,196,0.12) 0%,transparent 70%);pointer-events:none;}
-.wrap{position:relative;z-index:1;width:100%;max-width:420px;}
-.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px;}
-.logo-icon{width:44px;height:44px;background:#4f72c4;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,114,196,0.5);}
-.logo-name{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#eef2ff;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(79,114,196,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,114,196,0.04) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0;}
+.bg-glow{position:fixed;top:-180px;right:-180px;width:560px;height:560px;background:radial-gradient(circle,rgba(79,114,196,0.14) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.bg-glow2{position:fixed;bottom:-120px;left:-120px;width:400px;height:400px;background:radial-gradient(circle,rgba(122,170,248,0.07) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;width:100%;max-width:440px;}
+
+/* Logo */
+.logo{display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:36px;}
+.logo-icon{width:46px;height:46px;background:#4f72c4;border-radius:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 22px rgba(79,114,196,0.5);}
+.logo-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#eef2ff;letter-spacing:-.02em;}
 .logo-name em{color:#7aaaf8;font-style:normal;}
-.success-badge{background:rgba(60,180,100,0.1);border:1px solid rgba(60,180,100,0.25);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:28px;}
-.success-badge svg{flex-shrink:0;}
-.success-badge-text{font-size:13px;color:rgba(140,220,170,0.9);line-height:1.5;}
-.success-badge-text b{color:#80e0a0;display:block;margin-bottom:2px;}
-.card{background:#111a2e;border:1px solid rgba(79,114,196,0.25);border-radius:20px;padding:36px 32px 32px;box-shadow:0 24px 64px rgba(0,0,0,0.5);}
-.title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-.02em;}
-.sub{font-size:12px;color:rgba(200,216,255,0.5);text-align:center;margin-bottom:28px;line-height:1.6;}
-.field{margin-bottom:16px;}
-label{display:block;font-size:10px;font-weight:600;letter-spacing:.09em;color:rgba(200,216,255,0.45);text-transform:uppercase;margin-bottom:6px;}
-input{width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(79,114,196,0.22);border-radius:10px;color:#eef2ff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:all .2s;}
-input::placeholder{color:rgba(200,216,255,0.25);}
-input:focus{border-color:#7aaaf8;background:rgba(79,114,196,0.06);box-shadow:0 0 0 3px rgba(79,114,196,0.12);}
-.err{font-size:11px;color:#e05a50;margin-top:10px;text-align:center;display:none;padding:10px;background:rgba(224,90,80,0.08);border-radius:8px;border:1px solid rgba(224,90,80,0.2);}
-.btn{width:100%;padding:14px;background:#4f72c4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:8px;}
-.btn:hover{background:#3d60b8;box-shadow:0 6px 20px rgba(79,114,196,0.4);}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.footnote{font-size:11px;color:rgba(200,216,255,0.25);text-align:center;margin-top:14px;}
+
+/* Success badge */
+.success-badge{background:rgba(60,180,100,0.09);border:1px solid rgba(60,180,100,0.28);border-radius:13px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:24px;animation:fadeUp .4s cubic-bezier(.22,1,.36,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+.success-badge-text b{color:#5ae090;display:block;font-size:13px;margin-bottom:3px;}
+.success-badge-text span{font-size:12px;color:rgba(140,220,170,0.8);line-height:1.5;}
+
+/* Card */
+.card{background:rgba(10,16,34,0.92);border:1px solid rgba(79,114,196,0.22);border-radius:22px;padding:40px 36px 34px;box-shadow:0 28px 72px rgba(0,0,0,0.55);backdrop-filter:blur(12px);}
+.card-title{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;text-align:center;margin-bottom:7px;letter-spacing:-.02em;}
+.card-sub{font-size:12px;color:rgba(200,216,255,0.48);text-align:center;margin-bottom:30px;line-height:1.65;}
+
+/* Fields */
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;color:rgba(200,216,255,0.42);text-transform:uppercase;margin-bottom:7px;}
+.inp{width:100%;padding:13px 15px;background:rgba(255,255,255,0.035);border:1.5px solid rgba(79,114,196,0.2);border-radius:11px;color:#eef2ff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:all .2s;}
+.inp::placeholder{color:rgba(200,216,255,0.22);}
+.inp:focus{border-color:#7aaaf8;background:rgba(79,114,196,0.06);box-shadow:0 0 0 3px rgba(79,114,196,0.13);}
+.inp.err-field{border-color:rgba(224,90,80,0.5);}
+
+/* Error */
+.err-box{font-size:12px;color:#f08888;margin-bottom:12px;text-align:center;padding:10px 14px;background:rgba(224,90,80,0.07);border-radius:9px;border:1px solid rgba(224,90,80,0.18);display:none;}
+
+/* Button */
+.btn{width:100%;padding:15px;background:linear-gradient(135deg,#4f72c4,#5f85d4);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:6px;letter-spacing:.01em;}
+.btn:hover:not(:disabled){background:linear-gradient(135deg,#3d60b8,#4f72c4);box-shadow:0 7px 22px rgba(79,114,196,0.45);transform:translateY(-1px);}
+.btn:disabled{opacity:.42;cursor:not-allowed;transform:none;}
+
+/* Footer links */
+.card-links{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+.card-links a{font-size:11px;color:rgba(200,216,255,0.35);cursor:pointer;text-decoration:none;transition:color .15s;}
+.card-links a:hover{color:#7aaaf8;}
+
+/* Back */
+.back-link{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:22px;font-size:12px;color:rgba(200,216,255,0.3);text-decoration:none;transition:color .15s;}
+.back-link:hover{color:#7aaaf8;}
+.back-link svg{transition:transform .15s;}
+.back-link:hover svg{transform:translateX(-3px);}
+
+/* Secure note */
+.secure-note{font-size:10px;color:rgba(200,216,255,0.2);text-align:center;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px;}
+
+/* ── Responsive ── */
+@media(max-width:480px){
+  .wrap{padding:0 4px;}
+  .card{padding:28px 20px 24px;}
+  .card-title{font-size:19px;}
+  .logo-name{font-size:21px;}
+  .btn{font-size:13px;padding:13px;}
+}
+@media(min-width:1440px){
+  .wrap{max-width:500px;}
+  .card{padding:48px 44px 40px;}
+  .card-title{font-size:26px;}
+  .inp{font-size:14px;padding:15px 17px;}
+}
 </style>
 </head>
 <body>
 <div class="bg-grid"></div>
 <div class="bg-glow"></div>
+<div class="bg-glow2"></div>
 
 <div class="wrap">
   <div class="logo">
@@ -58,97 +107,179 @@ input:focus{border-color:#7aaaf8;background:rgba(79,114,196,0.06);box-shadow:0 0
   </div>
 
   <div class="success-badge" id="success-badge" style="display:none">
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px">
       <circle cx="12" cy="12" r="10" stroke="#3cb464" stroke-width="1.8"/>
       <polyline points="9 12 11 14 15 10" stroke="#3cb464" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <div class="success-badge-text">
-      <b>Payment successful!</b>
-      Sign in below to access your dashboard.
+      <b>Payment successful — welcome aboard!</b>
+      <span>Your membership is now active. Sign in below to access your dashboard.</span>
     </div>
   </div>
 
   <div class="card">
-    <h1 class="title">Sign in to Dave.AI</h1>
-    <p class="sub">Enter the email and password you used to sign up.</p>
+    <h1 class="card-title">Sign in to Dave.AI</h1>
+    <p class="card-sub" id="card-sub">Enter your email and password to continue.</p>
+
     <div class="field">
       <label>Email address</label>
-      <input type="email" id="email" placeholder="david@chambers.co.uk" autocomplete="email"/>
+      <input type="email" class="inp" id="email" placeholder="example@gmail.com" autocomplete="email"/>
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()"/>
+      <input type="password" class="inp" id="pass" placeholder="Your password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()"/>
     </div>
-    <div class="err" id="err">Incorrect email or password. Please try again.</div>
+
+    <div class="err-box" id="err-box"></div>
+
     <button class="btn" id="btn" onclick="doLogin()">Sign in to Dave.AI →</button>
-    <p class="footnote">Your account is secure · UK GDPR compliant</p>
+
+    <div class="card-links">
+      <a href="Dave_AI_Landing.html#signup" onclick="event.preventDefault();window.location.href='Dave_AI_Landing.html'">Create account</a>
+      <a onclick="showForgot()">Forgot password?</a>
+    </div>
+  </div>
+
+  <a class="back-link" href="Dave_AI_Landing.html">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Dave.AI home
+  </a>
+
+  <div class="secure-note">
+    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    Secured · UK GDPR compliant · 256-bit encryption
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// Check if coming from Stripe payment
-(function(){
+const _sb = supabase.createClient(
+  'https://wyribnzwosqzfnhomhig.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cmlibnp3b3NxemZuaG9taGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzUyNTAsImV4cCI6MjA5NDcxMTI1MH0.obrpUEG6mRHdugLeznOrFcC6GalW7wJvgAzhaBSneWo'
+);
+var _fromPayment = false;
+
+(function init(){
   var qs = window.location.search;
+  var params = new URLSearchParams(qs);
+
+  // Came back from Stripe payment
   if(qs.indexOf('payment=success') !== -1){
+    _fromPayment = true;
     document.getElementById('success-badge').style.display = 'flex';
-    // Save session from URL
-    try{
-      var params = new URLSearchParams(qs);
-      var raw = params.get('session');
-      if(raw){
+    document.getElementById('card-sub').textContent = 'Enter your email and password to access your new membership.';
+    // If session data was passed back (via success.html relay)
+    var raw = params.get('session');
+    if(raw){
+      try{
         var s = JSON.parse(decodeURIComponent(raw));
         s.planActive = true;
         localStorage.setItem('dave_session', JSON.stringify(s));
-        // Pre-fill email
-        if(s.email) document.getElementById('email').value = s.email;
-      }
-    }catch(e){}
+      }catch(e){}
+    }
     history.replaceState({}, '', window.location.pathname);
   }
-  // Pre-fill from existing session
-  var session = JSON.parse(localStorage.getItem('dave_session') || '{}');
-  if(session.email && !document.getElementById('email').value){
-    document.getElementById('email').value = session.email;
-  }
-  // Focus password if email is filled
-  if(document.getElementById('email').value){
-    document.getElementById('pass').focus();
+
+  // Returning user with active Supabase session → go straight to dashboard
+  if(!_fromPayment){
+    _sb.auth.getSession().then(function(res){
+      if(res.data && res.data.session){
+        window.location.href = 'dashboard.html';
+      }
+    });
   }
 })();
 
-function doLogin(){
-  var email = document.getElementById('email').value.trim();
-  var pass  = document.getElementById('pass').value;
-  var err   = document.getElementById('err');
-  var btn   = document.getElementById('btn');
+async function doLogin(){
+  var emailEl = document.getElementById('email');
+  var passEl  = document.getElementById('pass');
+  var errBox  = document.getElementById('err-box');
+  var btn     = document.getElementById('btn');
+  var email   = emailEl.value.trim();
+  var pass    = passEl.value;
 
-  err.style.display = 'none';
+  errBox.style.display = 'none';
+  emailEl.classList.remove('err-field');
+  passEl.classList.remove('err-field');
 
   if(!email || !pass){
-    err.textContent = 'Please enter your email and password.';
-    err.style.display = 'block';
-    return;
-  }
-
-  var session = JSON.parse(localStorage.getItem('dave_session') || '{}');
-  var emailMatch = session.email && session.email.toLowerCase() === email.toLowerCase();
-  var passOk = pass.length >= 8;
-
-  if(!emailMatch || !passOk){
-    err.textContent = 'Incorrect email or password. Please try again.';
-    err.style.display = 'block';
+    showErr('Please enter your email and password.');
+    if(!email) emailEl.classList.add('err-field');
+    if(!pass)  passEl.classList.add('err-field');
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = 'Signing in...';
+  btn.textContent = 'Signing in…';
 
-  session.planActive = true;
+  var result = await _sb.auth.signInWithPassword({ email: email, password: pass });
+
+  if(result.error){
+    showErr('Incorrect email or password. Please try again.');
+    emailEl.classList.add('err-field');
+    passEl.classList.add('err-field');
+    btn.disabled = false;
+    btn.textContent = 'Sign in to Dave.AI →';
+    return;
+  }
+
+  var meta = result.data.user.user_metadata || {};
+  var session = {
+    email: email,
+    firstName: meta.firstName || '',
+    lastName: meta.lastName || '',
+    firm: meta.firm || '',
+    plan: meta.plan || 'pro',
+    planName: meta.planName || 'Pro Plan',
+    planPrice: meta.planPrice || '£149/mo',
+    planUsers: meta.planUsers || 'up to 5 users',
+    planActive: meta.planActive || false,
+    trialStart: meta.trialStart || new Date().toISOString()
+  };
+  if(_fromPayment) session.planActive = true;
   localStorage.setItem('dave_session', JSON.stringify(session));
 
-  // Redirect to main app with welcome flag
-  localStorage.setItem('dave_show_welcome', '1');
-  window.location.href = 'dashboard.html';
+  window.location.href = _fromPayment ? 'dashboard.html?welcome=paid' : 'dashboard.html';
+}
+
+function showErr(msg){
+  var box = document.getElementById('err-box');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+
+async function showForgot(){
+  var emailEl = document.getElementById('email');
+  var email   = emailEl.value.trim();
+
+  if(!email){
+    showErr('Please enter your email address first, then click Forgot password.');
+    emailEl.classList.add('err-field');
+    emailEl.focus();
+    return;
+  }
+
+  var btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending reset link…';
+
+  var result = await _sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://daveai.law/login.html'
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Sign in to Dave.AI →';
+
+  if(result.error){
+    showErr('Could not send reset email. Please check your email address and try again.');
+    return;
+  }
+
+  // Show success message
+  var sub = document.getElementById('card-sub');
+  sub.innerHTML = 'A password reset link has been sent to <strong style="color:#7aaaf8">' + email + '</strong>. Check your inbox and follow the link to reset your password.';
+  sub.style.color = 'rgba(200,216,255,0.7)';
 }
 </script>
 </body>

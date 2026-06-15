@@ -1,5 +1,9 @@
-[build]
-  functions = "netlify/functions"
-
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
+
+[functions."ai-proxy"]
+  timeout = 30
+
+[functions."stripe-webhook"]
+  timeout = 30

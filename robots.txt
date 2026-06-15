@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /success.html
+Disallow: /.netlify/
+
+Sitemap: https://daveai.law/sitemap.xml

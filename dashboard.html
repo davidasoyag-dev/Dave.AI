@@ -4,553 +4,1080 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Dave.AI — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _sb = supabase.createClient(
+  'https://wyribnzwosqzfnhomhig.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cmlibnp3b3NxemZuaG9taGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzUyNTAsImV4cCI6MjA5NDcxMTI1MH0.obrpUEG6mRHdugLeznOrFcC6GalW7wJvgAzhaBSneWo'
+);
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --navy:#090e1c;--navy2:#0f1729;--card:#121d35;--card2:#162040;--card3:#1a2848;
-  --blue:#4f72c4;--blue2:#7aaaf8;--blue3:rgba(79,114,196,0.15);
-  --border:rgba(79,114,196,0.18);--border2:rgba(79,114,196,0.32);
-  --text:#eef2ff;--muted:rgba(200,216,255,0.55);--dim:rgba(200,216,255,0.28);
-  --green:#3cb464;--red:#e05a50;--amber:#c8963c;
-  --sidebar:220px;--topbar:56px;
-  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+  --bg:#f2f4f9;
+  --bg2:#ffffff;
+  --card:#ffffff;
+  --card2:#f4f7ff;
+  --blue:#4f72c4;
+  --blue2:#3558a8;
+  --border:rgba(79,114,196,0.13);
+  --border2:rgba(79,114,196,0.28);
+  --text:#1a2840;
+  --muted:#6674a0;
+  --dim:#a8b4cc;
+  --green:#237a3c;
+  --red:#c0392b;
+  --amber:#96620a;
+  --sidebar:224px;
+  --topbar:60px;
+  --font:'DM Sans',system-ui,sans-serif;
+  --display:'Syne',sans-serif;
+  --mono:'DM Mono',monospace;
 }
-html,body{height:100%;font-family:var(--sans);background:var(--navy);color:var(--text);overflow:hidden;}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;}
+
+/* ── Layout ── */
 .app{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:var(--topbar) 1fr;height:100vh;}
-.topbar{grid-column:1/-1;background:var(--navy2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px 0 0;z-index:100;}
-.tb-logo{width:var(--sidebar);flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 20px;border-right:1px solid var(--border);height:100%;}
-.tb-logo-icon{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(79,114,196,0.4);flex-shrink:0;}
-.tb-logo-name{font-family:var(--display);font-size:16px;font-weight:700;}
+
+/* ── Topbar ── */
+.topbar{grid-column:1/-1;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px 0 0;z-index:50;}
+.tb-logo{width:var(--sidebar);flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 20px;border-right:1px solid var(--border);height:100%;text-decoration:none;}
+.tb-logo-icon{width:32px;height:32px;background:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(79,114,196,0.45);}
+.tb-logo-name{font-family:var(--display);font-size:17px;font-weight:700;color:var(--text);}
 .tb-logo-name em{color:var(--blue2);font-style:normal;}
-.tb-center{flex:1;padding:0 20px;}
-.tb-search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:7px 13px;width:280px;}
-.tb-search input{background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--sans);width:100%;}
+.tb-search{flex:1;display:flex;align-items:center;gap:8px;margin:0 24px;max-width:300px;background:#f4f7fb;border:1px solid var(--border);border-radius:9px;padding:8px 14px;}
+.tb-search input{background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font);width:100%;}
 .tb-search input::placeholder{color:var(--dim);}
-.tb-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.tb-plan-badge{background:rgba(79,114,196,0.12);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:.04em;}
-.tb-avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#3d60b8,#4f72c4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;cursor:pointer;border:1.5px solid var(--border2);}
-.sidebar{background:var(--navy2);border-right:1px solid var(--border);padding:16px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
-.sb-section{font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:10px 10px 6px;margin-top:6px;}
-.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--muted);position:relative;}
-.sb-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
-.sb-item.active{background:rgba(79,114,196,0.15);color:var(--text);}
-.sb-item.active::before{content:'';position:absolute;left:0;top:20%;height:60%;width:3px;background:var(--blue2);border-radius:0 3px 3px 0;}
-.sb-icon{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.sb-badge{margin-left:auto;background:var(--blue);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;}
-.sb-divider{height:1px;background:var(--border);margin:8px 4px;}
-.sb-bottom{margin-top:auto;}
-.sb-user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.02);}
-.sb-user-av{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#3d60b8,#4f72c4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.tb-plan-badge{background:rgba(79,114,196,0.12);border:1px solid var(--border2);border-radius:20px;padding:4px 13px;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:.05em;cursor:default;}
+.tb-plan-badge.paid{background:rgba(60,180,100,0.1);border-color:rgba(60,180,100,0.3);color:#5ae090;}
+.tb-avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3558a8,#4f72c4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1.5px solid var(--border2);cursor:pointer;flex-shrink:0;}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;overflow-y:auto;}
+.sb-sec{font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:12px 10px 5px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;position:relative;user-select:none;}
+.sb-item:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.sb-item.on{background:rgba(79,114,196,.14);color:var(--text);}
+.sb-item.on::before{content:'';position:absolute;left:0;top:20%;height:60%;width:3px;background:var(--blue2);border-radius:0 3px 3px 0;}
+.sb-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.sb-badge{margin-left:auto;background:var(--blue);color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;}
+.sb-div{height:1px;background:var(--border);margin:10px 4px;}
+.sb-bot{margin-top:auto;}
+.sb-user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.02);cursor:pointer;transition:background .15s;}
+.sb-user:hover{background:rgba(255,255,255,.04);}
+.sb-user-av{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#3558a8,#4f72c4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
 .sb-user-name{font-size:12px;font-weight:600;}
-.sb-user-plan{font-size:10px;color:var(--muted);}
-.main{overflow-y:auto;background:var(--navy);}
-.view{padding:28px 32px;min-height:100%;animation:viewIn .2s ease both;}
-@keyframes viewIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-.view-title{font-family:var(--display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
-.view-sub{font-size:12px;color:var(--muted);margin-bottom:24px;}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;}
-.stat-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
-.stat-val{font-family:var(--display);font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1;}
-.stat-sub{font-size:11px;color:var(--muted);margin-top:6px;}
+.sb-user-role{font-size:10px;color:var(--muted);}
+
+/* ── Main ── */
+.main{overflow-y:auto;background:var(--bg);}
+.view{padding:28px 32px;animation:vi .22s ease;}
+@keyframes vi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.view-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.view-title{font-family:var(--font);font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:3px;color:var(--text);}
+.view-sub{font-size:12px;color:var(--dim);}
+
+/* ── Cards ── */
 .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;}
-.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
-.qa-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:all .2s;text-align:center;}
-.qa-card:hover{border-color:var(--border2);background:var(--card2);transform:translateY(-2px);}
-.qa-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
-.qa-label{font-size:12px;font-weight:600;}
-.qa-desc{font-size:10px;color:var(--muted);margin-top:3px;}
-.btn{padding:9px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s;border:none;display:inline-flex;align-items:center;gap:6px;}
-.btn-primary{background:var(--blue);color:#fff;}
-.btn-primary:hover{background:#3d60b8;}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
-.btn-ghost:hover{color:var(--text);border-color:var(--border2);}
-.inp{width:100%;padding:10px 13px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:all .2s;}
-.inp:focus{border-color:var(--blue2);background:rgba(79,114,196,0.06);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* ── Stats ── */
+.stat{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:12px;padding:16px 18px;}
+.stat-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;}
+.stat-val{font-family:var(--display);font-size:24px;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:5px;}
+
+/* ── Quick actions ── */
+.qa-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;}
+.qa{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .2s cubic-bezier(.22,1,.36,1);display:flex;align-items:center;gap:13px;}
+.qa:hover{border-color:rgba(79,114,196,.4);background:var(--card2);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.3);}
+.qa-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qa-label{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-.01em;}
+.qa-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── Buttons ── */
+.btn{padding:9px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s;}
+.btn-p{background:var(--blue);color:#fff;}
+.btn-p:hover{background:#3d5da8;box-shadow:0 4px 14px rgba(79,114,196,.35);}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-g:hover{color:var(--text);border-color:var(--border2);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── Form ── */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:6px;}
+.inp{width:100%;padding:10px 13px;background:#f8faff;border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:all .2s;}
+.inp:focus{border-color:var(--blue2);background:#eef3ff;box-shadow:0 0 0 3px rgba(79,114,196,0.08);}
 .inp::placeholder{color:var(--dim);}
 textarea.inp{resize:vertical;line-height:1.6;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
-.ai-out{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px;font-family:var(--mono);font-size:12px;color:rgba(200,216,255,0.85);line-height:1.75;white-space:pre-wrap;min-height:200px;max-height:400px;overflow-y:auto;}
-.typing{display:flex;align-items:center;gap:5px;padding:14px 0;}
+select.inp{cursor:pointer;}
+
+/* ── AI output ── */
+.ai-out{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px;font-family:var(--mono);font-size:12px;color:#344268;line-height:1.75;white-space:pre-wrap;min-height:200px;max-height:420px;overflow-y:auto;}
+.typing{display:flex;align-items:center;gap:5px;padding:12px 0;}
 .typing span{width:6px;height:6px;border-radius:50%;background:var(--blue2);animation:bounce .9s infinite;}
 .typing span:nth-child(2){animation-delay:.15s;}
 .typing span:nth-child(3){animation-delay:.3s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
-.chat-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:4px 0;}
-.msg-user{align-self:flex-end;max-width:75%;background:var(--blue);color:#fff;padding:10px 14px;border-radius:12px 12px 3px 12px;font-size:13px;line-height:1.55;}
-.msg-ai{align-self:flex-start;max-width:85%;background:var(--card2);border:1px solid var(--border);padding:12px 14px;border-radius:12px 12px 12px 3px;font-size:12px;line-height:1.7;color:rgba(200,216,255,0.9);font-family:var(--mono);}
-.msg-ai-label{font-size:9px;font-weight:600;letter-spacing:.08em;color:var(--blue2);margin-bottom:6px;}
-.chat-inp{flex:1;padding:11px 14px;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border .2s;}
-.chat-inp:focus{border-color:var(--blue2);}
-.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;}
-.upload-zone:hover{border-color:var(--blue2);background:rgba(79,114,196,0.05);}
-.risk-item{border-radius:9px;padding:12px 14px;margin-bottom:8px;border-left:3px solid;}
-.risk-high{background:rgba(224,90,80,0.08);border-color:#e05a50;}
-.risk-medium{background:rgba(200,150,60,0.08);border-color:#c8963c;}
-.risk-low{background:rgba(60,180,100,0.08);border-color:#3cb464;}
-.risk-title{font-size:12px;font-weight:600;margin-bottom:3px;}
-.risk-detail{font-size:11px;color:var(--muted);line-height:1.5;}
-.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;}
-.tag-blue{background:rgba(79,114,196,0.15);color:var(--blue2);border:1px solid rgba(79,114,196,0.25);}
-.tag-green{background:rgba(60,180,100,0.12);color:#3cb464;border:1px solid rgba(60,180,100,0.22);}
-.tag-red{background:rgba(224,90,80,0.12);color:#e05a50;border:1px solid rgba(224,90,80,0.22);}
-.doc-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+
+/* ── Risk items ── */
+.risk{border-radius:9px;padding:11px 14px;margin-bottom:8px;border-left:3px solid;}
+.risk-h{background:rgba(224,90,80,.08);border-color:#e05a50;}
+.risk-m{background:rgba(200,150,60,.08);border-color:#c8963c;}
+.risk-l{background:rgba(60,180,100,.08);border-color:#3cb464;}
+.risk-ttl{font-size:12px;font-weight:600;margin-bottom:3px;}
+.risk-det{font-size:11px;color:var(--muted);line-height:1.5;}
+
+/* ── Chat ── */
+.chat-msgs{display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;}
+.msg-u{align-self:flex-end;max-width:75%;background:var(--blue);color:#fff;padding:10px 14px;border-radius:12px 12px 3px 12px;font-size:13px;line-height:1.55;}
+.msg-a{align-self:flex-start;max-width:85%;background:var(--card2);border:1px solid var(--border);padding:12px 14px;border-radius:12px 12px 12px 3px;font-size:12px;line-height:1.7;color:#344268;font-family:var(--mono);}
+.msg-a-lbl{font-size:9px;font-weight:600;color:var(--blue);margin-bottom:6px;letter-spacing:.08em;}
+.chat-inp{flex:1;padding:11px 14px;background:#f8faff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .2s;}
+.chat-inp:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(79,114,196,0.08);}
+
+/* ── Doc rows ── */
+.doc-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
 .doc-row:hover{background:var(--card2);border-color:var(--border);}
 .doc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.doc-name{font-size:13px;font-weight:500;}
-.doc-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── Tags ── */
+.tag{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;}
+.tag-b{background:rgba(79,114,196,.15);color:var(--blue2);border:1px solid rgba(79,114,196,.25);}
+.tag-g{background:rgba(60,180,100,.12);color:#3cb464;border:1px solid rgba(60,180,100,.22);}
+.tag-r{background:rgba(224,90,80,.12);color:#e05a50;border:1px solid rgba(224,90,80,.22);}
+.tag-a{background:rgba(200,150,60,.12);color:#c8963c;border:1px solid rgba(200,150,60,.22);}
+
+/* ── Empty ── */
 .empty{text-align:center;padding:48px 20px;}
-.empty-icon{width:52px;height:52px;border-radius:14px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-.empty-title{font-size:14px;font-weight:600;margin-bottom:6px;}
-.empty-sub{font-size:12px;color:var(--muted);line-height:1.6;max-width:280px;margin:0 auto 18px;}
-.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
-.tab{padding:9px 16px;font-size:12px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--sans);transition:all .15s;margin-bottom:-1px;}
-.tab.on{color:var(--text);border-bottom-color:var(--blue2);}
-.plan-card-ui{border:1.5px solid var(--border);border-radius:14px;padding:20px;transition:all .2s;}
-.plan-card-ui.current{border-color:var(--blue2);background:rgba(79,114,196,0.08);}
-.plan-name-ui{font-family:var(--display);font-size:15px;font-weight:700;margin-bottom:4px;}
-.plan-price-ui{font-family:var(--display);font-size:26px;font-weight:800;color:var(--blue2);}
-.plan-price-ui sub{font-size:12px;font-weight:500;color:var(--muted);}
-.plan-feat-ui{font-size:11px;color:var(--muted);margin-top:12px;display:flex;flex-direction:column;gap:5px;}
-.plan-feat-ui li{list-style:none;display:flex;align-items:center;gap:6px;}
-.plan-feat-ui li::before{content:'✓';color:var(--green);font-size:10px;font-weight:700;}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
-.settings-row:last-child{border-bottom:none;}
-.settings-label{font-size:13px;font-weight:500;}
-.settings-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.empty-ttl{font-size:14px;font-weight:600;margin-bottom:6px;}
+.empty-sub{font-size:12px;color:var(--muted);line-height:1.6;max-width:260px;margin:0 auto 18px;}
+
+/* ── Upload ── */
+.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;}
+.upload-zone:hover,.upload-zone.over{border-color:var(--blue2);background:rgba(79,114,196,.05);}
+.upload-icon{margin-bottom:10px;}
+
+/* ── Plan cards ── */
+.plan-card{border:1.5px solid var(--border);border-radius:14px;padding:20px;transition:all .2s;cursor:default;}
+.plan-card.cur{border-color:var(--blue2);background:rgba(79,114,196,.07);}
+.plan-card:hover:not(.cur){border-color:var(--border2);background:rgba(79,114,196,.04);}
+.plan-name{font-family:var(--font);font-size:13px;font-weight:600;margin-bottom:4px;color:var(--muted);}
+.plan-price{font-family:var(--display);font-size:22px;font-weight:700;color:var(--text);}
+.plan-price sub{font-size:11px;font-weight:500;color:var(--muted);}
+.plan-feats{font-size:11px;color:var(--muted);margin-top:12px;display:flex;flex-direction:column;gap:5px;list-style:none;}
+.plan-feats li{display:flex;align-items:baseline;gap:6px;}
+.plan-feats li::before{content:'—';color:var(--blue);font-weight:700;flex-shrink:0;}
+
+/* ── Settings ── */
+.s-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.s-row:last-child{border-bottom:none;}
 .toggle{width:38px;height:22px;border-radius:11px;background:var(--border2);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
 .toggle.on{background:var(--blue);}
 .toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;}
 .toggle.on::after{transform:translateX(16px);}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:16px;}
+.tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font);transition:all .15s;}
+.tab.on{background:rgba(79,114,196,.14);color:var(--text);border-color:var(--border2);}
+
+/* ── Activity ── */
+.act-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.act-row:last-child{border-bottom:none;}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.act-text{font-size:12px;flex:1;}
+.act-time{font-size:10px;color:var(--dim);}
+
+/* ── Scrollbar ── */
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(79,114,196,0.25);border-radius:5px;}
-/* Welcome banner */
-.welcome-banner{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#162040,#1a2848);border:1px solid rgba(79,114,196,0.4);color:#eef2ff;padding:16px 28px;border-radius:14px;z-index:9999;font-family:var(--sans);box-shadow:0 8px 32px rgba(0,0,0,0.5);text-align:center;min-width:300px;animation:bannerIn .4s cubic-bezier(.22,1,.36,1) both;}
-@keyframes bannerIn{from{opacity:0;transform:translateX(-50%) translateY(-20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
-.welcome-banner h3{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:4px;}
-.welcome-banner h3 em{color:var(--blue2);font-style:normal;}
-.welcome-banner p{font-size:12px;color:rgba(200,216,255,0.6);}
+::-webkit-scrollbar-thumb{background:rgba(79,114,196,.25);border-radius:5px;}
+
+/* ══ WELCOME BANNER ══ */
+.welcome-banner{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%);
+  border-radius:16px;z-index:999;text-align:center;
+  box-shadow:0 8px 32px rgba(79,114,196,.18);
+  animation:wbIn .5s cubic-bezier(.22,1,.36,1) both;
+  white-space:nowrap;padding:20px 36px;min-width:320px;
+}
+.welcome-banner.trial{
+  background:#ffffff;
+  border:1px solid var(--border2);
+}
+.welcome-banner.paid{
+  background:#f0fff5;
+  border:1px solid rgba(60,180,100,0.35);
+}
+@keyframes wbIn{from{opacity:0;transform:translateX(-50%) translateY(-22px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.wb-title{font-family:var(--display);font-size:18px;font-weight:800;margin-bottom:5px;color:var(--text);}
+.wb-title em{font-style:normal;}
+.welcome-banner.trial .wb-title em{color:var(--blue);}
+.welcome-banner.paid .wb-title em{color:#237a3c;}
+.wb-sub{font-size:12px;color:var(--muted);}
+.welcome-banner.paid .wb-sub{color:#2d7a44;}
+
+/* ══ MEMBERSHIP STRIP ══ */
+.membership-strip{
+  background:#ffffff;
+  border:1px solid var(--border2);
+  border-radius:14px;margin-top:24px;padding:18px 22px;
+}
+.ms-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ms-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.ms-title-badge{background:rgba(200,150,60,0.12);border:1px solid rgba(200,150,60,0.28);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;color:#c8963c;}
+.ms-dismiss{font-size:10px;color:var(--dim);cursor:pointer;transition:color .15s;}
+.ms-dismiss:hover{color:var(--muted);}
+.ms-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ms-plan{border:1.5px solid var(--border);border-radius:11px;padding:14px 16px;transition:all .2s;position:relative;}
+.ms-plan.popular{border-color:var(--border2);}
+.ms-plan:hover{border-color:var(--blue2);background:rgba(79,114,196,0.05);}
+.ms-popular-tag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:.04em;white-space:nowrap;}
+.ms-plan-name{font-family:var(--display);font-size:12px;font-weight:700;margin-bottom:4px;}
+.ms-plan-price{font-family:var(--display);font-size:20px;font-weight:800;color:var(--blue2);line-height:1;}
+.ms-plan-price sub{font-size:10px;font-weight:500;color:var(--muted);}
+.ms-plan-users{font-size:10px;color:var(--muted);margin:5px 0 10px;}
+.ms-plan-btn{width:100%;padding:7px;background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--blue2);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.ms-plan-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.ms-plan.popular .ms-plan-btn{background:var(--blue);color:#fff;border-color:var(--blue);}
+.ms-plan.popular .ms-plan-btn:hover{background:#3d5da8;}
+
+/* ── Danger zone ── */
+.btn-danger{background:rgba(224,90,80,.1);color:var(--red);border:1px solid rgba(224,90,80,.25);padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.btn-danger:hover{background:rgba(224,90,80,.2);}
+
+/* ── Trial expired overlay ── */
+.trial-expired-overlay{position:fixed;inset:0;z-index:999;background:rgba(20,30,60,0.72);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;}
+.trial-expired-box{background:var(--card);border:1px solid rgba(200,150,60,0.35);border-radius:20px;padding:40px 36px;max-width:520px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6);}
+.trial-expired-icon{width:72px;height:72px;border-radius:50%;background:rgba(200,150,60,0.1);border:1.5px solid rgba(200,150,60,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;}
+.trial-expired-title{font-family:var(--display);font-size:clamp(20px,3vw,26px);font-weight:800;margin-bottom:8px;}
+.trial-expired-sub{font-size:clamp(12px,1.5vw,14px);color:var(--muted);margin-bottom:28px;line-height:1.7;}
+.trial-expired-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+
+/* ── Responsive ── */
+@media(max-width:1024px){
+  :root{--sidebar:200px;}
+  .stat-val{font-size:clamp(20px,3vw,28px);}
+}
+@media(max-width:768px){
+  :root{--sidebar:0px;--topbar:56px;}
+  .sidebar{display:none;}
+  .app{grid-template-columns:1fr;}
+  .tb-search{display:none;}
+  .ms-plans{grid-template-columns:1fr;}
+  .trial-expired-plans{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .cards-grid{grid-template-columns:1fr;}
+}
+@media(min-width:1600px){
+  :root{--sidebar:256px;}
+  body{font-size:15px;}
+  .stat-val{font-size:34px;}
+  .card-title-text{font-size:15px;}
+}
 </style>
 </head>
 <body>
+
+<!-- Trial expired overlay -->
+<div class="trial-expired-overlay" id="trial-expired-overlay" style="display:none">
+  <div class="trial-expired-box">
+    <div class="trial-expired-icon">
+      <svg width="28" height="28" fill="none" stroke="#c8963c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2.5"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg>
+    </div>
+    <div class="trial-expired-title">Your free trial has ended</div>
+    <div class="trial-expired-sub">Your 14-day trial is up. Choose a plan below to keep full access to Dave.AI — contract drafting, document review and AI legal research.</div>
+    <div class="trial-expired-plans" id="teo-plans"></div>
+    <div style="font-size:11px;color:var(--dim)">Secure checkout · Cancel anytime · UK GDPR compliant</div>
+  </div>
+</div>
+
 <div class="app">
 
+  <!-- ══ TOPBAR ══ -->
   <header class="topbar">
-    <div class="tb-logo">
+    <a class="tb-logo" href="#" onclick="go('dash'); return false;">
       <div class="tb-logo-icon">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/><rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/><rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/><path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+          <rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/>
+          <rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/>
+          <rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/>
+          <path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <line x1="4" y1="8" x2="1.5" y2="8" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="1.5" cy="8" r=".8" fill="white"/>
+          <line x1="4" y1="12" x2="1.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="1.5" cy="12" r=".8" fill="white"/>
+          <circle cx="20.5" cy="12" r="1" fill="white"/>
+          <line x1="20.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
       </div>
       <span class="tb-logo-name">Dave<em>.AI</em></span>
-    </div>
-    <div class="tb-center">
-      <div class="tb-search">
-        <svg width="13" height="13" fill="none" stroke="rgba(200,216,255,0.3)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" placeholder="Search documents, research..."/>
-      </div>
+    </a>
+    <div class="tb-search">
+      <svg width="13" height="13" fill="none" stroke="#a8b4cc" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search documents, research…"/>
     </div>
     <div class="tb-right">
-      <div class="tb-plan-badge" id="tb-plan-badge">PRO PLAN</div>
-      <div class="tb-avatar" id="tb-avatar">DA</div>
+      <div class="tb-plan-badge" id="tb-badge">PRO · TRIAL</div>
+      <div class="tb-avatar" id="tb-av">DA</div>
     </div>
   </header>
 
+  <!-- ══ SIDEBAR ══ -->
   <nav class="sidebar">
-    <div class="sb-section">Main</div>
-    <div class="sb-item active" onclick="nav('dashboard')" id="nav-dashboard">
+    <div class="sb-sec">Main</div>
+    <div class="sb-item on" onclick="go('dash')" id="nav-dash">
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
       Dashboard
     </div>
-    <div class="sb-section">Tools</div>
-    <div class="sb-item" onclick="nav('draft')" id="nav-draft">
+    <div class="sb-sec">Tools</div>
+    <div class="sb-item" onclick="go('draft')" id="nav-draft">
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
       Draft
     </div>
-    <div class="sb-item" onclick="nav('review')" id="nav-review">
+    <div class="sb-item" onclick="go('review')" id="nav-review">
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
       Review
     </div>
-    <div class="sb-item" onclick="nav('research')" id="nav-research">
+    <div class="sb-item" onclick="go('research')" id="nav-research">
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
       Research
     </div>
-    <div class="sb-section">Workspace</div>
-    <div class="sb-item" onclick="nav('history')" id="nav-history">
-      <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+    <div class="sb-sec">Workspace</div>
+    <div class="sb-item" onclick="go('history')" id="nav-history">
+      <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div>
       History
-      <span class="sb-badge" id="doc-count">0</span>
+      <span class="sb-badge" id="doc-cnt">0</span>
     </div>
-    <div class="sb-item" onclick="nav('settings')" id="nav-settings">
+    <div class="sb-item" onclick="go('settings')" id="nav-settings">
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
       Settings
     </div>
-    <div class="sb-divider"></div>
-    <div class="sb-bottom">
-      <div class="sb-item" onclick="nav('billing')" id="nav-billing">
+    <div class="sb-div"></div>
+    <div class="sb-bot">
+      <div class="sb-item" onclick="go('billing')" id="nav-billing">
         <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
         Billing
       </div>
-      <div class="sb-user" style="margin-top:8px">
+      <div id="usage-badge" style="font-size:10px;color:#a8b4cc;padding:6px 12px;margin-bottom:4px;text-align:center"></div>
+      <div class="sb-user" style="margin-top:4px" onclick="go('settings')">
         <div class="sb-user-av" id="sb-av">DA</div>
         <div>
           <div class="sb-user-name" id="sb-name">David Asoyag</div>
-          <div class="sb-user-plan" id="sb-plan">Pro Plan · Active</div>
+          <div class="sb-user-role" id="sb-role">Pro Plan</div>
         </div>
       </div>
     </div>
   </nav>
 
+  <!-- ══ MAIN ══ -->
   <main class="main" id="main"></main>
+
 </div>
 
 <script>
-// ── Load session ──
-var S = JSON.parse(localStorage.getItem('dave_session') || '{}');
+// ══ STRIPE PAYMENT LINKS ══
+// Update these success URLs in your Stripe dashboard to point to:
+//   https://your-netlify-domain.netlify.app/success.html
+var STRIPE = {
+  starter: 'https://buy.stripe.com/test_5kQeVdbOlfCN20Kf0g8bS01',
+  pro:     'https://buy.stripe.com/test_fZudR9bOl1LX5cW8BS8bS00',
+  firm:    'https://buy.stripe.com/test_8x27sLaKhfCNbBk2du8bS02'
+};
 
-// Redirect to login if no session
-if(!S.plan){
-  window.location.href = 'index.html';
+function stripeUrl(key){
+  var url = STRIPE[key] || STRIPE.pro;
+  var s = JSON.parse(localStorage.getItem('dave_session') || '{}');
+  if(s.email) url += '?prefilled_email=' + encodeURIComponent(s.email);
+  return url;
 }
 
-var firstName  = S.firstName  || 'David';
-var lastName   = S.lastName   || 'Asoyag';
+// ══ SESSION ══
+var S = JSON.parse(localStorage.getItem('dave_session') || '{}');
+
+// Auth guard — use localStorage as primary, Supabase as background sync
+if(!S.email && !S.plan){
+  window.location.href = 'login.html';
+}
+
+// Background Supabase sync (non-blocking — never freezes the page)
+try {
+  _sb.auth.getSession().then(function(res){
+    var sbSession = res && res.data && res.data.session;
+    if(sbSession && sbSession.user && !S.email){
+      var meta = sbSession.user.user_metadata || {};
+      S = {
+        email: sbSession.user.email,
+        firstName: meta.firstName || '',
+        lastName: meta.lastName || '',
+        firm: meta.firm || '',
+        plan: meta.plan || 'pro',
+        planName: meta.planName || 'Pro Plan',
+        planPrice: meta.planPrice || '£149/mo',
+        planUsers: meta.planUsers || 'up to 5 users',
+        planActive: meta.planActive || false,
+        trialStart: meta.trialStart || new Date().toISOString()
+      };
+      localStorage.setItem('dave_session', JSON.stringify(S));
+    }
+  });
+} catch(e){}
+
+// Handle URL params for welcome state
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var wParam = params.get('welcome');
+  if(wParam === 'paid'){
+    S.planActive = true;
+    localStorage.setItem('dave_session', JSON.stringify(S));
+    localStorage.setItem('dave_welcome', 'paid');
+  } else if(wParam === '1'){
+    localStorage.setItem('dave_welcome', 'trial');
+  }
+  if(wParam) history.replaceState({}, '', window.location.pathname);
+})();
+
+// Fix malformed names (email used as firstName)
+if(S.firstName && S.firstName.indexOf('@') !== -1){
+  S.firstName = S.firstName.split('@')[0].split('.')[0];
+  S.firstName = S.firstName.charAt(0).toUpperCase() + S.firstName.slice(1);
+  localStorage.setItem('dave_session', JSON.stringify(S));
+}
+
+// ── Derived session values ──
+var firstName  = S.firstName  || 'there';
+var lastName   = S.lastName   || '';
 var fullName   = (firstName + ' ' + lastName).trim();
-var initials   = (firstName[0]||'D').toUpperCase() + (lastName[0]||'A').toUpperCase();
+var initials   = ((firstName[0]||'D') + (lastName[0]||'A')).toUpperCase();
 var email      = S.email      || '';
 var firm       = S.firm       || '';
 var plan       = S.plan       || 'pro';
 var planName   = S.planName   || 'Pro Plan';
 var planPrice  = S.planPrice  || '£149/mo';
 var planUsers  = S.planUsers  || 'up to 5 users';
+var planActive = S.planActive || false;
 var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
-var trialEnd   = new Date(trialStart); trialEnd.setDate(trialEnd.getDate()+14);
-var trialDaysLeft = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
-var trialEndStr = trialEnd.toLocaleDateString('en-GB',{day:'numeric',month:'long'});
+var trialEnd   = new Date(trialStart); trialEnd.setDate(trialEnd.getDate() + 14);
+var trialDays  = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
+var trialEndStr= trialEnd.toLocaleDateString('en-GB', {day:'numeric', month:'long'});
+var docs       = JSON.parse(localStorage.getItem('daveai_docs') || '[]');
 
-// ── Set UI elements ──
-document.getElementById('tb-avatar').textContent = initials;
-document.getElementById('tb-avatar').title = fullName;
-document.getElementById('sb-av').textContent = initials;
-document.getElementById('sb-name').textContent = fullName;
-document.getElementById('sb-plan').textContent = planName + (S.planActive ? ' · Active' : ' · Trial');
-document.getElementById('tb-plan-badge').textContent = plan.toUpperCase() + (S.planActive ? ' · ACTIVE' : ' · TRIAL');
+// ── Show expired trial overlay if trial has ended ──
+if(!planActive && trialDays === 0){
+  var teoPlans = [
+    {key:'starter', name:'Starter', price:'£49', users:'1 user'},
+    {key:'pro',     name:'Pro',     price:'£149', users:'up to 5 users', popular:true},
+    {key:'firm',    name:'Firm',    price:'£299', users:'unlimited users'}
+  ];
+  document.getElementById('teo-plans').innerHTML = teoPlans.map(function(p){
+    return '<div class="ms-plan'+(p.popular?' popular':'')+'" style="text-align:left">'
+      +(p.popular?'<div class="ms-popular-tag">MOST POPULAR</div>':'')
+      +'<div class="ms-plan-name">'+p.name+'</div>'
+      +'<div class="ms-plan-price">'+p.price+'<sub>/mo</sub></div>'
+      +'<div class="ms-plan-users">'+p.users+'</div>'
+      +'<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\''+p.key+'\')">Activate '+p.name+' →</button>'
+      +'</div>';
+  }).join('');
+  document.getElementById('trial-expired-overlay').style.display = 'flex';
+}
 
-// ── Docs ──
-var docs = JSON.parse(localStorage.getItem('dave_docs_'+plan) || '[]');
-function saveDocs(){ localStorage.setItem('dave_docs_'+plan, JSON.stringify(docs)); document.getElementById('doc-count').textContent = docs.length; }
-document.getElementById('doc-count').textContent = docs.length;
+function saveDocs(){
+  localStorage.setItem('daveai_docs', JSON.stringify(docs));
+  var el = document.getElementById('doc-cnt');
+  if(el) el.textContent = docs.length;
+}
+
+// ── Usage limits ──
+var PLAN_LIMITS = { trial: 10, starter: 20, pro: Infinity, firm: Infinity, enterprise: Infinity };
+
+// ── Init UI ──
+document.getElementById('tb-av').textContent    = initials;
+document.getElementById('sb-av').textContent    = initials;
+document.getElementById('sb-name').textContent  = fullName;
+document.getElementById('sb-role').textContent  = planName + (planActive ? ' · Active' : ' · Trial');
+document.getElementById('doc-cnt').textContent  = docs.length;
+updateUsageBadge();
+
+var badge = document.getElementById('tb-badge');
+if(planActive){
+  badge.textContent = plan.toUpperCase() + ' · ACTIVE';
+  badge.classList.add('paid');
+} else {
+  badge.textContent = plan.toUpperCase() + ' · TRIAL';
+}
 
 // ── Navigation ──
-var currentView = 'dashboard';
-function nav(view){
-  currentView = view;
-  document.querySelectorAll('.sb-item').forEach(function(el){ el.classList.remove('active'); });
-  var navEl = document.getElementById('nav-'+view);
-  if(navEl) navEl.classList.add('active');
-  render(view);
-}
-
-function render(view){
+function go(v){
+  document.querySelectorAll('.sb-item').forEach(function(e){ e.classList.remove('on'); });
+  var el = document.getElementById('nav-'+v);
+  if(el) el.classList.add('on');
   var m = document.getElementById('main');
-  if(view==='dashboard') m.innerHTML = viewDashboard();
-  else if(view==='draft') m.innerHTML = viewDraft();
-  else if(view==='review') m.innerHTML = viewReview();
-  else if(view==='research'){ m.innerHTML = viewResearch(); renderChat(); }
-  else if(view==='history') m.innerHTML = viewHistory();
-  else if(view==='settings') m.innerHTML = viewSettings();
-  else if(view==='billing') m.innerHTML = viewBilling();
+  if(v==='dash')     { m.innerHTML = vDash(); }
+  else if(v==='draft')    { m.innerHTML = vDraft(); }
+  else if(v==='review')   { m.innerHTML = vReview(); }
+  else if(v==='research') { m.innerHTML = vResearch(); renderChat(); }
+  else if(v==='history')  { m.innerHTML = vHistory(); }
+  else if(v==='settings') { m.innerHTML = vSettings(); }
+  else if(v==='billing')  { m.innerHTML = vBilling(); }
+  m.scrollTop = 0;
 }
 
-// ── Claude API ──
-async function callClaude(system, user){
-  const r = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:system,messages:[{role:'user',content:user}]})
-  });
-  const d = await r.json();
-  return d.content && d.content[0] ? d.content[0].text : 'Error: no response';
+function getUsageKey(){
+  var month = new Date().toISOString().slice(0,7); // 'YYYY-MM'
+  return 'daveai_usage_' + month;
 }
 
-// ── DASHBOARD ──
-function viewDashboard(){
-  var recent = docs.slice(0,5);
-  return `<div class="view">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px">
-      <div><div class="view-title">Good morning, ${firstName} &#x1F44B;</div><div class="view-sub">Here's what's happening in your workspace today.</div></div>
-      <div style="background:rgba(200,150,60,0.1);border:1px solid rgba(200,150,60,0.25);border-radius:9px;padding:8px 14px;font-size:11px;color:#c8963c;display:flex;align-items:center;gap:7px;">
-        &#x23F3; Trial ends ${trialEndStr} &middot; <span style="color:#7aaaf8;cursor:pointer" onclick="nav('billing')">Upgrade now</span>
-      </div>
-    </div>
-    <div class="grid-4">
-      <div class="stat-card"><div class="stat-label">Documents</div><div class="stat-val">${docs.length}</div><div class="stat-sub">created this trial</div></div>
-      <div class="stat-card"><div class="stat-label">Hours saved</div><div class="stat-val">${(docs.length*1.8).toFixed(1)}</div><div class="stat-sub">vs manual drafting</div></div>
-      <div class="stat-card"><div class="stat-label">Cost saved</div><div class="stat-val">&#xa3;${(docs.length*220).toLocaleString()}</div><div class="stat-sub">vs solicitor billing</div></div>
-      <div class="stat-card"><div class="stat-label">Trial days left</div><div class="stat-val">${trialDaysLeft}</div><div class="stat-sub">of 14-day trial</div></div>
-    </div>
-    <div style="font-size:15px;font-weight:600;margin-bottom:14px">Quick actions</div>
-    <div class="quick-actions">
-      <div class="qa-card" onclick="nav('draft')"><div class="qa-icon" style="background:rgba(79,114,196,0.15)"><svg width="18" height="18" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="qa-label">Draft document</div><div class="qa-desc">NDA, contract, letter</div></div>
-      <div class="qa-card" onclick="nav('review')"><div class="qa-icon" style="background:rgba(60,180,100,0.12)"><svg width="18" height="18" fill="none" stroke="#3cb464" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div class="qa-label">Review contract</div><div class="qa-desc">Risk flags & analysis</div></div>
-      <div class="qa-card" onclick="nav('research')"><div class="qa-icon" style="background:rgba(139,79,196,0.12)"><svg width="18" height="18" fill="none" stroke="#a78bfa" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="qa-label">Legal research</div><div class="qa-desc">UK law & case law</div></div>
-      <div class="qa-card" onclick="nav('history')"><div class="qa-icon" style="background:rgba(200,150,60,0.12)"><svg width="18" height="18" fill="none" stroke="#c8963c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><div class="qa-label">Document vault</div><div class="qa-desc">${docs.length} saved</div></div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:13px;font-weight:600">Recent documents</div><span style="font-size:11px;color:var(--blue2);cursor:pointer" onclick="nav('history')">View all</span></div>
-        ${recent.length===0?`<div class="empty"><div class="empty-icon"><svg width="20" height="20" fill="none" stroke="var(--dim)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg></div><div class="empty-title">No documents yet</div><div class="empty-sub">Draft your first document to get started.</div><button class="btn btn-primary" onclick="nav('draft')">Draft something</button></div>`:
-        recent.map(function(d){ return `<div class="doc-row"><div class="doc-icon" style="background:rgba(79,114,196,0.12)"><svg width="16" height="16" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg></div><div><div class="doc-name">${d.name}</div><div class="doc-meta">${d.type} &middot; ${d.date}</div></div><span class="tag tag-blue" style="margin-left:auto">${d.type}</span></div>`; }).join('')}
-      </div>
-      <div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:14px">Activity</div>
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:50%;background:#3cb464;flex-shrink:0"></div><div style="font-size:12px;flex:1">Account created &middot; Trial started</div><div style="font-size:10px;color:var(--dim)">Today</div></div>
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:50%;background:#4f72c4;flex-shrink:0"></div><div style="font-size:12px;flex:1">${planName} activated</div><div style="font-size:10px;color:var(--dim)">Today</div></div>
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0"><div style="width:8px;height:8px;border-radius:50%;background:#7aaaf8;flex-shrink:0"></div><div style="font-size:12px;flex:1">Welcome email sent to ${email}</div><div style="font-size:10px;color:var(--dim)">Today</div></div>
-      </div>
-    </div>
-  </div>`;
+function getUsageCount(){
+  return parseInt(localStorage.getItem(getUsageKey()) || '0', 10);
 }
 
-// ── DRAFT ──
-function viewDraft(){
-  return `<div class="view">
-    <div class="view-title">Contract Drafting</div>
-    <div class="view-sub">Describe what you need — Dave.AI drafts a full UK-law compliant document in seconds.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div>
-        <div class="card" style="margin-bottom:14px">
-          <div class="field"><label>Document type</label>
-            <select class="inp" id="draft-type">
-              <option>Mutual NDA</option><option>One-way NDA</option><option>Employment Contract</option>
-              <option>Freelance / Services Agreement</option><option>Settlement Agreement</option>
-              <option>Lease Agreement</option><option>Shareholder Agreement</option>
-              <option>Letter Before Action</option><option>Terms and Conditions</option><option>Privacy Policy</option>
-            </select>
-          </div>
-          <div class="field"><label>Your requirements</label>
-            <textarea class="inp" id="draft-prompt" rows="5" placeholder="e.g. Mutual NDA between Acme Ltd and Beta Co. 24 month term. English law..."></textarea>
-          </div>
-          <div style="display:flex;gap:10px">
-            <button class="btn btn-primary" onclick="doDraft()" id="draft-btn">&#x26A1; Generate document</button>
-            <button class="btn btn-ghost" onclick="clearDraft()">Clear</button>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div style="position:relative">
-          <div class="ai-out" id="draft-out" style="min-height:340px"><div style="color:var(--dim);font-size:12px;text-align:center;padding-top:60px;font-family:var(--sans)">Your drafted document will appear here.</div></div>
-          <div style="position:absolute;top:10px;right:10px"><button class="btn btn-ghost" style="font-size:11px;padding:6px 11px" onclick="copyDraft()">Copy</button></div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px" id="draft-actions" style="display:none">
-          <button class="btn btn-ghost" style="font-size:11px" onclick="saveDraftDoc()" id="save-draft-btn">&#x1F4BE; Save to vault</button>
-          <button class="btn btn-ghost" style="font-size:11px" onclick="downloadDraft()">&#x2B07; Download</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
+function incrementUsage(){
+  var key = getUsageKey();
+  var count = getUsageCount() + 1;
+  localStorage.setItem(key, count);
+  updateUsageBadge();
+  return count;
+}
+
+function getPlanLimit(){
+  if(!planActive) return PLAN_LIMITS.trial;
+  return PLAN_LIMITS[plan] !== undefined ? PLAN_LIMITS[plan] : Infinity;
+}
+
+function checkUsageLimit(){
+  var limit = getPlanLimit();
+  if(limit === Infinity) return true; // unlimited
+  var used = getUsageCount();
+  if(used >= limit){
+    var msg = !planActive
+      ? 'You have used all ' + limit + ' of your trial AI requests.\n\nUpgrade to a paid plan to continue.'
+      : 'You have reached your ' + limit + ' request limit for this month (Starter plan).\n\nUpgrade to Pro for unlimited requests.';
+    if(confirm(msg + '\n\nGo to Billing & Plans now?')){
+      go('billing');
+    }
+    return false;
+  }
+  return true;
+}
+
+function updateUsageBadge(){
+  var limit = getPlanLimit();
+  var used  = getUsageCount();
+  var el    = document.getElementById('usage-badge');
+  if(!el) return;
+  if(limit === Infinity){
+    el.textContent = used + ' requests this month';
+    el.style.color = '#a8b4cc';
+  } else {
+    var remaining = Math.max(0, limit - used);
+    el.textContent = remaining + ' / ' + limit + ' requests left';
+    el.style.color = remaining <= 3 ? '#c0392b' : remaining <= 5 ? '#96620a' : '#a8b4cc';
+  }
+}
+
+// ── Claude API helper ──
+async function callAI(sys, usr, maxTok, webSearch){
+  // Check usage limit before making request
+  if(!checkUsageLimit()) return null;
+
+  var attempts = 2;
+  for(var i = 0; i < attempts; i++){
+    try {
+      var controller = new AbortController();
+      var timeout = setTimeout(function(){ controller.abort(); }, 29000);
+      var r = await fetch('/.netlify/functions/ai-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: maxTok || 1200,
+          system: sys,
+          messages: [{ role: 'user', content: usr }],
+          web_search: webSearch || false
+        })
+      });
+      clearTimeout(timeout);
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      var d = await r.json();
+      incrementUsage(); // only count successful requests
+      return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
+    } catch(e) {
+      if(i < attempts - 1){
+        // Wait 2 seconds then retry
+        await new Promise(function(res){ setTimeout(res, 2000); });
+        continue;
+      }
+      return 'The AI service is temporarily unavailable. Please try again in a moment.';
+    }
+  }
+}
+
+// ══════════════════════════════════════════════
+//  DASHBOARD VIEW
+// ══════════════════════════════════════════════
+function vDash(){
+  var greeting = (function(){
+    var h = new Date().getHours();
+    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  })();
+
+  var recentHtml = docs.length === 0
+    ? '<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Draft your first document to get started.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft something →</button></div>'
+    : docs.slice(0,5).map(function(d){
+        var ic = d.type==='Draft'?'var(--blue2)':d.type==='Review'?'#3cb464':'#a78bfa';
+        var bg = d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
+        return '<div class="doc-row"><div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+d.type+' · '+d.date+'</div></div><span class="tag tag-b" style="flex-shrink:0">'+d.type.split(' ')[0]+'</span></div>';
+      }).join('');
+
+  var trialBanner = !planActive
+    ? '<div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.25);border-radius:9px;padding:8px 14px;font-size:11px;color:#c8963c;display:flex;align-items:center;gap:8px;white-space:nowrap">Trial ends '+trialEndStr+'<span style="color:var(--blue2);cursor:pointer;font-weight:600" onclick="go(\'billing\')"> · Upgrade →</span></div>'
+    : '<div style="background:rgba(60,180,100,0.08);border:1px solid rgba(60,180,100,0.22);border-radius:9px;padding:8px 14px;font-size:11px;color:#5ae090;display:flex;align-items:center;gap:7px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>Membership active</div>';
+
+  var membershipStrip = !planActive ? '<div class="membership-strip" id="ms-strip">' +
+    '<div class="ms-header">' +
+      '<div class="ms-title"><svg width="13" height="13" fill="none" stroke="#c8963c" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg> Upgrade your plan — trial ends '+trialEndStr+'<span class="ms-title-badge">'+trialDays+' days left</span></div>' +
+      '<span class="ms-dismiss" onclick="document.getElementById(\'ms-strip\').style.display=\'none\'">Dismiss ×</span>' +
+    '</div>' +
+    '<div class="ms-plans">' +
+      '<div class="ms-plan">' +
+        '<div class="ms-plan-name">Starter</div>' +
+        '<div class="ms-plan-price">£49<sub>/mo</sub></div>' +
+        '<div class="ms-plan-users">1 user · 20 docs/month</div>' +
+        '<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\'starter\')">Select Starter</button>' +
+      '</div>' +
+      '<div class="ms-plan popular">' +
+        '<div class="ms-popular-tag">Most popular</div>' +
+        '<div class="ms-plan-name">Pro</div>' +
+        '<div class="ms-plan-price">£149<sub>/mo</sub></div>' +
+        '<div class="ms-plan-users">5 users · Unlimited docs</div>' +
+        '<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\'pro\')">Select Pro</button>' +
+      '</div>' +
+      '<div class="ms-plan">' +
+        '<div class="ms-plan-name">Firm</div>' +
+        '<div class="ms-plan-price">£299<sub>/mo</sub></div>' +
+        '<div class="ms-plan-users">10 users · Analytics</div>' +
+        '<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\'firm\')">Select Firm</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>' : '';
+
+  return '<div class="view">' +
+    '<div class="view-head">' +
+      '<div><div class="view-title">'+greeting+', '+firstName+'</div><div class="view-sub">'+(new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</div></div>' +
+      '<div>'+trialBanner+'</div>' +
+    '</div>' +
+    '<div class="grid4" style="margin-bottom:24px">' +
+      '<div class="stat"><div class="stat-lbl">Documents</div><div class="stat-val">'+docs.length+'</div><div class="stat-sub">created</div></div>' +
+      '<div class="stat"><div class="stat-lbl">Hours saved</div><div class="stat-val">'+(docs.length*1.8).toFixed(1)+'</div><div class="stat-sub">vs manual drafting</div></div>' +
+      '<div class="stat"><div class="stat-lbl">Cost saved</div><div class="stat-val">£'+(docs.length*220).toLocaleString()+'</div><div class="stat-sub">vs solicitor billing</div></div>' +
+      '<div class="stat"><div class="stat-lbl">'+(planActive?'Membership':'Days left')+'</div><div class="stat-val">'+(planActive?'Active':trialDays)+'</div><div class="stat-sub">'+(planActive?planName:'of 14-day trial')+'</div></div>' +
+    '</div>' +
+    '<div style="font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:10px">Tools</div>' +
+    '<div class="qa-grid">' +
+      '<div class="qa" onclick="go(\'draft\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div style="flex:1"><div class="qa-label">Contract Drafting</div><div class="qa-desc">NDA, employment, lease</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+      '<div class="qa" onclick="go(\'review\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div style="flex:1"><div class="qa-label">Document Review</div><div class="qa-desc">Risk flags & clause analysis</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+      '<div class="qa" onclick="go(\'research\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="flex:1"><div class="qa-label">Legal Research</div><div class="qa-desc">UK case law & legislation</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+      '<div class="qa" onclick="go(\'history\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div><div style="flex:1"><div class="qa-label">Document Vault</div><div class="qa-desc">'+docs.length+' document'+(docs.length===1?'':'s')+' saved</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+    '</div>' +
+    '<div class="grid2">' +
+      '<div class="card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:13px;font-weight:600">Recent documents</div><span style="font-size:11px;color:var(--blue2);cursor:pointer" onclick="go(\'history\')">View all →</span></div>' +
+        recentHtml +
+      '</div>' +
+      '<div class="card">' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Recent activity</div>' +
+        '<div class="act-row"><div class="act-dot" style="background:#3cb464"></div><div class="act-text">Account created · Trial started</div><div class="act-time">Today</div></div>' +
+        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+planName+' '+(planActive?'activated':'trial started')+'</div><div class="act-time">Today</div></div>' +
+        '<div class="act-row"><div class="act-dot" style="background:#7aaaf8"></div><div class="act-text">Welcome email sent to '+(email||'your inbox')+'</div><div class="act-time">Today</div></div>' +
+        (docs.length > 0 ? '<div class="act-row"><div class="act-dot" style="background:#a78bfa"></div><div class="act-text">First document: '+docs[0].name+'</div><div class="act-time">'+docs[0].date+'</div></div>' : '') +
+      '</div>' +
+    '</div>' +
+    membershipStrip +
+  '</div>';
+}
+
+// ══════════════════════════════════════════════
+//  DRAFT VIEW
+// ══════════════════════════════════════════════
+function vDraft(){
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Contract Drafting</div><div class="view-sub">Select a document type, describe your requirements, and receive a UK-law compliant draft.</div></div></div>' +
+    '<div class="grid2">' +
+      '<div>' +
+        '<div class="card" style="margin-bottom:14px">' +
+          '<div class="field"><label>Document type</label><select class="inp" id="dt"><option>Mutual NDA</option><option>One-way NDA</option><option>Employment Contract</option><option>Freelance / Services Agreement</option><option>Settlement Agreement</option><option>Lease Agreement</option><option>Shareholder Agreement</option><option>Letter Before Action</option><option>Terms and Conditions</option><option>Privacy Policy</option></select></div>' +
+          '<div class="field"><label>Requirements</label><textarea class="inp" id="dp" rows="6" placeholder="e.g. Mutual NDA between Acme Ltd and Beta Co. 24 month term. English law. Include non-solicitation clause…"></textarea></div>' +
+          '<div style="display:flex;gap:10px"><button class="btn btn-p" onclick="doDraft()" id="dbtn" style="white-space:nowrap">Generate document</button><button class="btn btn-g" onclick="document.getElementById(\'dp\').value=\'\'">Clear</button></div>' +
+        '</div>' +
+        '<div class="card" style="background:rgba(79,114,196,.04);border-color:rgba(79,114,196,.12)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:10px;letter-spacing:.04em">Drafting tips</div><ul style="list-style:none;font-size:11px;color:var(--muted);line-height:1.9;padding:0"><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Include both party names and company numbers</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Specify the governing law (default: English law)</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Mention key terms: duration, payment, termination</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Add any special clauses you need</li></ul></div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="position:relative"><div class="ai-out" id="dout" style="min-height:360px"><div style="color:var(--dim);font-size:12px;text-align:center;padding-top:80px;font-family:var(--font);line-height:1.8">Your document will appear here.<br><span style="font-size:11px;opacity:.6">Fill in the form and click Generate document.</span></div></div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="navigator.clipboard.writeText(document.getElementById(\'dout\').textContent)">Copy</button></div></div>' +
+        '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save">Save to vault</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 async function doDraft(){
-  var type=document.getElementById('draft-type').value;
-  var prompt=document.getElementById('draft-prompt').value.trim();
-  if(!prompt){alert('Please describe your requirements.');return;}
-  var btn=document.getElementById('draft-btn');
-  btn.disabled=true;btn.textContent='Generating...';
-  document.getElementById('draft-out').innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+  var type = document.getElementById('dt').value;
+  var prompt = document.getElementById('dp').value.trim();
+  if(!prompt){ alert('Please describe your requirements.'); return; }
+  var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
+  document.getElementById('dout').innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
   try{
-    var r=await callClaude('You are a senior UK solicitor. Draft professional, legally precise documents governed by English law. Use proper clause numbering, clear headings, and full legal boilerplate. Include a signature block. End with: "AI-generated draft — review with a qualified solicitor before use."','Draft a '+type+' for: '+prompt);
-    document.getElementById('draft-out').textContent=r;
-    document.getElementById('draft-actions').style.display='flex';
-    window._lastDraft={name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
-  }catch(e){document.getElementById('draft-out').textContent='Error: '+e.message;}
-  btn.disabled=false;btn.innerHTML='&#x26A1; Generate document';
+    var r = await callAI(
+      'You are a senior UK solicitor. Draft professional, legally precise documents governed by English law. Use proper clause numbering, clear headings, and full legal boilerplate. Include a signature block. End with: "AI-generated draft — review with a qualified solicitor before use."',
+      'Draft a '+type+' for: '+prompt
+    );
+    document.getElementById('dout').textContent = r;
+    window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+  }catch(e){ document.getElementById('dout').textContent='Error: '+e.message; }
+  btn.disabled=false; btn.innerHTML='Generate document';
 }
-function saveDraftDoc(){if(!window._lastDraft)return;docs.unshift(window._lastDraft);saveDocs();var b=document.getElementById('save-draft-btn');b.textContent='&#x2713; Saved!';b.disabled=true;}
-function copyDraft(){navigator.clipboard.writeText(document.getElementById('draft-out').textContent);}
-function downloadDraft(){var blob=new Blob([document.getElementById('draft-out').textContent],{type:'text/plain'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='document.txt';a.click();}
-function clearDraft(){document.getElementById('draft-prompt').value='';document.getElementById('draft-out').innerHTML='<div style="color:var(--dim);font-size:12px;text-align:center;padding-top:60px;font-family:var(--sans)">Your drafted document will appear here.</div>';document.getElementById('draft-actions').style.display='none';}
+function saveDoc(){
+  if(!window._draft) return;
+  docs.unshift(window._draft); saveDocs();
+  var b=document.getElementById('dbtn-save'); b.textContent='✓ Saved!'; b.disabled=true;
+}
+function dlDoc(){
+  var blob=new Blob([document.getElementById('dout').textContent],{type:'text/plain'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='document.txt'; a.click();
+}
 
-// ── REVIEW ──
-function viewReview(){
-  return `<div class="view">
-    <div class="view-title">Document Review</div>
-    <div class="view-sub">Upload or paste a contract — get instant risk flags and suggested amendments.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div><div class="card">
-        <div class="tabs"><button class="tab on" onclick="rvTab('paste',this)">Paste text</button><button class="tab" onclick="rvTab('upload',this)">Upload file</button></div>
-        <div id="rv-paste"><textarea class="inp" id="rv-text" rows="8" placeholder="Paste contract text here..."></textarea></div>
-        <div id="rv-upload" style="display:none"><div class="upload-zone" onclick="document.getElementById('rv-file').click()"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop your contract here</div><div style="font-size:11px;color:var(--muted)">or click to browse · TXT, PDF, DOCX</div><input type="file" id="rv-file" style="display:none" accept=".txt,.pdf,.docx" onchange="rvLoadFile(this)"/></div></div>
-        <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="doReview()" id="rv-btn">Analyse document</button>
-      </div></div>
-      <div id="rv-results"><div class="card" style="height:100%"><div style="color:var(--dim);font-size:12px;text-align:center;padding:60px 20px">Upload or paste a contract to see risk analysis here.</div></div></div>
-    </div>
-  </div>`;
+// ══════════════════════════════════════════════
+//  REVIEW VIEW
+// ══════════════════════════════════════════════
+function vReview(){
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Document Review</div><div class="view-sub">Paste or upload a contract to identify risks, flag clauses and receive suggested amendments.</div></div></div>' +
+    '<div class="grid2">' +
+      '<div><div class="card">' +
+        '<div class="tabs"><button class="tab on" onclick="rvTab(\'upload\',this)">Upload file</button><button class="tab" onclick="rvTab(\'paste\',this)">Paste text</button></div>' +
+        '<div id="rv-upload"><div class="upload-zone" onclick="document.getElementById(\'rv-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="rvDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop your contract here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="rv-file" style="display:none" accept=".txt,.pdf,.docx" onchange="rvFileSelect(this)"/></div><div id="rv-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
+        '<div id="rv-paste" style="display:none"><textarea class="inp" id="rv-text" rows="8" placeholder="Paste the contract text here…"></textarea></div>' +
+        '<button class="btn btn-p" style="margin-top:14px;width:100%" onclick="doReview()" id="rvbtn">Analyse document</button>' +
+      '</div></div>' +
+      '<div id="rv-res"><div class="card" style="height:100%"><div style="color:var(--dim);font-size:12px;text-align:center;padding:60px 20px">Upload or paste a contract to see the risk analysis here.</div></div></div>' +
+    '</div>' +
+  '</div>';
 }
 var rvFileText='';
-function rvTab(t,btn){document.getElementById('rv-paste').style.display=t==='paste'?'':'none';document.getElementById('rv-upload').style.display=t==='upload'?'':'none';document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');}
-function rvLoadFile(inp){var r=new FileReader();r.onload=function(e){rvFileText=e.target.result;};r.readAsText(inp.files[0]);}
+function rvTab(t,btn){ document.querySelectorAll('#rv-upload,#rv-paste').forEach(function(e){e.style.display='none';}); document.getElementById('rv-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
+function rvDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) rvLoad(e.dataTransfer.files[0]); }
+function rvFileSelect(inp){ if(inp.files[0]) rvLoad(inp.files[0]); }
+function rvLoad(f){ var r=new FileReader(); r.onload=function(e){rvFileText=e.target.result;}; r.readAsText(f); document.getElementById('rv-fname').textContent=''+f.name; document.getElementById('rv-fname').style.display='block'; }
 async function doReview(){
-  var text=rvFileText||(document.getElementById('rv-text')?document.getElementById('rv-text').value:'');
-  if(!text.trim()){alert('Please paste or upload a contract first.');return;}
-  var btn=document.getElementById('rv-btn');btn.disabled=true;btn.textContent='Analysing...';
-  document.getElementById('rv-results').innerHTML='<div class="card" style="height:100%"><div class="typing" style="justify-content:center;padding:60px 0"><span></span><span></span><span></span></div></div>';
+  var text = rvFileText || (document.getElementById('rv-text')?document.getElementById('rv-text').value:'');
+  if(!text.trim()){ alert('Please upload or paste a contract first.'); return; }
+  var btn=document.getElementById('rvbtn'); btn.disabled=true; btn.textContent='Analysing…';
+  document.getElementById('rv-res').innerHTML='<div class="card" style="height:100%"><div class="typing" style="justify-content:center;padding:60px 0"><span></span><span></span><span></span></div></div>';
   try{
-    var raw=await callClaude('You are a senior UK solicitor. Return ONLY valid JSON: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation"}],"clauses":[{"name":"clause","status":"ok|risk|missing","note":"brief note"}],"recommendation":"one sentence"}','Review this contract:\n\n'+text.slice(0,4000));
-    var data;try{data=JSON.parse(raw);}catch(e){data=JSON.parse(raw.replace(/```json|```/g,''));}
-    document.getElementById('rv-results').innerHTML=`<div class="card">
-      <div style="font-size:13px;font-weight:600;margin-bottom:14px">Analysis complete</div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:16px;padding:12px;background:var(--card2);border-radius:9px">${data.summary}</div>
-      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;margin-bottom:10px">Risk flags</div>
-      ${(data.risks||[]).map(function(r){return`<div class="risk-item risk-${r.level}"><div class="risk-title" style="color:${r.level==='high'?'#e05a50':r.level==='medium'?'#c8963c':'#3cb464'}">${r.level.toUpperCase()} — ${r.title}</div><div class="risk-detail">${r.detail}</div></div>`;}).join('')}
-      <div style="margin-top:16px;padding:12px;background:rgba(79,114,196,0.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">${data.recommendation}</div>
-    </div>`;
-  }catch(e){document.getElementById('rv-results').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">Error: '+e.message+'</div></div>';}
-  btn.disabled=false;btn.textContent='Analyse document';
+    var raw = await callAI(
+      'You are a senior UK solicitor reviewing contracts. Return ONLY valid JSON, no markdown, no text outside the JSON object: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation and suggested amendment"}],"recommendation":"one sentence action"}',
+      'Review this contract and identify key risks:\n\n'+text.slice(0,4000)
+    );
+    var d; try{d=JSON.parse(raw);}catch(e){d=JSON.parse(raw.replace(/```json|```/g,''));}
+    document.getElementById('rv-res').innerHTML='<div class="card">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Analysis complete</div>' +
+      '<div style="font-size:12px;color:var(--muted);line-height:1.65;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:16px">'+d.summary+'</div>' +
+      '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px">Risk flags</div>' +
+      (d.risks||[]).map(function(r){var col=r.level==='high'?'#e05a50':r.level==='medium'?'#c8963c':'#3cb464';var lbl=r.level==='high'?'High':'Medium'==='medium'?'Medium':'Low';return '<div class="risk risk-'+(r.level==='high'?'h':r.level==='medium'?'m':'l')+'"><div class="risk-ttl"><span style="color:'+col+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:6px">'+r.level+'</span>'+r.title+'</div><div class="risk-det">'+r.detail+'</div></div>';}).join('') +
+      '<div style="margin-top:16px;padding:12px;background:rgba(79,114,196,.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">'+d.recommendation+'</div>' +
+    '</div>';
+    // Auto-save to vault
+    docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
+    saveDocs();
+  }catch(e){ document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">Error: '+e.message+'</div></div>'; }
+  btn.disabled=false; btn.textContent='Analyse document';
 }
 
-// ── RESEARCH ──
+// ══════════════════════════════════════════════
+//  RESEARCH VIEW
+// ══════════════════════════════════════════════
 var chatMsgs=[];
-function viewResearch(){
-  var suggestions=['What are the statutory redundancy notice periods?','When does a director have a duty to creditors?','What are the GDPR obligations for a UK business?','How does TUPE apply to a business sale?'];
-  return `<div class="view" style="display:flex;flex-direction:column;height:calc(100vh - 56px)">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;margin-bottom:20px">
-      <div><div class="view-title">Legal Research</div><div class="view-sub">Ask any UK law question — cited answers referencing real Acts and case law.</div></div>
-      <button class="btn btn-ghost" onclick="chatMsgs=[];nav('research')">New chat</button>
-    </div>
-    ${chatMsgs.length===0?`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
-      <div style="width:52px;height:52px;background:rgba(79,114,196,0.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:6px">Ask Dave.AI anything about UK law</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from real UK statutes and case law</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">
-        ${suggestions.map(function(s){return`<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer" onclick="researchQ('${s}')">${s}</div>`;}).join('')}
-      </div>
-    </div>`:`<div class="chat-msgs" id="chat-msgs" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>`}
-    <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border)">
-      <div style="display:flex;gap:8px">
-        <input class="chat-inp" id="research-inp" placeholder="Ask a UK law question..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doResearch();}"/>
-        <button class="btn btn-primary" onclick="doResearch()" id="research-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-      </div>
-      <div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Always verify with a qualified solicitor</div>
-    </div>
-  </div>`;
+function vResearch(){
+  var sugg=['What are the statutory redundancy notice periods?','When does a director have a duty to creditors?','What are the GDPR obligations for a UK business?','How does TUPE apply to a business sale?','What constitutes wrongful dismissal in England?'];
+  return '<div class="view" style="display:flex;flex-direction:column;height:calc(100vh - var(--topbar))">' +
+    '<div style="display:flex;justify-content:space-between;flex-shrink:0;margin-bottom:20px"><div><div class="view-title">Legal Research</div><div class="view-sub">Search UK statutes and case law. Answers are cited with source references.</div></div><button class="btn btn-g" style="white-space:nowrap" onclick="chatMsgs=[];go(\'research\')">New session</button></div>' +
+    (chatMsgs.length===0
+      ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
+      : '<div class="chat-msgs" id="cmsgs" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
+    ) +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/><button class="btn btn-p" onclick="doR()" id="rbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Referencing real UK statutes and case law · Always verify with a qualified solicitor</div></div>' +
+  '</div>';
 }
-function renderChat(){var el=document.getElementById('chat-msgs');if(!el)return;el.innerHTML=chatMsgs.map(function(m){return m.role==='user'?`<div class="msg-user">${m.content}</div>`:`<div class="msg-ai"><div class="msg-ai-label">Dave.AI Legal Research</div>${m.content}</div>`;}).join('');el.scrollTop=el.scrollHeight;}
-function researchQ(q){nav('research');setTimeout(function(){var inp=document.getElementById('research-inp');if(inp){inp.value=q;doResearch();}},50);}
-async function doResearch(){
-  var inp=document.getElementById('research-inp');if(!inp)return;
-  var q=inp.value.trim();if(!q)return;
-  inp.value='';chatMsgs.push({role:'user',content:q});
-  nav('research');
-  var btn=document.getElementById('research-btn');if(btn)btn.disabled=true;
-  var el=document.getElementById('chat-msgs');
-  if(el){el.innerHTML+=`<div class="msg-ai" id="typing-r"><div class="msg-ai-label">Dave.AI</div><div class="typing"><span></span><span></span><span></span></div></div>`;el.scrollTop=el.scrollHeight;}
-  try{var a=await callClaude('You are a senior UK solicitor. Answer questions about UK law with precision. Always cite the relevant Act and section number. Reference relevant case law where applicable.',''+q);chatMsgs.push({role:'assistant',content:a});}
-  catch(e){chatMsgs.push({role:'assistant',content:'Error: '+e.message});}
-  nav('research');renderChat();if(btn)btn.disabled=false;
+function renderChat(){
+  var el=document.getElementById('cmsgs'); if(!el)return;
+  el.innerHTML=chatMsgs.map(function(m){return m.role==='user'?'<div class="msg-u">'+m.content+'</div>':'<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div>'+m.content+'</div>';}).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
+async function doR(){
+  var inp=document.getElementById('ri'); if(!inp)return;
+  var q=inp.value.trim(); if(!q)return;
+  inp.value=''; chatMsgs.push({role:'user',content:q});
+  go('research');
+  var btn=document.getElementById('rbtn'); if(btn)btn.disabled=true;
+  var el=document.getElementById('cmsgs');
+  if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI</div><div class="typing"><span></span><span></span><span></span></div></div>';el.scrollTop=el.scrollHeight;}
+  try{
+    var a=await callAI('You are a senior UK solicitor and legal researcher. Answer questions about UK law with precision. Always cite the relevant Act of Parliament and section number. Reference relevant case law where applicable. Format with the legal basis first, then practical implications. Note that answers should be verified with a qualified solicitor. If web search results are provided, use them to ensure your answer reflects the very latest UK legislation.',q, 1200, true);
+    if(a){
+      chatMsgs.push({role:'assistant',content:a});
+      // Auto-save to vault
+      docs.unshift({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
+      saveDocs();
+    }
+  }catch(e){chatMsgs.push({role:'assistant',content:'Error: '+e.message});}
+  go('research'); renderChat(); if(btn)btn.disabled=false;
 }
 
-// ── HISTORY ──
-function viewHistory(){
-  return `<div class="view">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px">
-      <div><div class="view-title">Document Vault</div><div class="view-sub">${docs.length} document${docs.length!==1?'s':''} saved</div></div>
-      <button class="btn btn-ghost" onclick="nav('draft')">+ New draft</button>
-    </div>
-    <div class="card" style="margin-bottom:14px"><input class="inp" id="hist-search" placeholder="Search documents..." oninput="filterDocs()" style="margin-bottom:0"/></div>
-    <div id="hist-list">${renderDocList(docs)}</div>
-  </div>`;
+// ══════════════════════════════════════════════
+//  HISTORY VIEW
+// ══════════════════════════════════════════════
+function vHistory(){
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Document Vault</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    '<div class="card" style="margin-bottom:14px"><input class="inp" id="hs" placeholder="Search documents…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
+    '<div id="hl">'+renderDocs(docs)+'</div>' +
+    // Document viewer modal
+    '<div id="doc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:20px">' +
+      '<div style="background:#0d1326;border:1px solid rgba(79,114,196,0.25);border-radius:18px;width:100%;max-width:760px;max-height:85vh;display:flex;flex-direction:column">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(79,114,196,0.12)">' +
+          '<div id="doc-modal-title" style="font-size:14px;font-weight:600"></div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button class="btn btn-g" style="font-size:11px" onclick="copyDocModal()">Copy</button>' +
+            '<button class="btn btn-g" style="font-size:11px" onclick="dlDocModal()">Download</button>' +
+            '<button class="btn btn-g" style="font-size:11px" onclick="closeDocModal()">✕ Close</button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="doc-modal-body" style="padding:24px;overflow-y:auto;font-size:13px;line-height:1.8;color:rgba(200,216,255,0.85);white-space:pre-wrap;font-family:monospace"></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
-function renderDocList(list){
-  if(list.length===0)return`<div class="empty"><div class="empty-icon"><svg width="22" height="22" fill="none" stroke="var(--dim)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><div class="empty-title">No documents yet</div><div class="empty-sub">Draft your first document and it will appear here.</div><button class="btn btn-primary" onclick="nav('draft')">Draft your first document</button></div>`;
-  return`<div class="card">${list.map(function(d,i){return`<div class="doc-row"><div class="doc-icon" style="background:rgba(79,114,196,0.12)"><svg width="16" height="16" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg></div><div style="flex:1"><div class="doc-name">${d.name}</div><div class="doc-meta">${d.type} &middot; ${d.date}</div></div><span class="tag tag-blue">${d.type}</span><button class="btn btn-ghost" style="font-size:10px;padding:4px 8px;opacity:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0" onclick="delDoc(${i})">Delete</button></div>`;}).join('')}</div>`;
+function renderDocs(list){
+  if(list.length===0)return'<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Documents you draft or review will appear here automatically.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft your first document →</button></div>';
+  return'<div class="card">'+list.map(function(d,i){
+    var ic=d.type==='Draft'?'var(--blue2)':d.type==='Review'?'#3cb464':'#a78bfa';
+    var bg=d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
+    return '<div class="doc-row" style="cursor:pointer" onclick="viewDoc('+i+')">' +
+      '<div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+d.name+'</div><div style="font-size:11px;color:var(--muted)">'+d.type+' · '+d.date+'</div></div>' +
+      '<span class="tag tag-b">'+d.type+'</span>' +
+      '<button class="btn btn-g" style="font-size:10px;padding:4px 10px;margin-left:8px" onclick="event.stopPropagation();delDoc('+i+')">Delete</button>' +
+    '</div>';
+  }).join('')+'</div>';
 }
-function filterDocs(){var q=(document.getElementById('hist-search').value||'').toLowerCase();document.getElementById('hist-list').innerHTML=renderDocList(docs.filter(function(d){return d.name.toLowerCase().includes(q)||d.type.toLowerCase().includes(q);}));}
-function delDoc(i){if(confirm('Delete this document?')){docs.splice(i,1);saveDocs();nav('history');}}
-
-// ── SETTINGS ──
-function viewSettings(){
-  return `<div class="view">
-    <div class="view-title">Settings</div><div class="view-sub">Manage your account and preferences.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
-      <div>
-        <div class="card" style="margin-bottom:14px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:16px">Account details</div>
-          <div class="field"><label>First name</label><input class="inp" value="${firstName}"/></div>
-          <div class="field"><label>Last name</label><input class="inp" value="${lastName}"/></div>
-          <div class="field"><label>Work email</label><input class="inp" type="email" value="${email}"/></div>
-          <div class="field"><label>Firm</label><input class="inp" value="${firm||''}"/></div>
-          <button class="btn btn-primary" onclick="alert('Changes saved!')">Save changes</button>
-        </div>
-      </div>
-      <div>
-        <div class="card" style="margin-bottom:14px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Preferences</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Control how Dave.AI works for you</div>
-          ${[['Email notifications','Receive updates about your documents',true],['Auto-save drafts','Automatically save as you generate',true],['UK GDPR mode','Ensure all outputs comply with UK GDPR',true]].map(function(s,i){return`<div class="settings-row"><div><div class="settings-label">${s[0]}</div><div class="settings-desc">${s[1]}</div></div><div class="toggle ${s[2]?'on':''}" onclick="this.classList.toggle('on')"></div></div>`;}).join('')}
-        </div>
-        <div class="card">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Team members</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Your ${planName} supports ${planUsers}</div>
-          <div class="doc-row" style="cursor:default"><div class="doc-icon" style="background:linear-gradient(135deg,#3d60b8,#4f72c4)"><span style="font-size:12px;font-weight:700;color:#fff">${initials}</span></div><div><div class="doc-name">${fullName}</div><div class="doc-meta">${email} &middot; Admin</div></div><span class="tag tag-blue">Admin</span></div>
-          <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="alert('Invite sent!')">+ Invite team member</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── BILLING ──
-function viewBilling(){
-  return `<div class="view">
-    <div class="view-title">Billing & Plans</div><div class="view-sub">Manage your subscription.</div>
-    ${!S.planActive?`<div class="card" style="margin-bottom:20px;background:rgba(200,150,60,0.06);border-color:rgba(200,150,60,0.3)">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div><div style="font-size:13px;font-weight:600;color:#c8963c;margin-bottom:3px">Trial ending soon</div><div style="font-size:12px;color:var(--muted)">Your trial ends in ${trialDaysLeft} days. Add a payment method to continue.</div></div>
-        <button class="btn btn-primary" style="flex-shrink:0;margin-left:20px" onclick="doStripeCheckout('${plan}')">Add payment method</button>
-      </div>
-    </div>`:''}
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
-      ${[['starter','Starter','£49',['1 user','Contract drafting','Document review','Legal research','20 docs/month']],['pro','Pro','£149',['Up to 5 users','Everything in Starter','Unlimited documents','Priority support']],['firm','Firm','£299',['Up to 10 users','Everything in Pro','Team analytics','Custom templates']],['enterprise','Enterprise','Custom',['10+ users','Everything in Firm','API access','White-labelling']]].map(function(p){var isCurrent=plan===p[0];return`<div class="plan-card-ui ${isCurrent?'current':''}"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="plan-name-ui">${p[1]}</div>${isCurrent?'<span class="tag tag-blue">Current</span>':''}</div><div class="plan-price-ui">${p[2]}${p[2]!=='Custom'?'<sub>/mo</sub>':''}</div><ul class="plan-feat-ui">${p[3].map(function(f){return`<li>${f}</li>`;}).join('')}</ul><button class="btn ${isCurrent?'btn-primary':'btn-ghost'}" style="width:100%;margin-top:14px" onclick="doStripeCheckout('${p[0]}')">${isCurrent?(S.planActive?'Active':'Activate plan'):'Select plan'}</button></div>`;}).join('')}
-    </div>
-    <div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:16px">Billing history</div><div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No billing history yet</div></div>
-  </div>`;
-}
-
-function doStripeCheckout(planKey){
-  var btn = event && event.target ? event.target : null;
-  if(btn){ btn.disabled=true; btn.textContent='Redirecting...'; }
-  fetch('/.netlify/functions/create-checkout',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({plan:planKey,email:email,firstName:firstName,lastName:lastName,firm:firm})
-  })
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.url) window.location.href=d.url;
-    else{ alert('Error: '+(d.error||'Could not connect')); if(btn){btn.disabled=false;btn.textContent='Activate plan';} }
-  })
-  .catch(function(e){
-    alert('Could not connect. Please try again.');
-    if(btn){btn.disabled=false;btn.textContent='Activate plan';}
-  });
-}
-
-// ── Show welcome banner if just signed in ──
-(function(){
-  if(localStorage.getItem('dave_show_welcome')==='1'){
-    localStorage.removeItem('dave_show_welcome');
-    setTimeout(function(){
-      var b=document.createElement('div');
-      b.className='welcome-banner';
-      b.innerHTML='<h3>Welcome to Dave<em>.AI</em>, '+firstName+'!</h3><p>Please enjoy your experience</p>';
-      document.body.appendChild(b);
-      setTimeout(function(){b.style.transition='opacity 0.5s';b.style.opacity='0';setTimeout(function(){b.remove();},500);},5000);
-    },400);
+function viewDoc(i){
+  var d = docs[i];
+  if(!d) return;
+  document.getElementById('doc-modal-title').textContent = d.name;
+  var body = d.content || '';
+  // If it's a Review, parse the JSON and show it nicely
+  if(d.type === 'Review'){
+    try {
+      var rv = JSON.parse(body);
+      body = 'SUMMARY\n' + rv.summary + '\n\nRISKS\n' +
+        (rv.risks||[]).map(function(r){ return r.level.toUpperCase()+' — '+r.title+'\n'+r.detail; }).join('\n\n') +
+        '\n\nRECOMMENDATION\n' + rv.recommendation;
+    } catch(e){}
   }
-})();
+  document.getElementById('doc-modal-body').textContent = body;
+  document.getElementById('doc-modal').style.display = 'flex';
+}
+function closeDocModal(){ document.getElementById('doc-modal').style.display = 'none'; }
+function copyDocModal(){ navigator.clipboard.writeText(document.getElementById('doc-modal-body').textContent); }
+function dlDocModal(){
+  var title = document.getElementById('doc-modal-title').textContent;
+  var body  = document.getElementById('doc-modal-body').textContent;
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([body], {type:'text/plain'}));
+  a.download = title.replace(/[^a-z0-9]/gi,'_') + '.txt';
+  a.click();
+}
+function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return d.name.toLowerCase().includes(q)||d.type.toLowerCase().includes(q);}));}
+function delDoc(i){if(confirm('Delete this document?')){docs.splice(i,1);saveDocs();go('history');}}
 
-// ── Init ──
-render('dashboard');
+// ══════════════════════════════════════════════
+//  SETTINGS VIEW
+// ══════════════════════════════════════════════
+function vSettings(){
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Settings</div><div class="view-sub">Manage your account, preferences and team.</div></div></div>' +
+    '<div class="grid2" style="align-items:start">' +
+      '<div>' +
+        '<div class="card" style="margin-bottom:14px">' +
+          '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Account details</div>' +
+          '<div class="field"><label>First name</label><input class="inp" id="s-first" value="'+firstName+'"/></div>' +
+          '<div class="field"><label>Last name</label><input class="inp" id="s-last" value="'+lastName+'"/></div>' +
+          '<div class="field"><label>Work email</label><input class="inp" type="email" value="'+email+'"/></div>' +
+          '<div class="field"><label>Firm / organisation</label><input class="inp" value="'+(firm||'')+'"/></div>' +
+          '<button class="btn btn-p" onclick="alert(\'Changes saved!\')">Save changes</button>' +
+        '</div>' +
+        '<div class="card">' +
+          '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Security</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Update your password</div>' +
+          '<div class="field"><label>Current password</label><input class="inp" type="password" placeholder="••••••••"/></div>' +
+          '<div class="field"><label>New password</label><input class="inp" type="password" placeholder="••••••••"/></div>' +
+          '<button class="btn btn-g" onclick="alert(\'Password updated!\')">Update password</button>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="card" style="margin-bottom:14px">' +
+          '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Preferences</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Control how Dave.AI works for you</div>' +
+          [['Email notifications','Receive updates about your documents',true],['Auto-save drafts','Automatically save as you generate',true],['UK GDPR mode','Ensure all outputs comply with UK GDPR',true],['Product updates','Receive emails about new features',false]].map(function(s,i){return '<div class="s-row"><div><div style="font-size:13px;font-weight:500">'+s[0]+'</div><div style="font-size:11px;color:var(--muted)">'+s[1]+'</div></div><div class="toggle '+(s[2]?'on':'')+'" onclick="this.classList.toggle(\'on\')"></div></div>';}).join('') +
+        '</div>' +
+        '<div class="card" style="margin-bottom:14px">' +
+          '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Team members</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Your '+planName+' supports '+planUsers+'</div>' +
+          '<div class="doc-row" style="cursor:default"><div class="doc-icon" style="background:linear-gradient(135deg,#3558a8,#4f72c4)"><span style="font-size:11px;font-weight:700;color:#fff">'+initials+'</span></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+fullName+'</div><div style="font-size:11px;color:var(--muted)">'+(email||'—')+' · Admin</div></div><span class="tag tag-b">Admin</span></div>' +
+          '<button class="btn btn-g" style="width:100%;margin-top:12px" onclick="alert(\'Invite sent!\')">+ Invite team member</button>' +
+        '</div>' +
+        '<div class="card">' +
+          '<div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--red)">Danger zone</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">Signing out clears your local session.</div>' +
+          '<button class="btn-danger" onclick="signOut()">Sign out</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+async function signOut(){
+  if(confirm('Sign out of Dave.AI?')){
+    await _sb.auth.signOut();
+    localStorage.removeItem('dave_session');
+    window.location.href='index.html';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  BILLING VIEW
+// ══════════════════════════════════════════════
+async function openBillingPortal(){
+  var btn = document.getElementById('portal-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Opening…'; }
+  try {
+    var r = await fetch('/.netlify/functions/create-portal-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: S.email })
+    });
+    var d = await r.json();
+    if(d.url){
+      window.location.href = d.url;
+    } else {
+      alert(d.error || 'Could not open billing portal. Please contact support@daveai.law.');
+      if(btn){ btn.disabled = false; btn.textContent = 'Manage billing →'; }
+    }
+  } catch(e) {
+    alert('Could not open billing portal. Please contact support@daveai.law.');
+    if(btn){ btn.disabled = false; btn.textContent = 'Manage billing →'; }
+  }
+}
+
+function vBilling(){
+  var plans = [
+    {key:'starter',name:'Starter',price:'£49',users:'1 user',feats:['Contract drafting','Document review','Legal research','20 docs/month','Email support']},
+    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['Everything in Starter','Unlimited documents','Document vault','Priority support','Team collaboration']},
+    {key:'firm',name:'Firm',price:'£299',users:'Up to 10 users',feats:['Everything in Pro','Team analytics','Custom templates','Dedicated support','Advanced API access']},
+    {key:'enterprise',name:'Enterprise',price:'Custom',users:'10+ users',feats:['Everything in Firm','Custom SLA','White-labelling','On-premise option','Bespoke integrations']}
+  ];
+
+  var trialBanner = !planActive ? '<div class="card" style="margin-bottom:20px;background:rgba(200,150,60,0.06);border-color:rgba(200,150,60,0.28)">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between">' +
+      '<div><div style="font-size:13px;font-weight:600;color:#c8963c;margin-bottom:3px">Trial ends in '+trialDays+' days</div><div style="font-size:12px;color:var(--muted)">Choose a plan below to continue without interruption.</div></div>' +
+    '</div>' +
+  '</div>' : '<div class="card" style="margin-bottom:20px;background:rgba(60,180,100,0.06);border-color:rgba(60,180,100,0.25)">' +
+    '<div style="display:flex;align-items:center;gap:12px"><svg width="18" height="18" fill="none" stroke="#5ae090" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg><div><div style="font-size:13px;font-weight:600;color:#5ae090;margin-bottom:2px">'+planName+' · Active</div><div style="font-size:12px;color:var(--muted)">Your membership is active. Thank you for choosing Dave.AI.</div></div></div>' +
+  '</div>';
+
+  var portalBtn = planActive
+    ? '<button class="btn btn-g" id="portal-btn" onclick="openBillingPortal()" style="white-space:nowrap">Manage billing →</button>'
+    : '';
+
+  var mainPlans = plans.slice(0,3);
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Billing & Plans</div><div class="view-sub">Manage your subscription and billing details.</div></div>' + portalBtn + '</div>' +
+    trialBanner +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">' +
+    mainPlans.map(function(p){
+      var isCur = plan === p.key;
+      return '<div class="plan-card '+(isCur?'cur':'')+'">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div class="plan-name">'+p.name+'</div>' +
+          (isCur?'<span class="tag tag-b">Current</span>':'') +
+        '</div>' +
+        '<div class="plan-price">'+p.price+'<sub>/mo</sub></div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:14px">'+p.users+'</div>' +
+        '<ul class="plan-feats">'+p.feats.map(function(f){return'<li>'+f+'</li>';}).join('')+'</ul>' +
+        '<button class="btn '+(isCur?'btn-p':'btn-g')+'" style="width:100%;margin-top:16px;white-space:nowrap" onclick="'+
+          ((isCur && planActive)
+            ? 'alert(\'This is your current active plan.\')'
+            : 'window.location.href=stripeUrl(\''+p.key+'\')') +
+        '">'+
+          (isCur ? (planActive ? '✓ Active plan' : 'Activate plan') : 'Select '+p.name) +
+        '</button>' +
+      '</div>';
+    }).join('') +
+    '</div>' +
+    '<div class="card" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;background:rgba(79,114,196,.04)">' +
+      '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Enterprise</div><div style="font-size:12px;color:var(--muted)">10+ users · Custom SLA · White-labelling · API access · On-premise option</div></div>' +
+      '<button class="btn btn-g" style="white-space:nowrap;flex-shrink:0" onclick="alert(\'Contact support@daveai.law for Enterprise pricing.\')">Contact us →</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Billing history</div>' +
+      (planActive
+        ? '<div class="doc-row" style="cursor:default"><div style="width:8px;height:8px;border-radius:50%;background:#3cb464;flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+planName+' — payment received</div><div style="font-size:11px;color:var(--muted)">Processed via Stripe · UK VAT included</div></div><span class="tag tag-g">Paid</span></div>'
+        : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No billing history yet · Your trial is free</div>'
+      ) +
+    '</div>' +
+  '</div>';
+}
+
+// ══════════════════════════════════════════════
+//  WELCOME BANNER
+// ══════════════════════════════════════════════
+function showWelcomeBanner(type){
+  var b = document.createElement('div');
+  b.className = 'welcome-banner ' + type;
+  if(type === 'paid'){
+    b.innerHTML = '<div class="wb-title">Welcome to Dave<em>.AI</em>, '+firstName+'!</div>' +
+                  '<div class="wb-sub">Enjoy your membership — full access is now unlocked.</div>';
+  } else {
+    b.innerHTML = '<div class="wb-title">Welcome to Dave<em>.AI</em>, '+firstName+'!</div>' +
+                  '<div class="wb-sub">Your 14-day free trial is active. No charge until '+trialEndStr+'.</div>';
+  }
+  document.body.appendChild(b);
+  setTimeout(function(){
+    b.style.transition = 'opacity .6s ease, transform .6s ease';
+    b.style.opacity = '0';
+    b.style.transform = 'translateX(-50%) translateY(-12px)';
+    setTimeout(function(){ b.remove(); }, 650);
+  }, type === 'paid' ? 6000 : 5000);
+}
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+go('dash');
+
+setTimeout(function(){
+  var wType = localStorage.getItem('dave_welcome');
+  if(wType){
+    localStorage.removeItem('dave_welcome');
+    showWelcomeBanner(wType);
+  }
+}, 600);
 </script>
 </body>
 </html>
