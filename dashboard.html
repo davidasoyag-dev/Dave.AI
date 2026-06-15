@@ -853,8 +853,9 @@ async function doReview(){
   var rvi=0;
   document.getElementById('rv-res').innerHTML='<div class="card" style="height:100%"><div style="text-align:center;padding:54px 20px"><div class="typing" style="justify-content:center;margin-bottom:18px"><span></span><span></span><span></span></div><div id="rv-status" style="font-size:12px;color:var(--muted);transition:opacity .25s">'+rvSteps[0]+'</div></div></div>';
   var rvTimer=setInterval(function(){ rvi=(rvi+1)%rvSteps.length; var el=document.getElementById('rv-status'); if(el){ el.style.opacity='0'; setTimeout(function(){ if(el){ el.textContent=rvSteps[rvi]; el.style.opacity='1'; } },220); } },1900);
+  var raw='';
   try{
-    var raw = await callAI(
+    raw = await callAI(
       'You are a senior UK solicitor reviewing contracts. Respond with ONLY a single valid JSON object and nothing else: no markdown, no code fences, no commentary before or after. Begin your reply with { and end with }. Schema: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation and suggested amendment"}],"recommendation":"one sentence action"}',
       'Review this contract and identify key risks:\n\n'+text.slice(0,4000),
       1600
@@ -871,7 +872,19 @@ async function doReview(){
     // Auto-save to vault
     docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
     saveDocs();
-  }catch(e){ clearInterval(rvTimer); document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">Error: '+e.message+'</div></div>'; }
+  }catch(e){
+    clearInterval(rvTimer);
+    // Graceful fallback (build r3): if structured parsing fails, show the AI's
+    // text directly rather than a raw error, so the user always gets something useful.
+    var esc=(raw||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if(esc.trim()){
+      document.getElementById('rv-res').innerHTML='<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Analysis</div><div style="font-size:12px;color:var(--muted);line-height:1.7;white-space:pre-wrap">'+esc+'</div></div>';
+      docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:raw});
+      saveDocs();
+    } else {
+      document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">The review could not be completed. Please try again. [build r3]</div></div>';
+    }
+  }
   btn.disabled=false; btn.textContent='Analyse document';
 }
 
