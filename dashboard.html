@@ -495,7 +495,9 @@ function saveDocs(){
 }
 
 // ── Usage limits ──
-var PLAN_LIMITS = { trial: 10, starter: 20, pro: Infinity, firm: Infinity, enterprise: Infinity };
+// NOTE: trial is temporarily Infinity for the beta so evaluators aren't capped.
+// Restore a real cap (was 10) once Stripe billing is live.
+var PLAN_LIMITS = { trial: Infinity, starter: 20, pro: Infinity, firm: Infinity, enterprise: Infinity };
 
 // ── Init UI ──
 document.getElementById('tb-av').textContent    = initials;
