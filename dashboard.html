@@ -840,12 +840,16 @@ async function doReview(){
   var text = rvFileText || (document.getElementById('rv-text')?document.getElementById('rv-text').value:'');
   if(!text.trim()){ alert('Please upload or paste a contract first.'); return; }
   var btn=document.getElementById('rvbtn'); btn.disabled=true; btn.textContent='Analysing…';
-  document.getElementById('rv-res').innerHTML='<div class="card" style="height:100%"><div class="typing" style="justify-content:center;padding:60px 0"><span></span><span></span><span></span></div></div>';
+  var rvSteps=['Reading the document…','Identifying key clauses…','Checking liability and indemnities…','Reviewing payment and termination terms…','Assessing governing law and jurisdiction…','Flagging potential risks…','Preparing recommendations…'];
+  var rvi=0;
+  document.getElementById('rv-res').innerHTML='<div class="card" style="height:100%"><div style="text-align:center;padding:54px 20px"><div class="typing" style="justify-content:center;margin-bottom:18px"><span></span><span></span><span></span></div><div id="rv-status" style="font-size:12px;color:var(--muted);transition:opacity .25s">'+rvSteps[0]+'</div></div></div>';
+  var rvTimer=setInterval(function(){ rvi=(rvi+1)%rvSteps.length; var el=document.getElementById('rv-status'); if(el){ el.style.opacity='0'; setTimeout(function(){ if(el){ el.textContent=rvSteps[rvi]; el.style.opacity='1'; } },220); } },1900);
   try{
     var raw = await callAI(
       'You are a senior UK solicitor reviewing contracts. Return ONLY valid JSON, no markdown, no text outside the JSON object: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation and suggested amendment"}],"recommendation":"one sentence action"}',
       'Review this contract and identify key risks:\n\n'+text.slice(0,4000)
     );
+    clearInterval(rvTimer);
     var d; try{d=JSON.parse(raw);}catch(e){d=JSON.parse(raw.replace(/```json|```/g,''));}
     document.getElementById('rv-res').innerHTML='<div class="card">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Analysis complete</div>' +
@@ -857,7 +861,7 @@ async function doReview(){
     // Auto-save to vault
     docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
     saveDocs();
-  }catch(e){ document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">Error: '+e.message+'</div></div>'; }
+  }catch(e){ clearInterval(rvTimer); document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">Error: '+e.message+'</div></div>'; }
   btn.disabled=false; btn.textContent='Analyse document';
 }
 
