@@ -853,13 +853,14 @@ async function doReview(){
   var rvi=0;
   document.getElementById('rv-res').innerHTML='<div class="card" style="height:100%"><div style="text-align:center;padding:54px 20px"><div class="typing" style="justify-content:center;margin-bottom:18px"><span></span><span></span><span></span></div><div id="rv-status" style="font-size:12px;color:var(--muted);transition:opacity .25s">'+rvSteps[0]+'</div></div></div>';
   var rvTimer=setInterval(function(){ rvi=(rvi+1)%rvSteps.length; var el=document.getElementById('rv-status'); if(el){ el.style.opacity='0'; setTimeout(function(){ if(el){ el.textContent=rvSteps[rvi]; el.style.opacity='1'; } },220); } },1900);
+  var rvSys='You are a senior UK solicitor reviewing contracts. Respond with ONLY a single valid JSON object and nothing else: no markdown, no code fences, no commentary before or after. Begin your reply with { and end with }. Identify the most important risks (maximum 6); keep each "detail" to one or two concise sentences. Schema: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"concise explanation and suggested amendment"}],"recommendation":"one sentence action"}';
+  var rvUsr='Review this contract and identify key risks:\n\n'+text.slice(0,4000);
   var raw='';
   try{
-    raw = await callAI(
-      'You are a senior UK solicitor reviewing contracts. Respond with ONLY a single valid JSON object and nothing else: no markdown, no code fences, no commentary before or after. Begin your reply with { and end with }. Schema: {"summary":"2-3 sentence overview","risks":[{"level":"high|medium|low","title":"short title","detail":"explanation and suggested amendment"}],"recommendation":"one sentence action"}',
-      'Review this contract and identify key risks:\n\n'+text.slice(0,4000),
-      1600
-    );
+    // Stream to keep the connection alive (avoids the gateway/client timeout
+    // seen on longer analyses); fall back to the standard call if streaming fails.
+    raw = await callAIStream(rvSys, rvUsr, 1200, null);
+    if(!raw){ raw = await callAI(rvSys, rvUsr, 1200); }
     clearInterval(rvTimer);
     var d = parseReviewJSON(raw);
     document.getElementById('rv-res').innerHTML='<div class="card">' +
