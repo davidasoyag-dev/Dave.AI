@@ -5,5 +5,8 @@
 [functions."ai-proxy"]
   timeout = 30
 
+[functions."ai-stream"]
+  timeout = 30
+
 [functions."stripe-webhook"]
   timeout = 30

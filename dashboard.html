@@ -620,6 +620,59 @@ async function callAI(sys, usr, maxTok, webSearch){
   }
 }
 
+// Streaming variant — calls onChunk(fullTextSoFar) as text arrives.
+// Returns the full text on success, or null on failure (caller can fall back to callAI).
+async function callAIStream(sys, usr, maxTok, onChunk){
+  if(!checkUsageLimit()) return null;
+  try {
+    var controller = new AbortController();
+    var timeout = setTimeout(function(){ controller.abort(); }, 45000);
+    var r = await fetch('/.netlify/functions/ai-stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: maxTok || 1200,
+        system: sys,
+        messages: [{ role: 'user', content: usr }]
+      })
+    });
+    if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
+
+    var reader = r.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = '';
+    var full = '';
+    while(true){
+      var res = await reader.read();
+      if(res.done) break;
+      buffer += decoder.decode(res.value, { stream: true });
+      var lines = buffer.split('\n');
+      buffer = lines.pop(); // keep any incomplete trailing line
+      for(var i = 0; i < lines.length; i++){
+        var line = lines[i].trim();
+        if(line.indexOf('data:') !== 0) continue;
+        var data = line.slice(5).trim();
+        if(!data || data === '[DONE]') continue;
+        try {
+          var ev = JSON.parse(data);
+          if(ev.type === 'content_block_delta' && ev.delta && typeof ev.delta.text === 'string'){
+            full += ev.delta.text;
+            if(onChunk) onChunk(full);
+          }
+        } catch(e) { /* ignore keep-alives / partial frames */ }
+      }
+    }
+    clearTimeout(timeout);
+    if(!full) return null;       // nothing streamed — let caller fall back
+    incrementUsage();
+    return full;
+  } catch(e) {
+    return null;                 // signal failure → caller falls back to callAI
+  }
+}
+
 // ══════════════════════════════════════════════
 //  DASHBOARD VIEW
 // ══════════════════════════════════════════════
@@ -731,15 +784,24 @@ async function doDraft(){
   var prompt = document.getElementById('dp').value.trim();
   if(!prompt){ alert('Please describe your requirements.'); return; }
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
-  document.getElementById('dout').innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  var out = document.getElementById('dout');
+  out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  var sys = 'You are a senior UK solicitor. Draft professional, legally precise documents governed by English law. Use proper clause numbering, clear headings, and full legal boilerplate. Include a signature block. End with: "AI-generated draft — review with a qualified solicitor before use."';
+  var usr = 'Draft a '+type+' for: '+prompt;
   try{
-    var r = await callAI(
-      'You are a senior UK solicitor. Draft professional, legally precise documents governed by English law. Use proper clause numbering, clear headings, and full legal boilerplate. Include a signature block. End with: "AI-generated draft — review with a qualified solicitor before use."',
-      'Draft a '+type+' for: '+prompt
-    );
-    document.getElementById('dout').textContent = r;
-    window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
-  }catch(e){ document.getElementById('dout').textContent='Error: '+e.message; }
+    var started = false;
+    var r = await callAIStream(sys, usr, 1200, function(text){
+      if(!started){ out.textContent=''; started=true; }
+      out.textContent = text;
+    });
+    if(r === null){
+      // Streaming unavailable — fall back to the standard request
+      out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+      r = await callAI(sys, usr, 1200);
+      out.textContent = r;
+    }
+    if(r){ window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r}; }
+  }catch(e){ out.textContent='Error: '+e.message; }
   btn.disabled=false; btn.innerHTML='Generate document';
 }
 function saveDoc(){
