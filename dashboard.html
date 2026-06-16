@@ -830,18 +830,18 @@ async function doDraft(){
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
   var out = document.getElementById('dout');
   out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
-  var sys = 'You are a senior UK solicitor. Draft a COMPLETE, professional contract governed by English law, with numbered clauses, clear headings and a signature block. Critical: produce a focused draft of roughly 900-1300 words covering only the essential operative clauses; do not pad, repeat, or add lengthy recitals. It is essential that the document is FINISHED in full and not cut off. End with exactly: "AI-generated draft - review with a qualified solicitor before use."';
+  var sys = 'You are a senior UK solicitor drafting a contract governed by English law. Write a CONCISE but complete draft: aim for about 700-900 words, maximum 12 short numbered clauses, each only 1-3 sentences. No recitals, no padding, no repetition. Include a brief signature block. You MUST finish the whole document; pace yourself so you reach the end. Finish with exactly: "AI-generated draft - review with a qualified solicitor before use."';
   var usr = 'Draft a '+type+' for: '+prompt;
   try{
     var started = false;
-    var r = await callAIStream(sys, usr, 2200, function(text){
+    var r = await callAIStream(sys, usr, 2600, function(text){
       if(!started){ out.textContent=''; started=true; }
       out.textContent = text;
     });
     if(r === null){
       // Streaming unavailable — fall back to the standard request
       out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
-      r = await callAI(sys, usr, 2200);
+      r = await callAI(sys, usr, 2600);
       out.textContent = r;
     }
     if(r){ window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r}; }
