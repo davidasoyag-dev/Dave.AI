@@ -137,8 +137,18 @@ select.inp{cursor:pointer;}
 /* ── Chat ── */
 .chat-msgs{display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;}
 .msg-u{align-self:flex-end;max-width:75%;background:var(--blue);color:#fff;padding:10px 14px;border-radius:12px 12px 3px 12px;font-size:13px;line-height:1.55;}
-.msg-a{align-self:flex-start;max-width:85%;background:var(--card2);border:1px solid var(--border);padding:12px 14px;border-radius:12px 12px 12px 3px;font-size:12px;line-height:1.7;color:#344268;font-family:var(--mono);}
-.msg-a-lbl{font-size:9px;font-weight:600;color:var(--blue);margin-bottom:6px;letter-spacing:.08em;}
+.msg-a{align-self:flex-start;max-width:88%;background:var(--card2);border:1px solid var(--border);padding:14px 16px;border-radius:12px 12px 12px 3px;font-size:13px;line-height:1.65;color:#344268;}
+.msg-a-lbl{font-size:9px;font-weight:600;color:var(--blue);margin-bottom:8px;letter-spacing:.08em;}
+.msg-a-body > *:first-child{margin-top:0;}
+.msg-a-body > *:last-child{margin-bottom:0;}
+.msg-a-body p{margin:0 0 10px;}
+.msg-a-body h4,.msg-a-body h5,.msg-a-body h6{margin:15px 0 7px;font-size:13px;font-weight:700;color:#1a2840;}
+.msg-a-body ul,.msg-a-body ol{margin:0 0 10px;padding-left:20px;}
+.msg-a-body li{margin-bottom:5px;}
+.msg-a-body li:last-child{margin-bottom:0;}
+.msg-a-body strong{color:#1a2840;font-weight:700;}
+.msg-a-body code{background:rgba(79,114,196,0.1);padding:1px 5px;border-radius:4px;font-size:12px;font-family:var(--mono);}
+.msg-a-body a{color:var(--blue2);word-break:break-word;}
 .chat-inp{flex:1;padding:11px 14px;background:#f8faff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .2s;}
 .chat-inp:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(79,114,196,0.08);}
 
@@ -622,9 +632,40 @@ async function callAI(sys, usr, maxTok, webSearch){
   }
 }
 
+function escHtml(x){ return (x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Lightweight Markdown -> HTML for chat answers (headings, lists, bold, code, links).
+function mdToHtml(src){
+  if(!src) return '';
+  var s = escHtml(src);
+  var lines = s.split('\n');
+  var out = '', list = null;
+  function closeList(){ if(list){ out += '</' + list + '>'; list = null; } }
+  function inline(x){
+    return x
+      .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  }
+  for(var i = 0; i < lines.length; i++){
+    var t = lines[i].trim();
+    if(t === ''){ closeList(); continue; }
+    var h = t.match(/^(#{1,6})\s+(.*)$/);
+    if(h){ closeList(); var lvl = Math.min(h[1].length + 2, 6); out += '<h' + lvl + '>' + inline(h[2]) + '</h' + lvl + '>'; continue; }
+    var ol = t.match(/^\d+[.)]\s+(.*)$/);
+    if(ol){ if(list !== 'ol'){ closeList(); out += '<ol>'; list = 'ol'; } out += '<li>' + inline(ol[1]) + '</li>'; continue; }
+    var ul = t.match(/^[-*•]\s+(.*)$/);
+    if(ul){ if(list !== 'ul'){ closeList(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(ul[1]) + '</li>'; continue; }
+    closeList(); out += '<p>' + inline(t) + '</p>';
+  }
+  closeList();
+  return out;
+}
+
 // Streaming variant — calls onChunk(fullTextSoFar) as text arrives.
 // Returns the full text on success, or null on failure (caller can fall back to callAI).
-async function callAIStream(sys, usr, maxTok, onChunk){
+async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
   if(!checkUsageLimit()) return null;
   try {
     var controller = new AbortController();
@@ -637,7 +678,8 @@ async function callAIStream(sys, usr, maxTok, onChunk){
         model: 'claude-sonnet-4-5',
         max_tokens: maxTok || 1200,
         system: sys,
-        messages: [{ role: 'user', content: usr }]
+        messages: [{ role: 'user', content: usr }],
+        web_search: webSearch || false
       })
     });
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
@@ -908,7 +950,7 @@ function vResearch(){
 }
 function renderChat(){
   var el=document.getElementById('cmsgs'); if(!el)return;
-  el.innerHTML=chatMsgs.map(function(m){return m.role==='user'?'<div class="msg-u">'+m.content+'</div>':'<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div>'+m.content+'</div>';}).join('');
+  el.innerHTML=chatMsgs.map(function(m){return m.role==='user'?'<div class="msg-u">'+escHtml(m.content)+'</div>':'<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>';}).join('');
   el.scrollTop=el.scrollHeight;
 }
 function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
@@ -919,14 +961,21 @@ async function doR(){
   go('research');
   var btn=document.getElementById('rbtn'); if(btn)btn.disabled=true;
   var el=document.getElementById('cmsgs');
-  if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI</div><div class="typing"><span></span><span></span><span></span></div></div>';el.scrollTop=el.scrollHeight;}
+  if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div><div class="msg-a-body" id="r-streaming"><div class="typing"><span></span><span></span><span></span></div></div></div>';el.scrollTop=el.scrollHeight;}
+  var rSys='You are a senior UK solicitor and legal researcher. Answer questions about UK law precisely, citing the relevant Act of Parliament and section number, and relevant case law where applicable. Structure your answer clearly in Markdown: open with a brief direct answer in one short paragraph, then use "## " headings for sections (such as Legal basis, Key points, Practical implications), and use numbered or bulleted lists for steps or multiple points. Keep paragraphs short (2-3 sentences) with a blank line between them. Finish with a one-line note that the answer should be verified with a qualified solicitor. If web search results are provided, use them so the answer reflects the latest UK legislation.';
   try{
-    var a=await callAI('You are a senior UK solicitor and legal researcher. Answer questions about UK law with precision. Always cite the relevant Act of Parliament and section number. Reference relevant case law where applicable. Format with the legal basis first, then practical implications. Note that answers should be verified with a qualified solicitor. If web search results are provided, use them to ensure your answer reflects the very latest UK legislation.',q, 1200, true);
+    var target=document.getElementById('r-streaming');
+    var a=await callAIStream(rSys, q, 1200, function(text){
+      if(target){ target.innerHTML=mdToHtml(text); if(el) el.scrollTop=el.scrollHeight; }
+    }, true);
+    if(!a){ a=await callAI(rSys, q, 1200, true); if(target) target.innerHTML=mdToHtml(a); }
     if(a){
       chatMsgs.push({role:'assistant',content:a});
       // Auto-save to vault
       docs.unshift({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
       saveDocs();
+    } else {
+      chatMsgs.push({role:'assistant',content:'The research service is temporarily unavailable. Please try again in a moment.'});
     }
   }catch(e){chatMsgs.push({role:'assistant',content:'Error: '+e.message});}
   go('research'); renderChat(); if(btn)btn.disabled=false;
