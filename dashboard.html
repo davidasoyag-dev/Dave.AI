@@ -571,8 +571,8 @@ function checkUsageLimit(){
   var used = getUsageCount();
   if(used >= limit){
     var msg = !planActive
-      ? 'You have used all ' + limit + ' of your trial AI requests.\n\nUpgrade to a paid plan to continue.'
-      : 'You have reached your ' + limit + ' request limit for this month (Starter plan).\n\nUpgrade to Pro for unlimited requests.';
+      ? 'You have used all ' + limit + ' of your trial documents.\n\nUpgrade to a paid plan to continue. (Legal research stays unlimited.)'
+      : 'You have reached your ' + limit + ' document limit for this month (Starter plan).\n\nUpgrade to Pro for unlimited documents. (Legal research stays unlimited.)';
     if(confirm(msg + '\n\nGo to Billing & Plans now?')){
       go('billing');
     }
@@ -587,20 +587,19 @@ function updateUsageBadge(){
   var el    = document.getElementById('usage-badge');
   if(!el) return;
   if(limit === Infinity){
-    el.textContent = used + ' requests this month';
+    el.textContent = used + ' documents this month';
     el.style.color = '#a8b4cc';
   } else {
     var remaining = Math.max(0, limit - used);
-    el.textContent = remaining + ' / ' + limit + ' requests left';
+    el.textContent = remaining + ' / ' + limit + ' documents left';
     el.style.color = remaining <= 3 ? '#c0392b' : remaining <= 5 ? '#96620a' : '#a8b4cc';
   }
 }
 
 // ── Claude API helper ──
+// Note: usage limit is checked/counted by the calling feature (Draft & Review
+// count toward the plan limit; Research is unlimited), not here.
 async function callAI(sys, usr, maxTok, webSearch){
-  // Check usage limit before making request
-  if(!checkUsageLimit()) return null;
-
   var attempts = 2;
   for(var i = 0; i < attempts; i++){
     try {
@@ -621,7 +620,6 @@ async function callAI(sys, usr, maxTok, webSearch){
       clearTimeout(timeout);
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
-      incrementUsage(); // only count successful requests
       return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
     } catch(e) {
       if(i < attempts - 1){
@@ -677,7 +675,6 @@ function mdToPlain(src){
 // Streaming variant — calls onChunk(fullTextSoFar) as text arrives.
 // Returns the full text on success, or null on failure (caller can fall back to callAI).
 async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
-  if(!checkUsageLimit()) return null;
   try {
     var controller = new AbortController();
     var timeout = setTimeout(function(){ controller.abort(); }, 45000);
@@ -721,7 +718,6 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
     }
     clearTimeout(timeout);
     if(!full) return null;       // nothing streamed — let caller fall back
-    incrementUsage();
     return full;
   } catch(e) {
     return null;                 // signal failure → caller falls back to callAI
@@ -838,6 +834,7 @@ async function doDraft(){
   var type = document.getElementById('dt').value;
   var prompt = document.getElementById('dp').value.trim();
   if(!prompt){ alert('Please describe your requirements.'); return; }
+  if(!checkUsageLimit()) return; // documents count toward the plan limit
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
   var out = document.getElementById('dout');
   out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
@@ -857,8 +854,13 @@ async function doDraft(){
     }
     if(r){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
-      window._lastDraftText = r;
-      window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+      // Only treat as a real document (save + count) if it isn't an error message
+      var ok = r.indexOf('temporarily unavailable')===-1 && r.indexOf('No response received')===-1;
+      if(ok){
+        window._lastDraftText = r;
+        window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+        incrementUsage(); // count this document toward the plan limit
+      }
     }
   }catch(e){ out.textContent='Error: '+e.message; }
   btn.disabled=false; btn.innerHTML='Generate document';
@@ -908,6 +910,7 @@ function parseReviewJSON(raw){
 async function doReview(){
   var text = rvFileText || (document.getElementById('rv-text')?document.getElementById('rv-text').value:'');
   if(!text.trim()){ alert('Please upload or paste a contract first.'); return; }
+  if(!checkUsageLimit()) return; // reviews count toward the plan limit
   var btn=document.getElementById('rvbtn'); btn.disabled=true; btn.textContent='Analysing…';
   var rvSteps=['Reading the document…','Identifying key clauses…','Checking liability and indemnities…','Reviewing payment and termination terms…','Assessing governing law and jurisdiction…','Flagging potential risks…','Preparing recommendations…'];
   var rvi=0;
@@ -933,6 +936,7 @@ async function doReview(){
     // Auto-save to vault
     docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
     saveDocs();
+    incrementUsage(); // count this review toward the plan limit
   }catch(e){
     clearInterval(rvTimer);
     // Graceful fallback (build r3): if structured parsing fails, show the AI's
