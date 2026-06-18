@@ -151,6 +151,15 @@ select.inp{cursor:pointer;}
 .msg-a-body strong{color:#1a2840;font-weight:700;}
 .msg-a-body code{background:rgba(79,114,196,0.1);padding:1px 5px;border-radius:4px;font-size:12px;font-family:var(--mono);}
 .msg-a-body a{color:var(--blue2);word-break:break-word;}
+.msg-a-body .md-table{width:100%;border-collapse:collapse;margin:4px 0 12px;font-size:12px;}
+.msg-a-body .md-table th{text-align:left;font-weight:700;color:#1a2840;background:#eef3fb;padding:7px 10px;border:1px solid rgba(79,114,196,0.18);}
+.msg-a-body .md-table td{padding:7px 10px;border:1px solid rgba(79,114,196,0.13);color:#344268;vertical-align:top;}
+.msg-a-body .md-note{margin:14px 0 0;padding:10px 13px;background:rgba(150,98,10,0.07);border-left:3px solid #b07d18;border-radius:0 8px 8px 0;font-size:12px;color:#7a560f;line-height:1.6;}
+.msg-a-body .md-cite{color:#3558a8;font-weight:600;}
+.msg-a-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.msg-a-top .msg-a-lbl{margin-bottom:0;}
+.msg-copy{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:10px;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:var(--font);transition:all .15s;flex-shrink:0;}
+.msg-copy:hover{color:var(--blue2);border-color:var(--blue2);}
 .chat-inp{flex:1;padding:11px 14px;background:#f8faff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .2s;}
 .chat-inp:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(79,114,196,0.08);}
 
@@ -641,8 +650,12 @@ function mdToHtml(src){
   var lines = s.split('\n');
   var out = '', list = null;
   function closeList(){ if(list){ out += '</' + list + '>'; list = null; } }
+  function cells(row){ return row.trim().replace(/^\||\|$/g, '').split('|').map(function(c){ return c.trim(); }); }
   function inline(x){
     return x
+      .replace(/\b([A-Z][A-Za-z&'’]+(?:\s[A-Z][A-Za-z&'’]+)*\sAct\s\d{4})\b/g, '<span class="md-cite">$1</span>')
+      .replace(/\b(s\.?\s?\d+[A-Z]?(?:\(\d+\))?|section\s\d+[A-Z]?)\b/gi, '<span class="md-cite">$1</span>')
+      .replace(/(\[\d{4}\])/g, '<span class="md-cite">$1</span>')
       .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -651,12 +664,27 @@ function mdToHtml(src){
   for(var i = 0; i < lines.length; i++){
     var t = lines[i].trim();
     if(t === ''){ closeList(); continue; }
+    // Table: header row + |---| separator + body rows
+    if(t.indexOf('|') === 0 && i+1 < lines.length && /^\|[\s:|-]*-[\s:|-]*\|?$/.test(lines[i+1].trim())){
+      closeList();
+      var hdr = cells(t), body = [], j = i+2;
+      while(j < lines.length && lines[j].trim().indexOf('|') === 0){ body.push(cells(lines[j])); j++; }
+      out += '<table class="md-table"><thead><tr>' + hdr.map(function(c){ return '<th>'+inline(c)+'</th>'; }).join('') +
+             '</tr></thead><tbody>' + body.map(function(r){ return '<tr>'+r.map(function(c){ return '<td>'+inline(c)+'</td>'; }).join('')+'</tr>'; }).join('') +
+             '</tbody></table>';
+      i = j - 1; continue;
+    }
     var h = t.match(/^(#{1,6})\s+(.*)$/);
     if(h){ closeList(); var lvl = Math.min(h[1].length + 2, 6); out += '<h' + lvl + '>' + inline(h[2]) + '</h' + lvl + '>'; continue; }
     var ol = t.match(/^\d+[.)]\s+(.*)$/);
     if(ol){ if(list !== 'ol'){ closeList(); out += '<ol>'; list = 'ol'; } out += '<li>' + inline(ol[1]) + '</li>'; continue; }
     var ul = t.match(/^[-*•]\s+(.*)$/);
     if(ul){ if(list !== 'ul'){ closeList(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(ul[1]) + '</li>'; continue; }
+    // Disclaimer / note line -> styled caveat box
+    var lo = t.toLowerCase();
+    if(lo.indexOf('qualified solicitor') !== -1 || lo.indexOf('seek legal advice') !== -1 || lo.indexOf('should be verified') !== -1 || /^(note|disclaimer)\s*[:\-]/.test(lo)){
+      closeList(); out += '<div class="md-note">' + inline(t.replace(/^(note|disclaimer)\s*[:\-]\s*/i, '')) + '</div>'; continue;
+    }
     closeList(); out += '<p>' + inline(t) + '</p>';
   }
   closeList();
@@ -970,8 +998,16 @@ function vResearch(){
 }
 function renderChat(){
   var el=document.getElementById('cmsgs'); if(!el)return;
-  el.innerHTML=chatMsgs.map(function(m){return m.role==='user'?'<div class="msg-u">'+escHtml(m.content)+'</div>':'<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>';}).join('');
+  el.innerHTML=chatMsgs.map(function(m,idx){
+    if(m.role==='user') return '<div class="msg-u">'+escHtml(m.content)+'</div>';
+    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>';
+  }).join('');
   el.scrollTop=el.scrollHeight;
+}
+function copyResearch(i, btn){
+  var m=chatMsgs[i]; if(!m) return;
+  navigator.clipboard.writeText(mdToPlain(m.content));
+  if(btn){ var o=btn.textContent; btn.textContent='Copied'; setTimeout(function(){ btn.textContent=o; },1200); }
 }
 function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
 async function doR(){
@@ -982,7 +1018,7 @@ async function doR(){
   var btn=document.getElementById('rbtn'); if(btn)btn.disabled=true;
   var el=document.getElementById('cmsgs');
   if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div><div class="msg-a-body" id="r-streaming"><div class="typing"><span></span><span></span><span></span></div></div></div>';el.scrollTop=el.scrollHeight;}
-  var rSys='You are a senior UK solicitor and legal researcher. Answer questions about UK law precisely, citing the relevant Act of Parliament and section number, and relevant case law where applicable. Structure your answer clearly in Markdown: open with a brief direct answer in one short paragraph, then use "## " headings for sections (such as Legal basis, Key points, Practical implications), and use numbered or bulleted lists for steps or multiple points. Keep paragraphs short (2-3 sentences) with a blank line between them. Finish with a one-line note that the answer should be verified with a qualified solicitor. If web search results are provided, use them so the answer reflects the latest UK legislation.';
+  var rSys='You are a senior UK solicitor and legal researcher. Answer questions about UK law precisely, citing the relevant Act of Parliament and section number, and relevant case law where applicable. Structure your answer clearly in Markdown: open with a brief direct answer in one short paragraph, then use "## " headings for sections (such as Legal basis, Key points, Practical implications), and use numbered or bulleted lists for steps or multiple points. When presenting figures that vary by category (notice periods, pay rates, thresholds, time limits), use a Markdown table with a header row. Keep paragraphs short (2-3 sentences) with a blank line between them. Finish with a single final line beginning "Note:" advising the answer should be verified with a qualified solicitor. If web search results are provided, use them so the answer reflects the latest UK legislation.';
   try{
     var target=document.getElementById('r-streaming');
     var a=await callAIStream(rSys, q, 1200, function(text){
