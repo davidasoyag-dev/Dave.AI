@@ -1020,8 +1020,7 @@ function renderChat(){
   var el=document.getElementById('cmsgs'); if(!el)return;
   el.innerHTML=chatMsgs.map(function(m,idx){
     if(m.role==='user') return '<div class="msg-u">'+escHtml(m.content)+'</div>';
-    var fu = (idx===chatMsgs.length-1) ? buildFollowups(m.followups) : '';
-    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div>'+buildSources(m.content)+fu+'</div>';
+    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div>'+buildSources(m.content)+buildFollowups(m.followups)+'</div>';
   }).join('');
   el.scrollTop=el.scrollHeight;
 }
