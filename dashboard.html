@@ -155,11 +155,24 @@ select.inp{cursor:pointer;}
 .msg-a-body .md-table th{text-align:left;font-weight:700;color:#1a2840;background:#eef3fb;padding:7px 10px;border:1px solid rgba(79,114,196,0.18);}
 .msg-a-body .md-table td{padding:7px 10px;border:1px solid rgba(79,114,196,0.13);color:#344268;vertical-align:top;}
 .msg-a-body .md-note{margin:14px 0 0;padding:10px 13px;background:rgba(150,98,10,0.07);border-left:3px solid #b07d18;border-radius:0 8px 8px 0;font-size:12px;color:#7a560f;line-height:1.6;}
-.msg-a-body .md-cite{color:#3558a8;font-weight:600;}
+.msg-a-body .md-cite{color:#3558a8;font-weight:600;cursor:pointer;border-bottom:1px dotted rgba(53,88,168,0.45);}
+.msg-a-body .md-cite:hover{background:rgba(79,114,196,0.1);border-radius:3px;}
 .msg-a-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .msg-a-top .msg-a-lbl{margin-bottom:0;}
 .msg-copy{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:10px;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:var(--font);transition:all .15s;flex-shrink:0;}
 .msg-copy:hover{color:var(--blue2);border-color:var(--blue2);}
+/* Research: history sidebar, follow-ups, sources */
+.rs-side{width:218px;flex-shrink:0;border-right:1px solid var(--border);padding-right:16px;overflow-y:auto;}
+.rs-hist-item{font-size:11px;color:var(--muted);padding:7px 9px;border-radius:7px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;transition:all .12s;}
+.rs-hist-item:hover{background:rgba(79,114,196,.08);color:var(--text);}
+.rs-blk-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin:14px 0 8px;}
+.rs-followups{margin-top:13px;}
+.rs-fu{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--blue2);cursor:pointer;font-family:var(--font);margin-bottom:6px;transition:all .15s;line-height:1.4;}
+.rs-fu:hover{border-color:var(--blue2);background:rgba(79,114,196,.06);transform:translateX(2px);}
+.rs-sources{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
+.rs-src{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--blue2);text-decoration:none;background:rgba(79,114,196,.07);border:1px solid var(--border);border-radius:7px;padding:5px 10px;margin:0 6px 6px 0;transition:all .15s;}
+.rs-src:hover{border-color:var(--blue2);background:rgba(79,114,196,.12);}
+@media(max-width:860px){.rs-side{display:none;}}
 .chat-inp{flex:1;padding:11px 14px;background:#f8faff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .2s;}
 .chat-inp:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(79,114,196,0.08);}
 
@@ -653,9 +666,9 @@ function mdToHtml(src){
   function cells(row){ return row.trim().replace(/^\||\|$/g, '').split('|').map(function(c){ return c.trim(); }); }
   function inline(x){
     return x
-      .replace(/\b([A-Z][A-Za-z&'’]+(?:\s[A-Z][A-Za-z&'’]+)*\sAct\s\d{4})\b/g, '<span class="md-cite">$1</span>')
-      .replace(/\b(s\.?\s?\d+[A-Z]?(?:\(\d+\))?|section\s\d+[A-Z]?)\b/gi, '<span class="md-cite">$1</span>')
-      .replace(/(\[\d{4}\])/g, '<span class="md-cite">$1</span>')
+      .replace(/\b([A-Z][A-Za-z&'’]+(?:\s[A-Z][A-Za-z&'’]+)*\sAct\s\d{4})\b/g, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
+      .replace(/\b(s\.?\s?\d+[A-Z]?(?:\(\d+\))?|section\s\d+[A-Z]?)\b/gi, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
+      .replace(/(\[\d{4}\])/g, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
       .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -987,20 +1000,28 @@ async function doReview(){
 var chatMsgs=[];
 function vResearch(){
   var sugg=['What are the statutory redundancy notice periods?','When does a director have a duty to creditors?','What are the GDPR obligations for a UK business?','How does TUPE apply to a business sale?','What constitutes wrongful dismissal in England?'];
-  return '<div class="view" style="display:flex;flex-direction:column;height:calc(100vh - var(--topbar))">' +
-    '<div style="display:flex;justify-content:space-between;flex-shrink:0;margin-bottom:20px"><div><div class="view-title">Legal Research</div><div class="view-sub">Search UK statutes and case law. Answers are cited with source references.</div></div><button class="btn btn-g" style="white-space:nowrap" onclick="chatMsgs=[];go(\'research\')">New session</button></div>' +
+  return '<div class="view" style="display:flex;gap:18px;height:calc(100vh - var(--topbar))">' +
+    '<div class="rs-side">' +
+      '<button class="btn btn-p" style="width:100%;font-size:12px;padding:9px" onclick="chatMsgs=[];go(\'research\')">+ New session</button>' +
+      '<div class="rs-blk-lbl">History</div>' +
+      '<div id="rs-hist">'+renderResearchHistory()+'</div>' +
+    '</div>' +
+    '<div style="flex:1;display:flex;flex-direction:column;min-width:0">' +
+    '<div style="flex-shrink:0;margin-bottom:18px"><div class="view-title">Legal Research</div><div class="view-sub">Search UK statutes and case law. Answers are cited with source references.</div></div>' +
     (chatMsgs.length===0
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
     '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/><button class="btn btn-p" onclick="doR()" id="rbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Referencing real UK statutes and case law · Always verify with a qualified solicitor</div></div>' +
+    '</div>' +
   '</div>';
 }
 function renderChat(){
   var el=document.getElementById('cmsgs'); if(!el)return;
   el.innerHTML=chatMsgs.map(function(m,idx){
     if(m.role==='user') return '<div class="msg-u">'+escHtml(m.content)+'</div>';
-    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>';
+    var fu = (idx===chatMsgs.length-1) ? buildFollowups(m.followups) : '';
+    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div>'+buildSources(m.content)+fu+'</div>';
   }).join('');
   el.scrollTop=el.scrollHeight;
 }
@@ -1008,6 +1029,49 @@ function copyResearch(i, btn){
   var m=chatMsgs[i]; if(!m) return;
   navigator.clipboard.writeText(mdToPlain(m.content));
   if(btn){ var o=btn.textContent; btn.textContent='Copied'; setTimeout(function(){ btn.textContent=o; },1200); }
+}
+function escAttr(x){ return (x||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+// Ask a new research question programmatically
+function askResearch(q){ var i=document.getElementById('ri'); if(i){ i.value=q; } doR(); }
+// Clicking a highlighted citation asks the AI about it
+function askCite(text){ if(text) askResearch('Explain ' + text.trim() + ' and how it applies in practice under UK law.'); }
+// Follow-up question chips under the latest answer
+function buildFollowups(fu){
+  if(!fu || !fu.length) return '';
+  return '<div class="rs-followups"><div class="rs-blk-lbl">Suggested follow-ups</div>' +
+    fu.map(function(q){ return '<button class="rs-fu" data-q="'+escAttr(q)+'" onclick="askResearch(this.getAttribute(\'data-q\'))">'+escHtml(q)+'</button>'; }).join('') +
+    '</div>';
+}
+// Official source links extracted from the answer's citations
+function buildSources(md){
+  if(!md) return '';
+  var items=[], seen={}, m;
+  var actRe=/\b([A-Z][A-Za-z&'’]+(?:\s[A-Z][A-Za-z&'’]+)*\sAct\s\d{4})\b/g;
+  while((m=actRe.exec(md))){ var a=m[1]; if(!seen[a]){ seen[a]=1; items.push({l:a,u:'https://www.legislation.gov.uk/all?title='+encodeURIComponent(a)}); } }
+  var caseRe=/([A-Z][A-Za-z.'’-]+(?:\s(?:&|and|v|[A-Z][A-Za-z.'’-]+))*\sv\s[A-Z][A-Za-z.'’-]+(?:\s[A-Za-z.'’&()-]+)*)\s\[\d{4}\]/g;
+  while((m=caseRe.exec(md))){ var c=m[1].trim(); if(c.length<60 && !seen[c]){ seen[c]=1; items.push({l:c,u:'https://caselaw.nationalarchives.gov.uk/judgments/search?query='+encodeURIComponent(c)}); } }
+  if(!items.length) return '';
+  var ico='<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+  return '<div class="rs-sources"><div class="rs-blk-lbl">Sources</div>' +
+    items.slice(0,8).map(function(it){ return '<a class="rs-src" href="'+it.u+'" target="_blank" rel="noopener">'+ico+escHtml(it.l)+'</a>'; }).join('') +
+    '</div>';
+}
+// Past research questions (from the vault) for the sidebar
+function renderResearchHistory(){
+  var rs=docs.filter(function(d){ return d.type==='Research'; });
+  if(!rs.length) return '<div style="font-size:11px;color:var(--dim);line-height:1.6">Your past research questions will appear here.</div>';
+  return rs.slice(0,40).map(function(d){
+    var idx=docs.indexOf(d);
+    var qn=(d.name||'').replace(/^Research —\s*/,'');
+    return '<div class="rs-hist-item" title="'+escAttr(qn)+'" onclick="loadResearch('+idx+')">'+escHtml(qn)+'</div>';
+  }).join('');
+}
+// Load a saved Q&A back into the chat
+function loadResearch(idx){
+  var d=docs[idx]; if(!d) return;
+  var c=d.content||''; var mm=c.match(/^Q:\s*([\s\S]*?)\n\nA:\s*([\s\S]*)$/);
+  if(mm){ chatMsgs=[{role:'user',content:mm[1].trim()},{role:'assistant',content:mm[2].trim(),followups:[]}]; }
+  go('research');
 }
 function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
 async function doR(){
@@ -1018,16 +1082,22 @@ async function doR(){
   var btn=document.getElementById('rbtn'); if(btn)btn.disabled=true;
   var el=document.getElementById('cmsgs');
   if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div><div class="msg-a-body" id="r-streaming"><div class="typing"><span></span><span></span><span></span></div></div></div>';el.scrollTop=el.scrollHeight;}
-  var rSys='You are a senior UK solicitor and legal researcher. Answer questions about UK law precisely, citing the relevant Act of Parliament and section number, and relevant case law where applicable. Structure your answer clearly in Markdown: open with a brief direct answer in one short paragraph, then use "## " headings for sections (such as Legal basis, Key points, Practical implications), and use numbered or bulleted lists for steps or multiple points. When presenting figures that vary by category (notice periods, pay rates, thresholds, time limits), use a Markdown table with a header row. Keep paragraphs short (2-3 sentences) with a blank line between them. Finish with a single final line beginning "Note:" advising the answer should be verified with a qualified solicitor. If web search results are provided, use them so the answer reflects the latest UK legislation.';
+  var rSys='You are a senior UK solicitor and legal researcher. Answer questions about UK law precisely, citing the relevant Act of Parliament and section number, and relevant case law where applicable. Structure your answer clearly in Markdown: open with a brief direct answer in one short paragraph, then use "## " headings for sections (such as Legal basis, Key points, Practical implications), and use numbered or bulleted lists for steps or multiple points. When presenting figures that vary by category (notice periods, pay rates, thresholds, time limits), use a Markdown table with a header row. Keep paragraphs short (2-3 sentences) with a blank line between them. Then add a single final line beginning "Note:" advising the answer should be verified with a qualified solicitor. After that, on the very last line, output exactly: FOLLOWUPS: question one | question two | question three — three short, specific follow-up questions a UK lawyer might naturally ask next. If web search results are provided, use them so the answer reflects the latest UK legislation.';
+  function stripFollowups(s){ return (s||'').replace(/\n*FOLLOWUPS:[\s\S]*$/i,'').trim(); }
   try{
     var target=document.getElementById('r-streaming');
-    var a=await callAIStream(rSys, q, 1200, function(text){
-      if(target){ target.innerHTML=mdToHtml(text); if(el) el.scrollTop=el.scrollHeight; }
+    var a=await callAIStream(rSys, q, 1300, function(text){
+      if(target){ target.innerHTML=mdToHtml(stripFollowups(text)); if(el) el.scrollTop=el.scrollHeight; }
     }, true);
-    if(!a){ a=await callAI(rSys, q, 1200, true); if(target) target.innerHTML=mdToHtml(a); }
+    if(!a){ a=await callAI(rSys, q, 1300, true); if(target) target.innerHTML=mdToHtml(stripFollowups(a)); }
     if(a){
-      chatMsgs.push({role:'assistant',content:a});
-      // Auto-save to vault
+      // Split out the follow-up questions
+      var followups=[];
+      var fm=a.match(/\n*FOLLOWUPS:\s*([^\n]+)\s*$/i);
+      if(fm){ followups=fm[1].split('|').map(function(s){return s.trim();}).filter(Boolean).slice(0,3); }
+      a=stripFollowups(a);
+      chatMsgs.push({role:'assistant',content:a,followups:followups});
+      // Auto-save to vault (without the followups line)
       docs.unshift({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
       saveDocs();
     } else {
