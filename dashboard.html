@@ -8,6 +8,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script>
 const _sb = supabase.createClient(
   'https://wyribnzwosqzfnhomhig.supabase.co',
@@ -938,7 +940,69 @@ var rvFileText='';
 function rvTab(t,btn){ document.querySelectorAll('#rv-upload,#rv-paste').forEach(function(e){e.style.display='none';}); document.getElementById('rv-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
 function rvDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) rvLoad(e.dataTransfer.files[0]); }
 function rvFileSelect(inp){ if(inp.files[0]) rvLoad(inp.files[0]); }
-function rvLoad(f){ var r=new FileReader(); r.onload=function(e){rvFileText=e.target.result;}; r.readAsText(f); document.getElementById('rv-fname').textContent=''+f.name; document.getElementById('rv-fname').style.display='block'; }
+
+// Universal text extractor — handles TXT, PDF and Word (.docx). Returns a Promise<string>.
+function extractFileText(file){
+  var name = (file.name||'').toLowerCase();
+  return new Promise(function(resolve, reject){
+    try {
+      if(name.endsWith('.pdf')){
+        var fr = new FileReader();
+        fr.onload = function(e){
+          try {
+            if(!window.pdfjsLib){ reject(new Error('PDF reader not loaded')); return; }
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            pdfjsLib.getDocument({ data: e.target.result }).promise.then(function(pdf){
+              var pages = [], i;
+              var getPage = function(n){
+                return pdf.getPage(n).then(function(p){ return p.getTextContent(); }).then(function(tc){
+                  return tc.items.map(function(it){ return it.str; }).join(' ');
+                });
+              };
+              var chain = Promise.resolve();
+              for(i=1;i<=pdf.numPages;i++){
+                (function(n){ chain = chain.then(function(){ return getPage(n); }).then(function(t){ pages.push(t); }); })(i);
+              }
+              chain.then(function(){ resolve(pages.join('\n\n')); }).catch(reject);
+            }).catch(reject);
+          } catch(err){ reject(err); }
+        };
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(file);
+      } else if(name.endsWith('.docx')){
+        var fr2 = new FileReader();
+        fr2.onload = function(e){
+          if(!window.mammoth){ reject(new Error('Word reader not loaded')); return; }
+          mammoth.extractRawText({ arrayBuffer: e.target.result })
+            .then(function(res){ resolve(res.value); }).catch(reject);
+        };
+        fr2.onerror = reject;
+        fr2.readAsArrayBuffer(file);
+      } else {
+        var fr3 = new FileReader();
+        fr3.onload = function(e){ resolve(e.target.result); };
+        fr3.onerror = reject;
+        fr3.readAsText(file);
+      }
+    } catch(err){ reject(err); }
+  });
+}
+
+function rvLoad(f){
+  var fn = document.getElementById('rv-fname');
+  if(fn){ fn.textContent = 'Reading ' + f.name + '…'; fn.style.display = 'block'; }
+  rvFileText = '';
+  extractFileText(f).then(function(text){
+    rvFileText = (text||'').trim();
+    if(fn){
+      if(rvFileText){ fn.textContent = f.name + ' · ' + rvFileText.length.toLocaleString() + ' characters read'; }
+      else { fn.textContent = f.name + ' · no text found (is it a scanned image?)'; }
+    }
+  }).catch(function(err){
+    rvFileText = '';
+    if(fn){ fn.textContent = 'Could not read ' + f.name + '. Try a TXT, PDF or .docx file, or paste the text instead.'; }
+  });
+}
 // Robustly pull a JSON object out of the model's reply, tolerating code
 // fences or any stray prose before/after the object.
 function parseReviewJSON(raw){
