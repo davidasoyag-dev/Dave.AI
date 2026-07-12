@@ -386,6 +386,18 @@ select.inp{cursor:pointer;}
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
       Research
     </div>
+    <div class="sb-item" onclick="go('docchat')" id="nav-docchat">
+      <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      Ask a Doc
+    </div>
+    <div class="sb-item" onclick="go('compare')" id="nav-compare">
+      <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="8 7 4 11 8 15"/><polyline points="16 7 20 11 16 15"/></svg></div>
+      Compare
+    </div>
+    <div class="sb-item" onclick="go('tools')" id="nav-tools">
+      <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 4V2M15 10V8M11 6h2M17 6h2M20 15v-2M20 21v-2M17 18h2M23 18h-2M8 3l1.5 3.5L13 8l-3.5 1.5L8 13l-1.5-3.5L3 8l3.5-1.5z"/></svg></div>
+      Quick Tools
+    </div>
     <div class="sb-sec">Workspace</div>
     <div class="sb-item" onclick="go('history')" id="nav-history">
       <div class="sb-icon"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div>
@@ -561,6 +573,9 @@ function go(v){
   else if(v==='draft')    { m.innerHTML = vDraft(); }
   else if(v==='review')   { m.innerHTML = vReview(); }
   else if(v==='research') { m.innerHTML = vResearch(); renderChat(); }
+  else if(v==='docchat')  { m.innerHTML = vDocChat(); renderDcChat(); }
+  else if(v==='compare')  { m.innerHTML = vCompare(); }
+  else if(v==='tools')    { m.innerHTML = vTools(); }
   else if(v==='history')  { m.innerHTML = vHistory(); }
   else if(v==='settings') { m.innerHTML = vSettings(); }
   else if(v==='billing')  { m.innerHTML = vBilling(); }
@@ -869,6 +884,7 @@ function vDraft(){
       '<div>' +
         '<div style="position:relative"><div class="ai-out" id="dout" style="min-height:360px"><div style="color:var(--dim);font-size:12px;text-align:center;padding-top:80px;font-family:var(--font);line-height:1.8">Your document will appear here.<br><span style="font-size:11px;opacity:.6">Fill in the form and click Generate document.</span></div></div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="navigator.clipboard.writeText(mdToPlain(window._lastDraftText||document.getElementById(\'dout\').textContent))">Copy</button></div></div>' +
         '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save">Save to vault</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button></div>' +
+        '<div id="draft-refine" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px"><input class="chat-inp" id="dref" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" onkeydown="if(event.key===\'Enter\'){event.preventDefault();doRefineDraft();}"/><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -903,6 +919,7 @@ async function doDraft(){
         window._lastDraftText = r;
         window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
         incrementUsage(); // count this document toward the plan limit
+        var rf=document.getElementById('draft-refine'); if(rf) rf.style.display='block';
       }
     }
   }catch(e){ out.textContent='Error: '+e.message; }
@@ -918,6 +935,128 @@ function dlDoc(){
   var blob=new Blob([txt],{type:'text/plain'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='document.txt'; a.click();
 }
+// Refine the current draft with a follow-up instruction (edits the same document, doesn't count as new)
+async function doRefineDraft(){
+  var cur=window._lastDraftText; if(!cur){ alert('Generate a draft first.'); return; }
+  var inp=document.getElementById('dref'); var instr=inp?inp.value.trim():''; if(!instr) return;
+  var btn=document.getElementById('drefbtn'); if(btn){btn.disabled=true;btn.textContent='Refining…';}
+  var out=document.getElementById('dout');
+  var sys='You are a senior UK solicitor revising a contract. Apply the requested change to the existing document and return the COMPLETE revised document in the same style (numbered clauses, headings, signature block). Keep everything else intact unless the change requires otherwise. Finish with exactly: "AI-generated draft - review with a qualified solicitor before use."';
+  var usr='Here is the current document:\n\n'+cur+'\n\n---\nRequested change: '+instr+'\n\nReturn the full revised document.';
+  out.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+  try{
+    var started=false;
+    var r=await callAIStream(sys, usr, 2600, function(text){ if(!started){out.innerHTML='<div class="msg-a-body" id="d-streaming"></div>';started=true;} var t=document.getElementById('d-streaming'); if(t)t.innerHTML=mdToHtml(text); out.scrollTop=out.scrollHeight; });
+    if(r===null){ r=await callAI(sys,usr,2600); }
+    if(r){
+      out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
+      if(r.indexOf('temporarily unavailable')===-1 && r.indexOf('No response received')===-1){
+        window._lastDraftText=r;
+        var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
+        window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+      }
+    }
+    if(inp) inp.value='';
+  }catch(e){ out.textContent='Error: '+e.message; }
+  if(btn){btn.disabled=false;btn.textContent='Refine';}
+}
+
+// ══════════════════════════════════════════════
+//  ASK A DOCUMENT
+// ══════════════════════════════════════════════
+var dcDoc='', dcName='', dcMsgs=[];
+function vDocChat(){
+  var loaded=!!dcDoc;
+  return '<div class="view" style="display:flex;flex-direction:column;height:calc(100vh - var(--topbar))">' +
+    '<div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div class="view-title">Ask a Document</div><div class="view-sub">Upload or paste a contract, then ask questions about it in plain English.</div></div>'+(loaded?'<button class="btn btn-g" style="white-space:nowrap" onclick="dcReset()">New document</button>':'')+'</div>' +
+    (loaded
+      ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
+        '<div class="chat-msgs" id="dcmsgs" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
+        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/><button class="btn btn-p" onclick="doDocChat()" id="dcbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
+      : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
+        '<div id="dc-upload"><div class="upload-zone" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
+        '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
+        '</div>'
+    ) +
+  '</div>';
+}
+function dcTab(t,btn){ document.querySelectorAll('#dc-upload,#dc-paste').forEach(function(e){e.style.display='none';}); document.getElementById('dc-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
+function dcDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) dcFile(e.dataTransfer.files[0]); }
+function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(){ if(fn)fn.textContent='Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
+function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){alert('Paste some text first.');return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
+function dcReset(){ dcDoc=''; dcName=''; dcMsgs=[]; go('docchat'); }
+function renderDcChat(){ var el=document.getElementById('dcmsgs'); if(!el)return; el.innerHTML=dcMsgs.map(function(m,idx){ if(m.role==='user')return '<div class="msg-u">'+escHtml(m.content)+'</div>'; return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI</div><button class="msg-copy" onclick="navigator.clipboard.writeText(mdToPlain(dcMsgs['+idx+'].content))">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>'; }).join(''); el.scrollTop=el.scrollHeight; }
+async function doDocChat(){
+  var inp=document.getElementById('dci'); if(!inp)return; var q=inp.value.trim(); if(!q)return;
+  inp.value=''; dcMsgs.push({role:'user',content:q}); go('docchat');
+  var el=document.getElementById('dcmsgs'); if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI</div><div class="msg-a-body" id="dc-streaming"><div class="typing"><span></span><span></span><span></span></div></div></div>';el.scrollTop=el.scrollHeight;}
+  var sys='You are a senior UK solicitor answering questions strictly about the document the user provides. Answer clearly and concisely in Markdown, quoting or referencing the relevant clause where helpful. If the document does not address the question, say so plainly. Do not invent terms that are not in the document. Where useful, note the practical implication under the law of England and Wales. End with a brief "Note:" that this is not a substitute for professional legal advice.';
+  var usr='DOCUMENT:\n"""\n'+dcDoc.slice(0,12000)+'\n"""\n\nQUESTION: '+q;
+  try{
+    var target=document.getElementById('dc-streaming');
+    var a=await callAIStream(sys, usr, 1200, function(text){ if(target){target.innerHTML=mdToHtml(text); if(el)el.scrollTop=el.scrollHeight;} });
+    if(!a){ a=await callAI(sys,usr,1200); if(target)target.innerHTML=mdToHtml(a); }
+    dcMsgs.push({role:'assistant',content:a||'The service is temporarily unavailable. Please try again in a moment.'});
+  }catch(e){ dcMsgs.push({role:'assistant',content:'Error: '+e.message}); }
+  go('docchat');
+}
+
+// ══════════════════════════════════════════════
+//  COMPARE CONTRACTS
+// ══════════════════════════════════════════════
+var cmpOut='';
+function vCompare(){
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Compare Contracts</div><div class="view-sub">Paste two versions of a contract. Dave.AI highlights what changed and who each change favours.</div></div></div>' +
+    '<div class="grid2">' +
+      '<div class="card"><div class="field" style="margin-bottom:0"><label>Version A — e.g. original / their draft</label><textarea class="inp" id="cmpA" rows="12" placeholder="Paste the first version…"></textarea></div></div>' +
+      '<div class="card"><div class="field" style="margin-bottom:0"><label>Version B — e.g. revised / your draft</label><textarea class="inp" id="cmpB" rows="12" placeholder="Paste the second version…"></textarea></div></div>' +
+    '</div>' +
+    '<div style="margin-top:14px;display:flex;gap:10px"><button class="btn btn-p" onclick="doCompare()" id="cmpbtn">Compare versions</button><button class="btn btn-g" onclick="cmpOut=\'\';document.getElementById(\'cmpA\').value=\'\';document.getElementById(\'cmpB\').value=\'\';document.getElementById(\'cmp-res\').innerHTML=\'\'">Clear</button></div>' +
+    '<div id="cmp-res" style="margin-top:18px">'+(cmpOut||'')+'</div>' +
+  '</div>';
+}
+async function doCompare(){
+  var A=document.getElementById('cmpA'), B=document.getElementById('cmpB');
+  var a=A?A.value.trim():'', b=B?B.value.trim():'';
+  if(!a||!b){ alert('Paste both versions first.'); return; }
+  var btn=document.getElementById('cmpbtn'); if(btn){btn.disabled=true;btn.textContent='Comparing…';}
+  var res=document.getElementById('cmp-res'); res.innerHTML='<div class="card"><div class="typing" style="justify-content:center;padding:40px 0"><span></span><span></span><span></span></div></div>';
+  var sys='You are a senior UK solicitor comparing two versions of a contract. Identify the substantive differences and ignore trivial formatting. Use Markdown: start with a one-paragraph summary, then a "## Key changes" section as a bulleted list where each item begins with a bold change title, followed by one sentence on the impact and which party it favours and why. Flag anything that materially shifts risk or liability. Finish with a "## Overall" line on which version is more balanced, then a brief "Note:" to verify with a qualified solicitor.';
+  var usr='VERSION A:\n"""\n'+a.slice(0,7000)+'\n"""\n\nVERSION B:\n"""\n'+b.slice(0,7000)+'\n"""';
+  try{
+    var r=await callAIStream(sys, usr, 1600, function(text){ res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(text)+'</div></div>'; });
+    if(!r){ r=await callAI(sys,usr,1600); res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(r)+'</div></div>'; }
+    cmpOut=res.innerHTML;
+  }catch(e){ res.innerHTML='<div class="card"><div style="color:var(--red);padding:16px;font-size:12px">Error: '+e.message+'</div></div>'; }
+  if(btn){btn.disabled=false;btn.textContent='Compare versions';}
+}
+
+// ══════════════════════════════════════════════
+//  QUICK TOOLS
+// ══════════════════════════════════════════════
+function vTools(){
+  return '<div class="view">' +
+    '<div class="view-head"><div><div class="view-title">Quick Tools</div><div class="view-sub">Fast helpers for everyday legal writing.</div></div></div>' +
+    '<div class="grid2">' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" style="margin-top:14px"></div></div>' +
+    '</div>' +
+  '</div>';
+}
+async function doQuick(inId,outId,btnId,sys){
+  var inp=document.getElementById(inId); var v=inp?inp.value.trim():''; if(!v)return;
+  var btn=document.getElementById(btnId); var o=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='Working…';}
+  var out=document.getElementById(outId); out.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+  try{
+    var wrap=function(html){ return '<div class="msg-a-body" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">'+html+'</div>'; };
+    var r=await callAIStream(sys, v, 1000, function(text){ out.innerHTML=wrap(mdToHtml(text)); });
+    if(!r){ r=await callAI(sys,v,1000); out.innerHTML=wrap(mdToHtml(r)); }
+  }catch(e){ out.innerHTML='<div style="color:var(--red);font-size:12px">Error: '+e.message+'</div>'; }
+  if(btn){btn.disabled=false;btn.textContent=o;}
+}
+function doExplain(){ doQuick('expIn','expOut','expbtn','You are a senior UK solicitor. Explain the following clause or legal wording in clear, plain English for a non-lawyer: what it means, what it requires, and any practical catch. Keep it concise and use short paragraphs or bullets. Do not add a disclaimer.'); }
+function doFormalise(){ doQuick('fmlIn','fmlOut','fmlbtn','You are a senior UK solicitor. Rewrite the following plain-English notes as clear, professional contract wording under the law of England and Wales. Return only the formalised wording, properly structured, with no preamble or commentary.'); }
 
 // ══════════════════════════════════════════════
 //  REVIEW VIEW
