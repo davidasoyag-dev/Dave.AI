@@ -515,7 +515,12 @@ var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
 var trialEnd   = new Date(trialStart); trialEnd.setDate(trialEnd.getDate() + 14);
 var trialDays  = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
 var trialEndStr= trialEnd.toLocaleDateString('en-GB', {day:'numeric', month:'long'});
-var docs       = JSON.parse(localStorage.getItem('daveai_docs') || '[]');
+// Documents are stored per account so a new sign-up starts empty and users on the
+// same browser never see each other's documents.
+function docsKey(){ return 'daveai_docs_' + (email || 'anon').toLowerCase(); }
+var docs       = JSON.parse(localStorage.getItem(docsKey()) || '[]');
+// Remove the old shared store (pre-account-scoping) so stale documents can't leak in.
+try { localStorage.removeItem('daveai_docs'); } catch(e){}
 
 // ── Show expired trial overlay if trial has ended ──
 if(!planActive && trialDays === 0){
@@ -537,7 +542,7 @@ if(!planActive && trialDays === 0){
 }
 
 function saveDocs(){
-  localStorage.setItem('daveai_docs', JSON.stringify(docs));
+  localStorage.setItem(docsKey(), JSON.stringify(docs));
   var el = document.getElementById('doc-cnt');
   if(el) el.textContent = docs.length;
 }
@@ -584,7 +589,7 @@ function go(v){
 
 function getUsageKey(){
   var month = new Date().toISOString().slice(0,7); // 'YYYY-MM'
-  return 'daveai_usage_' + month;
+  return 'daveai_usage_' + (email || 'anon').toLowerCase() + '_' + month;
 }
 
 function getUsageCount(){
