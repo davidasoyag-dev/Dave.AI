@@ -717,7 +717,7 @@ async function callAI(sys, usr, maxTok, webSearch){
       var timeout = setTimeout(function(){ controller.abort(); }, 29000);
       var r = await fetch('/.netlify/functions/ai-proxy', {
         method: 'POST',
-        headers: await _aiHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
@@ -728,7 +728,6 @@ async function callAI(sys, usr, maxTok, webSearch){
         })
       });
       clearTimeout(timeout);
-      if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
@@ -810,7 +809,7 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
     var timeout = setTimeout(function(){ controller.abort(); }, 45000);
     var r = await fetch('/.netlify/functions/ai-stream', {
       method: 'POST',
-      headers: await _aiHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
@@ -820,7 +819,6 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
         web_search: webSearch || false
       })
     });
-    if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
 
     var reader = r.body.getReader();
