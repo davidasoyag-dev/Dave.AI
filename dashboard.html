@@ -515,12 +515,39 @@ var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
 var trialEnd   = new Date(trialStart); trialEnd.setDate(trialEnd.getDate() + 14);
 var trialDays  = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
 var trialEndStr= trialEnd.toLocaleDateString('en-GB', {day:'numeric', month:'long'});
-// Documents are stored per account so a new sign-up starts empty and users on the
-// same browser never see each other's documents.
-function docsKey(){ return 'daveai_docs_' + (email || 'anon').toLowerCase(); }
-var docs       = JSON.parse(localStorage.getItem(docsKey()) || '[]');
-// Remove the old shared store (pre-account-scoping) so stale documents can't leak in.
-try { localStorage.removeItem('daveai_docs'); } catch(e){}
+// Documents now live in Supabase — per account, server-side, private via Row Level
+// Security. They load asynchronously after the page renders (see loadDocsFromServer).
+var docs = [];
+var currentView = 'dash';
+// Clean up any documents left in the browser by the pre-backend version.
+try { localStorage.removeItem('daveai_docs'); Object.keys(localStorage).forEach(function(k){ if(k.indexOf('daveai_docs_')===0) localStorage.removeItem(k); }); } catch(e){}
+
+// Load this user's documents from Supabase (RLS ensures they only get their own)
+async function loadDocsFromServer(){
+  try {
+    var res = await _sb.from('documents').select('id,type,name,content,created_at').order('created_at', { ascending: false });
+    if(res.error) throw res.error;
+    docs = (res.data || []).map(function(r){
+      return { id:r.id, type:r.type, name:r.name, content:r.content, date:new Date(r.created_at).toLocaleDateString('en-GB') };
+    });
+    var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
+    if(currentView === 'dash' || currentView === 'history') go(currentView);
+  } catch(e){ /* leave docs empty if offline / no session */ }
+}
+// Add a document: optimistic local insert, then persist to Supabase
+function addDoc(doc){
+  docs.unshift(doc);
+  var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
+  (async function(){
+    try {
+      var u = await _sb.auth.getUser();
+      var uid = u && u.data && u.data.user ? u.data.user.id : null;
+      if(!uid) return;
+      var ins = await _sb.from('documents').insert({ user_id:uid, type:doc.type, name:doc.name, content:doc.content }).select('id').single();
+      if(!ins.error && ins.data) doc.id = ins.data.id;
+    } catch(e){}
+  })();
+}
 
 // ── Show expired trial overlay if trial has ended ──
 if(!planActive && trialDays === 0){
@@ -542,7 +569,6 @@ if(!planActive && trialDays === 0){
 }
 
 function saveDocs(){
-  localStorage.setItem(docsKey(), JSON.stringify(docs));
   var el = document.getElementById('doc-cnt');
   if(el) el.textContent = docs.length;
 }
@@ -571,6 +597,7 @@ if(planActive){
 // ── Navigation ──
 function go(v){
   document.querySelectorAll('.sb-item').forEach(function(e){ e.classList.remove('on'); });
+  currentView = v;
   var el = document.getElementById('nav-'+v);
   if(el) el.classList.add('on');
   var m = document.getElementById('main');
@@ -932,7 +959,7 @@ async function doDraft(){
 }
 function saveDoc(){
   if(!window._draft) return;
-  docs.unshift(window._draft); saveDocs();
+  addDoc(window._draft);
   var b=document.getElementById('dbtn-save'); b.textContent='✓ Saved!'; b.disabled=true;
 }
 function dlDoc(){
@@ -1183,8 +1210,7 @@ async function doReview(){
       '<div style="margin-top:16px;padding:12px;background:rgba(79,114,196,.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">'+d.recommendation+'</div>' +
     '</div>';
     // Auto-save to vault
-    docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
-    saveDocs();
+    addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
     incrementUsage(); // count this review toward the plan limit
   }catch(e){
     clearInterval(rvTimer);
@@ -1193,8 +1219,7 @@ async function doReview(){
     var esc=(raw||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     if(esc.trim()){
       document.getElementById('rv-res').innerHTML='<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Analysis</div><div style="font-size:12px;color:var(--muted);line-height:1.7;white-space:pre-wrap">'+esc+'</div></div>';
-      docs.unshift({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:raw});
-      saveDocs();
+      addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:raw});
     } else {
       document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">The review could not be completed. Please try again. [build r3]</div></div>';
     }
@@ -1305,8 +1330,7 @@ async function doR(){
       a=stripFollowups(a);
       chatMsgs.push({role:'assistant',content:a,followups:followups});
       // Auto-save to vault (without the followups line)
-      docs.unshift({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
-      saveDocs();
+      addDoc({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
     } else {
       chatMsgs.push({role:'assistant',content:'The research service is temporarily unavailable. Please try again in a moment.'});
     }
@@ -1379,7 +1403,7 @@ function dlDocModal(){
   a.click();
 }
 function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return d.name.toLowerCase().includes(q)||d.type.toLowerCase().includes(q);}));}
-function delDoc(i){if(confirm('Delete this document?')){docs.splice(i,1);saveDocs();go('history');}}
+function delDoc(i){if(confirm('Delete this document?')){var d=docs[i];docs.splice(i,1);var el=document.getElementById('doc-cnt');if(el)el.textContent=docs.length;if(d&&d.id){try{_sb.from('documents').delete().eq('id',d.id).then(function(){});}catch(e){}}go('history');}}
 
 // ══════════════════════════════════════════════
 //  SETTINGS VIEW
@@ -1544,6 +1568,7 @@ function showWelcomeBanner(type){
 //  BOOT
 // ══════════════════════════════════════════════
 go('dash');
+loadDocsFromServer();
 
 setTimeout(function(){
   var wType = localStorage.getItem('dave_welcome');
