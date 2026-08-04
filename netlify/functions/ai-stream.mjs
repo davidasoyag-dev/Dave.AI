@@ -2,6 +2,23 @@
 // Pipes Anthropic's server-sent events straight back to the browser so
 // document drafts appear word-by-word with no single-shot timeout.
 
+// ── Auth: only logged-in Dave.AI users may call this endpoint ──
+const SUPABASE_URL = 'https://wyribnzwosqzfnhomhig.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cmlibnp3b3NxemZuaG9taGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzUyNTAsImV4cCI6MjA5NDcxMTI1MH0.obrpUEG6mRHdugLeznOrFcC6GalW7wJvgAzhaBSneWo';
+async function verifyUser(req){
+  const auth = req.headers.get('authorization') || '';
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
+  if(!token) return null;
+  try {
+    const r = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_ANON }
+    });
+    if(!r.ok) return null;
+    const u = await r.json();
+    return (u && u.id) ? u : null;
+  } catch(e){ return null; }
+}
+
 // Live UK-law web search via Brave (best-effort; returns '' on any failure)
 async function braveSearch(query){
   const key = process.env.BRAVE_SEARCH_KEY;
@@ -25,7 +42,7 @@ async function braveSearch(query){
 export default async (req) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
@@ -35,6 +52,14 @@ export default async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405, headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Require a valid logged-in Dave.AI user
+  const user = await verifyUser(req);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Please sign in to use Dave.AI.' }), {
+      status: 401, headers: { ...cors, 'Content-Type': 'application/json' }
     });
   }
 

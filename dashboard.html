@@ -698,6 +698,14 @@ function updateUsageBadge(){
   }
 }
 
+// Build request headers including the user's Supabase login token (the AI
+// functions require it — anonymous requests are rejected server-side).
+async function _aiHeaders(){
+  var h = { 'Content-Type': 'application/json' };
+  try { var s = await _sb.auth.getSession(); var t = s && s.data && s.data.session ? s.data.session.access_token : ''; if(t) h['Authorization'] = 'Bearer ' + t; } catch(e){}
+  return h;
+}
+
 // ── Claude API helper ──
 // Note: usage limit is checked/counted by the calling feature (Draft & Review
 // count toward the plan limit; Research is unlimited), not here.
@@ -709,7 +717,7 @@ async function callAI(sys, usr, maxTok, webSearch){
       var timeout = setTimeout(function(){ controller.abort(); }, 29000);
       var r = await fetch('/.netlify/functions/ai-proxy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await _aiHeaders(),
         signal: controller.signal,
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
@@ -720,6 +728,7 @@ async function callAI(sys, usr, maxTok, webSearch){
         })
       });
       clearTimeout(timeout);
+      if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
@@ -801,7 +810,7 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
     var timeout = setTimeout(function(){ controller.abort(); }, 45000);
     var r = await fetch('/.netlify/functions/ai-stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _aiHeaders(),
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
@@ -811,6 +820,7 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
         web_search: webSearch || false
       })
     });
+    if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
 
     var reader = r.body.getReader();

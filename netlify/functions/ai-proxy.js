@@ -5,33 +5,52 @@ const BRAVE_KEY = process.env.BRAVE_SEARCH_KEY;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-// Make a GET request and return parsed JSON
+const SUPABASE_HOST = 'wyribnzwosqzfnhomhig.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cmlibnp3b3NxemZuaG9taGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzUyNTAsImV4cCI6MjA5NDcxMTI1MH0.obrpUEG6mRHdugLeznOrFcC6GalW7wJvgAzhaBSneWo';
+
+// Make a GET request and return { status, json }
 function getJson(hostname, path, headers) {
   return new Promise((resolve) => {
     const req = https.request({ hostname, path, method: 'GET', headers }, (res) => {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch (e) { resolve(null); }
+        let json = null;
+        try { json = JSON.parse(data); } catch (e) {}
+        resolve({ status: res.statusCode, json });
       });
     });
-    req.on('error', () => resolve(null));
+    req.on('error', () => resolve({ status: 0, json: null }));
     req.end();
   });
+}
+
+// Verify the caller's Supabase login token; returns the user or null
+async function verifyUser(event) {
+  const h = event.headers || {};
+  const auth = h.authorization || h.Authorization || '';
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return null;
+  const res = await getJson(SUPABASE_HOST, '/auth/v1/user', {
+    'Authorization': 'Bearer ' + token,
+    'apikey': SUPABASE_ANON
+  });
+  return (res && res.status === 200 && res.json && res.json.id) ? res.json : null;
 }
 
 // Search Brave for recent UK law results
 async function braveSearch(query) {
   const path = '/res/v1/web/search?q=' + encodeURIComponent(query + ' UK law legislation 2024 2025') + '&count=5&country=gb&search_lang=en';
-  const result = await getJson('api.search.brave.com', path, {
+  const res = await getJson('api.search.brave.com', path, {
     'Accept': 'application/json',
     'Accept-Encoding': 'gzip',
     'X-Subscription-Token': BRAVE_KEY
   });
+  const result = res && res.json;
 
   if (!result || !result.web || !result.web.results) return '';
 
@@ -69,6 +88,12 @@ function callAnthropic(body) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: cors, body: '' };
+  }
+
+  // Require a valid logged-in Dave.AI user
+  const user = await verifyUser(event);
+  if (!user) {
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Please sign in to use Dave.AI.' }) };
   }
 
   let payload;
