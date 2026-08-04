@@ -519,9 +519,7 @@ var planPrice  = S.planPrice  || '£149/mo';
 var planUsers  = S.planUsers  || 'up to 5 users';
 var planActive = S.planActive || false;
 var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
-var trialEnd   = new Date(trialStart); trialEnd.setDate(trialEnd.getDate() + 14);
-var trialDays  = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
-var trialEndStr= trialEnd.toLocaleDateString('en-GB', {day:'numeric', month:'long'});
+var trialEnd, trialDays = 0, trialEndStr = '';
 // Documents now live in Supabase — per account, server-side, private via Row Level
 // Security. They load asynchronously after the page renders (see loadDocsFromServer).
 var docs = [];
@@ -535,14 +533,16 @@ async function loadDocsFromServer(){
     var res = await _sb.from('documents').select('id,type,name,content,created_at').order('created_at', { ascending: false });
     if(res.error) throw res.error;
     docs = (res.data || []).map(function(r){
-      return { id:r.id, type:r.type, name:r.name, content:r.content, date:new Date(r.created_at).toLocaleDateString('en-GB') };
+      return { id:r.id, type:r.type, name:r.name, content:r.content, created:r.created_at, date:new Date(r.created_at).toLocaleDateString('en-GB') };
     });
     var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
+    updateUsageBadge();
     if(currentView === 'dash' || currentView === 'history') go(currentView);
   } catch(e){ /* leave docs empty if offline / no session */ }
 }
 // Add a document: optimistic local insert, then persist to Supabase
 function addDoc(doc){
+  if(!doc.created) doc.created = new Date().toISOString();
   docs.unshift(doc);
   var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
   (async function(){
@@ -556,23 +556,50 @@ function addDoc(doc){
   })();
 }
 
-// ── Show expired trial overlay if trial has ended ──
-if(!planActive && trialDays === 0){
-  var teoPlans = [
-    {key:'starter', name:'Starter', price:'£49', users:'1 user'},
-    {key:'pro',     name:'Pro',     price:'£149', users:'up to 5 users', popular:true},
-    {key:'firm',    name:'Firm',    price:'£299', users:'unlimited users'}
-  ];
-  document.getElementById('teo-plans').innerHTML = teoPlans.map(function(p){
-    return '<div class="ms-plan'+(p.popular?' popular':'')+'" style="text-align:left">'
-      +(p.popular?'<div class="ms-popular-tag">MOST POPULAR</div>':'')
-      +'<div class="ms-plan-name">'+p.name+'</div>'
-      +'<div class="ms-plan-price">'+p.price+'<sub>/mo</sub></div>'
-      +'<div class="ms-plan-users">'+p.users+'</div>'
-      +'<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\''+p.key+'\')">Activate '+p.name+' →</button>'
-      +'</div>';
-  }).join('');
-  document.getElementById('trial-expired-overlay').style.display = 'flex';
+// ── Recompute trial state and show/hide the expired overlay ──
+function applyTrialState(){
+  trialEnd = new Date(trialStart); trialEnd.setDate(trialEnd.getDate() + 14);
+  trialDays = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
+  trialEndStr = trialEnd.toLocaleDateString('en-GB', {day:'numeric', month:'long'});
+  var ov = document.getElementById('trial-expired-overlay'); if(!ov) return;
+  if(!planActive && trialDays === 0){
+    var teoPlans = [
+      {key:'starter', name:'Starter', price:'£49', users:'1 user'},
+      {key:'pro',     name:'Pro',     price:'£149', users:'up to 5 users', popular:true},
+      {key:'firm',    name:'Firm',    price:'£299', users:'unlimited users'}
+    ];
+    var tp = document.getElementById('teo-plans');
+    if(tp) tp.innerHTML = teoPlans.map(function(p){
+      return '<div class="ms-plan'+(p.popular?' popular':'')+'" style="text-align:left">'
+        +(p.popular?'<div class="ms-popular-tag">MOST POPULAR</div>':'')
+        +'<div class="ms-plan-name">'+p.name+'</div>'
+        +'<div class="ms-plan-price">'+p.price+'<sub>/mo</sub></div>'
+        +'<div class="ms-plan-users">'+p.users+'</div>'
+        +'<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\''+p.key+'\')">Activate '+p.name+' →</button>'
+        +'</div>';
+    }).join('');
+    ov.style.display = 'flex';
+  } else {
+    ov.style.display = 'none';
+  }
+}
+applyTrialState();
+
+// Load plan + trial from the server (authoritative — cannot be reset by clearing the browser)
+async function loadProfile(){
+  try {
+    var res = await _sb.from('profiles').select('plan,plan_active,trial_start').single();
+    if(res.error) throw res.error;
+    var p = res.data; if(!p) return;
+    if(typeof p.plan_active === 'boolean') planActive = p.plan_active;
+    if(p.trial_start) trialStart = new Date(p.trial_start);
+    if(p.plan) plan = p.plan;
+    S.planActive = planActive; S.trialStart = trialStart.toISOString();
+    try { localStorage.setItem('dave_session', JSON.stringify(S)); } catch(e){}
+    applyTrialState();
+    updateUsageBadge();
+    if(currentView === 'dash' || currentView === 'billing') go(currentView);
+  } catch(e){ /* fall back to the cached localStorage values */ }
 }
 
 function saveDocs(){
@@ -621,21 +648,18 @@ function go(v){
   m.scrollTop = 0;
 }
 
-function getUsageKey(){
-  var month = new Date().toISOString().slice(0,7); // 'YYYY-MM'
-  return 'daveai_usage_' + (email || 'anon').toLowerCase() + '_' + month;
-}
-
+// Usage = the number of documents (drafts + reviews) created this month, counted
+// from the server-backed documents list — so it can't be reset by clearing the browser.
 function getUsageCount(){
-  return parseInt(localStorage.getItem(getUsageKey()) || '0', 10);
+  var month = new Date().toISOString().slice(0,7); // 'YYYY-MM'
+  return docs.filter(function(d){
+    return (d.type === 'Draft' || d.type === 'Review') && (d.created || '').slice(0,7) === month;
+  }).length;
 }
 
+// Usage is derived from the documents list, so this just refreshes the badge.
 function incrementUsage(){
-  var key = getUsageKey();
-  var count = getUsageCount() + 1;
-  localStorage.setItem(key, count);
   updateUsageBadge();
-  return count;
 }
 
 function getPlanLimit(){
@@ -1575,6 +1599,7 @@ function showWelcomeBanner(type){
 //  BOOT
 // ══════════════════════════════════════════════
 go('dash');
+loadProfile();
 loadDocsFromServer();
 
 setTimeout(function(){
