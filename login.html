@@ -164,6 +164,13 @@ var _fromPayment = false;
   var qs = window.location.search;
   var params = new URLSearchParams(qs);
 
+  // Session expired — prompt a fresh sign-in
+  if(qs.indexOf('expired=1') !== -1){
+    var cs = document.getElementById('card-sub');
+    if(cs){ cs.textContent = 'Your session expired. Please sign in again to continue.'; cs.style.color = 'rgba(255,200,120,0.8)'; }
+    history.replaceState({}, '', window.location.pathname);
+  }
+
   // Came back from Stripe payment
   if(qs.indexOf('payment=success') !== -1){
     _fromPayment = true;

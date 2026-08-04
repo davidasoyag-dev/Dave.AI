@@ -459,23 +459,30 @@ if(!S.email && !S.plan){
 try {
   _sb.auth.getSession().then(function(res){
     var sbSession = res && res.data && res.data.session;
-    if(sbSession && sbSession.user && !S.email){
-      var meta = sbSession.user.user_metadata || {};
-      S = {
-        email: sbSession.user.email,
-        firstName: meta.firstName || '',
-        lastName: meta.lastName || '',
-        firm: meta.firm || '',
-        plan: meta.plan || 'pro',
-        planName: meta.planName || 'Pro Plan',
-        planPrice: meta.planPrice || '£149/mo',
-        planUsers: meta.planUsers || 'up to 5 users',
-        planActive: meta.planActive || false,
-        trialStart: meta.trialStart || new Date().toISOString()
-      };
-      localStorage.setItem('dave_session', JSON.stringify(S));
+    if(sbSession && sbSession.user){
+      if(!S.email){
+        var meta = sbSession.user.user_metadata || {};
+        S = {
+          email: sbSession.user.email,
+          firstName: meta.firstName || '',
+          lastName: meta.lastName || '',
+          firm: meta.firm || '',
+          plan: meta.plan || 'pro',
+          planName: meta.planName || 'Pro Plan',
+          planPrice: meta.planPrice || '£149/mo',
+          planUsers: meta.planUsers || 'up to 5 users',
+          planActive: meta.planActive || false,
+          trialStart: meta.trialStart || new Date().toISOString()
+        };
+        localStorage.setItem('dave_session', JSON.stringify(S));
+      }
+    } else if(S.email){
+      // The browser still shows a login, but the database session has expired —
+      // documents can't be saved in this state. Send the user to sign in again.
+      localStorage.removeItem('dave_session');
+      window.location.href = 'login.html?expired=1';
     }
-  });
+  }).catch(function(){});
 } catch(e){}
 
 // Handle URL params for welcome state
