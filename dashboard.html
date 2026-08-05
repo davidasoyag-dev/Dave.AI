@@ -706,10 +706,25 @@ async function _aiHeaders(){
   return h;
 }
 
+// Build request headers with the user's login token. Capped at 2.5s so a slow
+// getSession can never hang (and hang) the AI request.
+async function _aiHeaders(){
+  var h = { 'Content-Type': 'application/json' };
+  try {
+    var tok = await Promise.race([
+      _sb.auth.getSession().then(function(s){ return (s && s.data && s.data.session && s.data.session.access_token) || ''; }, function(){ return ''; }),
+      new Promise(function(res){ setTimeout(function(){ res(''); }, 2500); })
+    ]);
+    if(tok) h['Authorization'] = 'Bearer ' + tok;
+  } catch(e){}
+  return h;
+}
+
 // ── Claude API helper ──
 // Note: usage limit is checked/counted by the calling feature (Draft & Review
 // count toward the plan limit; Research is unlimited), not here.
 async function callAI(sys, usr, maxTok, webSearch){
+  var _h = await _aiHeaders();
   var attempts = 2;
   for(var i = 0; i < attempts; i++){
     try {
@@ -717,7 +732,7 @@ async function callAI(sys, usr, maxTok, webSearch){
       var timeout = setTimeout(function(){ controller.abort(); }, 29000);
       var r = await fetch('/.netlify/functions/ai-proxy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _h,
         signal: controller.signal,
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
@@ -728,6 +743,7 @@ async function callAI(sys, usr, maxTok, webSearch){
         })
       });
       clearTimeout(timeout);
+      if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
@@ -805,11 +821,12 @@ function mdToPlain(src){
 // Returns the full text on success, or null on failure (caller can fall back to callAI).
 async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
   try {
+    var _h = await _aiHeaders();
     var controller = new AbortController();
     var timeout = setTimeout(function(){ controller.abort(); }, 45000);
     var r = await fetch('/.netlify/functions/ai-stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: _h,
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
@@ -819,6 +836,7 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
         web_search: webSearch || false
       })
     });
+    if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
 
     var reader = r.body.getReader();

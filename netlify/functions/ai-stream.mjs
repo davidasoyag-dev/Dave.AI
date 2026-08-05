@@ -55,6 +55,14 @@ export default async (req) => {
     });
   }
 
+  // Require a valid logged-in Dave.AI user
+  const user = await verifyUser(req);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Please sign in to use Dave.AI.' }), {
+      status: 401, headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     return new Response(JSON.stringify({ error: 'Server not configured' }), {

@@ -90,6 +90,12 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers: cors, body: '' };
   }
 
+  // Require a valid logged-in Dave.AI user
+  const user = await verifyUser(event);
+  if (!user) {
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Please sign in to use Dave.AI.' }) };
+  }
+
   let payload;
   try {
     payload = JSON.parse(event.body);
