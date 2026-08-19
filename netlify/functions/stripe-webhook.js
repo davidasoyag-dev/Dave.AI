@@ -7,7 +7,8 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 // Verify Stripe webhook signature
 function verifyStripeSignature(payload, sigHeader, secret) {
-  if (!secret || !sigHeader) return true; // skip verification if secret not set yet
+  if (!secret) return true; // skip verification if secret not set yet
+  if (!sigHeader) return false; // secret is configured — a missing header is a forgery attempt, not a pass
   try {
     const parts = sigHeader.split(',').reduce((acc, part) => {
       const [k, v] = part.split('=');
