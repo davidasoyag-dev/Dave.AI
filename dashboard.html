@@ -699,23 +699,17 @@ function updateUsageBadge(){
 }
 
 // Build request headers including the user's Supabase login token (the AI
-// functions require it — anonymous requests are rejected server-side).
-async function _aiHeaders(){
-  var h = { 'Content-Type': 'application/json' };
-  try { var s = await _sb.auth.getSession(); var t = s && s.data && s.data.session ? s.data.session.access_token : ''; if(t) h['Authorization'] = 'Bearer ' + t; } catch(e){}
-  return h;
-}
-
-// Build request headers with the user's login token. Capped at 2.5s so a slow
-// getSession can never hang (and hang) the AI request.
-async function _aiHeaders(){
+// and billing functions require it — anonymous requests are rejected
+// server-side). getSession() reads the cached session and transparently
+// refreshes it if the access token has expired, so this normally resolves
+// fast; forceRefresh forces a real refresh when the server has already
+// told us the cached token was rejected (401).
+async function _aiHeaders(forceRefresh){
   var h = { 'Content-Type': 'application/json' };
   try {
-    var tok = await Promise.race([
-      _sb.auth.getSession().then(function(s){ return (s && s.data && s.data.session && s.data.session.access_token) || ''; }, function(){ return ''; }),
-      new Promise(function(res){ setTimeout(function(){ res(''); }, 2500); })
-    ]);
-    if(tok) h['Authorization'] = 'Bearer ' + tok;
+    var s = forceRefresh ? await _sb.auth.refreshSession() : await _sb.auth.getSession();
+    var t = s && s.data && s.data.session ? s.data.session.access_token : '';
+    if(t) h['Authorization'] = 'Bearer ' + t;
   } catch(e){}
   return h;
 }
@@ -725,7 +719,7 @@ async function _aiHeaders(){
 // count toward the plan limit; Research is unlimited), not here.
 async function callAI(sys, usr, maxTok, webSearch){
   var _h = await _aiHeaders();
-  var attempts = 2;
+  var attempts = 2, refreshedAuth = false;
   for(var i = 0; i < attempts; i++){
     try {
       var controller = new AbortController();
@@ -743,7 +737,17 @@ async function callAI(sys, usr, maxTok, webSearch){
         })
       });
       clearTimeout(timeout);
-      if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
+      if(r.status === 401){
+        // The cached token may just be stale (dave_session/Supabase session
+        // drift) — force a real refresh and retry once before signing out.
+        if(!refreshedAuth){
+          refreshedAuth = true;
+          _h = await _aiHeaders(true);
+          if(_h['Authorization']) continue;
+        }
+        window.location.href = 'login.html?expired=1';
+        return null;
+      }
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
@@ -836,7 +840,10 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
         web_search: webSearch || false
       })
     });
-    if(r.status === 401){ window.location.href = 'login.html?expired=1'; return null; }
+    // A stale cached token can 401 here even for a logged-in user — rather
+    // than sign them out on the fast streaming path, fall back to callAI(),
+    // which refreshes the session and retries before giving up.
+    if(r.status === 401) return null;
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
 
     var reader = r.body.getReader();
@@ -1522,11 +1529,13 @@ async function openBillingPortal(){
   var btn = document.getElementById('portal-btn');
   if(btn){ btn.disabled = true; btn.textContent = 'Opening…'; }
   try {
+    var _h = await _aiHeaders();
     var r = await fetch('/.netlify/functions/create-portal-session', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: S.email })
+      headers: _h,
+      body: JSON.stringify({})
     });
+    if(r.status === 401){ window.location.href = 'login.html?expired=1'; return; }
     var d = await r.json();
     if(d.url){
       window.location.href = d.url;
