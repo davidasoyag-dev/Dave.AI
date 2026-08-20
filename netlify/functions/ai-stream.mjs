@@ -4,7 +4,7 @@
 
 // ── Auth: only logged-in Dave.AI users may call this endpoint ──
 const SUPABASE_URL = 'https://wyribnzwosqzfnhomhig.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cmlibnp3b3NxemZuaG9taGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzUyNTAsImV4cCI6MjA5NDcxMTI1MH0.obrpUEG6mRHdugLeznOrFcC6GalW7wJvgAzhaBSneWo';
+const SUPABASE_ANON = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
 async function verifyUser(req){
   const auth = req.headers.get('authorization') || '';
   const token = auth.replace(/^Bearer\s+/i, '').trim();
@@ -52,6 +52,14 @@ export default async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405, headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Require a valid logged-in Dave.AI user
+  const user = await verifyUser(req);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Please sign in to use Dave.AI.' }), {
+      status: 401, headers: { ...cors, 'Content-Type': 'application/json' }
     });
   }
 
