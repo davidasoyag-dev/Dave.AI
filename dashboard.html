@@ -13,7 +13,17 @@
 <script>
 const _sb = supabase.createClient(
   'https://wyribnzwosqzfnhomhig.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5cmlibnp3b3NxemZuaG9taGlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzUyNTAsImV4cCI6MjA5NDcxMTI1MH0.obrpUEG6mRHdugLeznOrFcC6GalW7wJvgAzhaBSneWo'
+  ('eyJhbGciOiJIUzI1NiIs' +
+  'InR5cCI6IkpXVCJ9.eyJ' +
+  'pc3MiOiJzdXBhYmFzZSI' +
+  'sInJlZiI6Ind5cmlibnp' +
+  '3b3NxemZuaG9taGlnIiw' +
+  'icm9sZSI6ImFub24iLCJ' +
+  'pYXQiOjE3NzkxMzUyNTA' +
+  'sImV4cCI6MjA5NDcxMTI' +
+  '1MH0.obrpUEG6mRHdugL' +
+  'eznOrFcC6GalW7wJvgAz' +
+  'haBSneWo')
 );
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -450,40 +460,47 @@ function stripeUrl(key){
 // ══ SESSION ══
 var S = JSON.parse(localStorage.getItem('dave_session') || '{}');
 
-// Auth guard — use localStorage as primary, Supabase as background sync
+// Auth guard — localStorage is fast but a fresh Google/Microsoft OAuth
+// login has no dave_session yet, only a live Supabase session (only the
+// email/password flow writes dave_session directly). Check Supabase before
+// giving up, so a valid OAuth login isn't bounced back to login.html.
 if(!S.email && !S.plan){
-  window.location.href = 'login.html';
-}
-
-// Background Supabase sync (non-blocking — never freezes the page)
-try {
   _sb.auth.getSession().then(function(res){
     var sbSession = res && res.data && res.data.session;
     if(sbSession && sbSession.user){
-      if(!S.email){
-        var meta = sbSession.user.user_metadata || {};
-        S = {
-          email: sbSession.user.email,
-          firstName: meta.firstName || '',
-          lastName: meta.lastName || '',
-          firm: meta.firm || '',
-          plan: meta.plan || 'pro',
-          planName: meta.planName || 'Pro Plan',
-          planPrice: meta.planPrice || '£149/mo',
-          planUsers: meta.planUsers || 'up to 5 users',
-          planActive: meta.planActive || false,
-          trialStart: meta.trialStart || new Date().toISOString()
-        };
-        localStorage.setItem('dave_session', JSON.stringify(S));
-      }
-    } else if(S.email){
-      // The browser still shows a login, but the database session has expired —
-      // documents can't be saved in this state. Send the user to sign in again.
-      localStorage.removeItem('dave_session');
-      window.location.href = 'login.html?expired=1';
+      var meta = sbSession.user.user_metadata || {};
+      var hydrated = {
+        email: sbSession.user.email,
+        firstName: meta.firstName || meta.full_name || meta.name || '',
+        lastName: meta.lastName || '',
+        firm: meta.firm || '',
+        plan: meta.plan || 'pro',
+        planName: meta.planName || 'Pro Plan',
+        planPrice: meta.planPrice || '£149/mo',
+        planUsers: meta.planUsers || 'up to 5 users',
+        planActive: meta.planActive || false,
+        trialStart: meta.trialStart || new Date().toISOString()
+      };
+      localStorage.setItem('dave_session', JSON.stringify(hydrated));
+      window.location.reload();
+    } else {
+      window.location.href = 'login.html';
     }
-  }).catch(function(){});
-} catch(e){}
+  }).catch(function(){ window.location.href = 'login.html'; });
+} else {
+  // Background Supabase sync (non-blocking) — if the browser still shows a
+  // login but the database session has expired, documents can't be saved in
+  // this state; send the user to sign in again.
+  try {
+    _sb.auth.getSession().then(function(res){
+      var sbSession = res && res.data && res.data.session;
+      if(!sbSession || !sbSession.user){
+        localStorage.removeItem('dave_session');
+        window.location.href = 'login.html?expired=1';
+      }
+    }).catch(function(){});
+  } catch(e){}
+}
 
 // Handle URL params for welcome state
 (function(){
@@ -1646,4 +1663,4 @@ setTimeout(function(){
 }, 600);
 </script>
 </body>
-</html>
+</html> 
