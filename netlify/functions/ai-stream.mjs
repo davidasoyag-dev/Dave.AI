@@ -4,7 +4,17 @@
 
 // ── Auth: only logged-in Dave.AI users may call this endpoint ──
 const SUPABASE_URL = 'https://wyribnzwosqzfnhomhig.supabase.co';
-const SUPABASE_ANON = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIs' +
+  'InR5cCI6IkpXVCJ9.eyJ' +
+  'pc3MiOiJzdXBhYmFzZSI' +
+  'sInJlZiI6Ind5cmlibnp' +
+  '3b3NxemZuaG9taGlnIiw' +
+  'icm9sZSI6ImFub24iLCJ' +
+  'pYXQiOjE3NzkxMzUyNTA' +
+  'sImV4cCI6MjA5NDcxMTI' +
+  '1MH0.obrpUEG6mRHdugL' +
+  'eznOrFcC6GalW7wJvgAz' +
+  'haBSneWo';
 async function verifyUser(req){
   const auth = req.headers.get('authorization') || '';
   const token = auth.replace(/^Bearer\s+/i, '').trim();

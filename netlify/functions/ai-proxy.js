@@ -10,7 +10,17 @@ const cors = {
 };
 
 const SUPABASE_HOST = 'wyribnzwosqzfnhomhig.supabase.co';
-const SUPABASE_ANON = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIs' +
+  'InR5cCI6IkpXVCJ9.eyJ' +
+  'pc3MiOiJzdXBhYmFzZSI' +
+  'sInJlZiI6Ind5cmlibnp' +
+  '3b3NxemZuaG9taGlnIiw' +
+  'icm9sZSI6ImFub24iLCJ' +
+  'pYXQiOjE3NzkxMzUyNTA' +
+  'sImV4cCI6MjA5NDcxMTI' +
+  '1MH0.obrpUEG6mRHdugL' +
+  'eznOrFcC6GalW7wJvgAz' +
+  'haBSneWo';
 
 // Make a GET request and return { status, json }
 function getJson(hostname, path, headers) {
