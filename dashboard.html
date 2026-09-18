@@ -7,9 +7,9 @@
 <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/mammoth.browser.min.js"></script>
 <script>
 const _sb = supabase.createClient(
   'https://wyribnzwosqzfnhomhig.supabase.co',
@@ -1203,7 +1203,7 @@ function extractFileText(file){
         fr.onload = function(e){
           try {
             if(!window.pdfjsLib){ reject(new Error('PDF reader not loaded')); return; }
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
             pdfjsLib.getDocument({ data: e.target.result }).promise.then(function(pdf){
               var pages = [], i;
               var getPage = function(n){

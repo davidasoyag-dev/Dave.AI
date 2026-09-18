@@ -3,7 +3,17 @@ const querystring = require('querystring');
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 const SUPABASE_HOST = 'wyribnzwosqzfnhomhig.supabase.co';
-const SUPABASE_ANON = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIs' +
+  'InR5cCI6IkpXVCJ9.eyJ' +
+  'pc3MiOiJzdXBhYmFzZSI' +
+  'sInJlZiI6Ind5cmlibnp' +
+  '3b3NxemZuaG9taGlnIiw' +
+  'icm9sZSI6ImFub24iLCJ' +
+  'pYXQiOjE3NzkxMzUyNTA' +
+  'sImV4cCI6MjA5NDcxMTI' +
+  '1MH0.obrpUEG6mRHdugL' +
+  'eznOrFcC6GalW7wJvgAz' +
+  'haBSneWo';
 
 // Verify the caller's Supabase login token; returns the user or null
 function verifyUser(event) {

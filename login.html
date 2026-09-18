@@ -149,12 +149,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
     <button class="btn" id="btn" onclick="doLogin()">Sign in to Dave.AI →</button>
 
     <div class="card-links">
-      <a href="Dave_AI_Landing.html#signup" onclick="event.preventDefault();window.location.href='Dave_AI_Landing.html'">Create account</a>
+      <a href="index.html#signup" onclick="event.preventDefault();window.location.href='index.html'">Create account</a>
       <a onclick="showForgot()">Forgot password?</a>
     </div>
   </div>
 
-  <a class="back-link" href="Dave_AI_Landing.html">
+  <a class="back-link" href="index.html">
     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     Back to Dave.AI home
   </a>
@@ -165,7 +165,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="vendor/supabase.js"></script>
 <script>
 const _sb = supabase.createClient(
   'https://wyribnzwosqzfnhomhig.supabase.co',
