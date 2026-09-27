@@ -1,106 +1,107 @@
-const https = require('https');
+-- ============================================================
+--  Dave.AI — backend schema (Step 1)
+--  Run this in Supabase → SQL Editor → New query → Run.
+--  Safe to run more than once.
+-- ============================================================
 
-const SUPABASE_HOST = 'wyribnzwosqzfnhomhig.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIs' +
-  'InR5cCI6IkpXVCJ9.eyJ' +
-  'pc3MiOiJzdXBhYmFzZSI' +
-  'sInJlZiI6Ind5cmlibnp' +
-  '3b3NxemZuaG9taGlnIiw' +
-  'icm9sZSI6ImFub24iLCJ' +
-  'pYXQiOjE3NzkxMzUyNTA' +
-  'sImV4cCI6MjA5NDcxMTI' +
-  '1MH0.obrpUEG6mRHdugL' +
-  'eznOrFcC6GalW7wJvgAz' +
-  'haBSneWo';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+-- 1) PROFILES: one row per user (plan, trial, name, firm)
+create table if not exists public.profiles (
+  id           uuid primary key references auth.users(id) on delete cascade,
+  email        text,
+  first_name   text,
+  last_name    text,
+  firm         text,
+  plan         text        default 'trial',
+  plan_active  boolean     default false,
+  trial_start  timestamptz default now(),
+  created_at   timestamptz default now()
+);
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
+-- 2) DOCUMENTS: every draft / review / research, tied to its owner
+create table if not exists public.documents (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  type        text not null,          -- 'Draft' | 'Review' | 'Research'
+  name        text not null,
+  content     text,
+  created_at  timestamptz default now()
+);
+create index if not exists documents_user_id_idx    on public.documents(user_id);
+create index if not exists documents_created_at_idx on public.documents(created_at);
 
-function request(method, hostname, path, headers, body) {
-  return new Promise((resolve) => {
-    const req = https.request({ hostname, path, method, headers }, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        let json = null;
-        try { json = JSON.parse(data); } catch (e) {}
-        resolve({ status: res.statusCode, json });
-      });
-    });
-    req.on('error', () => resolve({ status: 0, json: null }));
-    if (body) req.write(body);
-    req.end();
-  });
-}
+-- 3) ROW LEVEL SECURITY — the key part: users can only touch their own rows
+alter table public.profiles  enable row level security;
+alter table public.documents enable row level security;
 
-// Verify the caller's Supabase login token; returns the user or null
-async function verifyUser(event) {
-  const h = event.headers || {};
-  const auth = h.authorization || h.Authorization || '';
-  const token = auth.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return null;
-  const res = await request('GET', SUPABASE_HOST, '/auth/v1/user', {
-    'Authorization': 'Bearer ' + token,
-    'apikey': SUPABASE_ANON
-  });
-  return (res && res.status === 200 && res.json && res.json.id) ? res.json : null;
-}
+drop policy if exists profiles_select_own on public.profiles;
+drop policy if exists profiles_insert_own on public.profiles;
+drop policy if exists profiles_update_own on public.profiles;
+create policy profiles_select_own on public.profiles for select using (auth.uid() = id);
+create policy profiles_insert_own on public.profiles for insert with check (auth.uid() = id);
+create policy profiles_update_own on public.profiles for update using (auth.uid() = id);
 
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: cors, body: '' };
-  }
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: cors, body: 'Method Not Allowed' };
-  }
-  if (!SERVICE_ROLE_KEY) {
-    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'Server not configured for invites yet.' }) };
-  }
+drop policy if exists documents_select_own on public.documents;
+drop policy if exists documents_insert_own on public.documents;
+drop policy if exists documents_update_own on public.documents;
+drop policy if exists documents_delete_own on public.documents;
+create policy documents_select_own on public.documents for select using (auth.uid() = user_id);
+create policy documents_insert_own on public.documents for insert with check (auth.uid() = user_id);
+create policy documents_update_own on public.documents for update using (auth.uid() = user_id);
+create policy documents_delete_own on public.documents for delete using (auth.uid() = user_id);
 
-  // Require a valid logged-in Dave.AI user — only a real, signed-in user can invite someone
-  const user = await verifyUser(event);
-  if (!user) {
-    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Please sign in to invite a team member.' }) };
-  }
+-- 4) AUTO-CREATE a profile whenever a new user signs up (pulls signup metadata)
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, first_name, last_name, firm, plan, plan_active, trial_start)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'firstName',
+    new.raw_user_meta_data->>'lastName',
+    new.raw_user_meta_data->>'firm',
+    coalesce(new.raw_user_meta_data->>'plan', 'trial'),
+    coalesce((new.raw_user_meta_data->>'planActive')::boolean, false),
+    coalesce((new.raw_user_meta_data->>'trialStart')::timestamptz, now())
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
 
-  let payload;
-  try {
-    payload = JSON.parse(event.body);
-  } catch (e) {
-    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Invalid request.' }) };
-  }
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
-  const invitedEmail = (payload.email || '').trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invitedEmail)) {
-    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Please enter a valid email address.' }) };
-  }
+-- 5) BACKFILL profiles for anyone who already signed up before this ran
+insert into public.profiles (id, email, first_name, last_name, firm, plan, plan_active, trial_start)
+select u.id, u.email,
+       u.raw_user_meta_data->>'firstName',
+       u.raw_user_meta_data->>'lastName',
+       u.raw_user_meta_data->>'firm',
+       coalesce(u.raw_user_meta_data->>'plan', 'trial'),
+       coalesce((u.raw_user_meta_data->>'planActive')::boolean, false),
+       coalesce((u.raw_user_meta_data->>'trialStart')::timestamptz, now())
+from auth.users u
+on conflict (id) do nothing;
 
-  const origin = (event.headers.origin || 'https://daveai.law').replace(/\/$/, '');
-  const body = JSON.stringify({
-    email: invitedEmail,
-    data: { invited_by_email: user.email, invited_by_firm: (user.user_metadata && user.user_metadata.firm) || '' },
-    redirect_to: origin + '/login.html'
-  });
+-- 6) TEAM INVITES: tracks who a user has invited to join their Dave.AI team
+create table if not exists public.team_invites (
+  id            uuid primary key default gen_random_uuid(),
+  inviter_id    uuid not null references auth.users(id) on delete cascade,
+  invited_email text not null,
+  status        text default 'pending',
+  created_at    timestamptz default now()
+);
+create index if not exists team_invites_inviter_id_idx on public.team_invites(inviter_id);
 
-  const res = await request('POST', SUPABASE_HOST, '/auth/v1/invite', {
-    'Content-Type': 'application/json',
-    'apikey': SERVICE_ROLE_KEY,
-    'Authorization': 'Bearer ' + SERVICE_ROLE_KEY,
-    'Content-Length': Buffer.byteLength(body)
-  }, body);
+alter table public.team_invites enable row level security;
 
-  if (res.status === 200 || res.status === 201) {
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ ok: true }) };
-  }
-
-  // Supabase returns 422 when the email is already registered/invited
-  const msg = (res.json && (res.json.msg || res.json.message)) || '';
-  const friendly = /already|exists|registered/i.test(msg)
-    ? 'That email is already registered with Dave.AI.'
-    : 'Could not send the invite. Please try again.';
-  return { statusCode: res.status >= 400 ? res.status : 500, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: friendly }) };
-};
+drop policy if exists team_invites_select_own on public.team_invites;
+drop policy if exists team_invites_insert_own on public.team_invites;
+create policy team_invites_select_own on public.team_invites for select using (auth.uid() = inviter_id);
+create policy team_invites_insert_own on public.team_invites for insert with check (auth.uid() = inviter_id);
