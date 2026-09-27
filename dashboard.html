@@ -187,6 +187,8 @@ select.inp{cursor:pointer;}
 @media(max-width:860px){.rs-side{display:none;}}
 .chat-inp{flex:1;padding:11px 14px;background:#f8faff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .2s;}
 .chat-inp:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(79,114,196,0.08);}
+.mic-btn.mic-on{background:rgba(224,90,80,.12);color:#e05a50;border-color:rgba(224,90,80,.4);animation:micPulse 1.2s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{opacity:1}50%{opacity:.5}}
 
 /* ── Doc rows ── */
 .doc-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
@@ -715,6 +717,39 @@ function updateUsageBadge(){
   }
 }
 
+// ── Voice input (Web Speech API) ──
+// Lets the user dictate a question instead of typing it. Only rendered when
+// the browser actually supports it (Chrome/Edge/Safari; no Firefox support),
+// so unsupported browsers simply never see the mic button.
+var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+var _voiceRec = null;
+function micBtn(inputId, btnId){
+  if(!SpeechRec) return '';
+  return '<button type="button" class="btn btn-g mic-btn" id="'+btnId+'" title="Speak your question" onclick="toggleVoice(\''+inputId+'\',\''+btnId+'\')">' +
+    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>';
+}
+function toggleVoice(inputId, btnId){
+  var btn = document.getElementById(btnId);
+  if(_voiceRec){ _voiceRec.stop(); return; } // onend below cleans up state
+  var input = document.getElementById(inputId);
+  if(!input || !SpeechRec) return;
+  var base = input.value ? input.value.replace(/\s+$/,'') + ' ' : '';
+  var rec = new SpeechRec();
+  rec.lang = 'en-GB';
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.onresult = function(e){
+    var text = '';
+    for(var i = 0; i < e.results.length; i++){ text += e.results[i][0].transcript; }
+    input.value = base + text;
+  };
+  rec.onerror = function(){ /* mic denied / no speech detected — fail quietly, onend still fires */ };
+  rec.onend = function(){ _voiceRec = null; if(btn) btn.classList.remove('mic-on'); };
+  rec.start();
+  _voiceRec = rec;
+  if(btn) btn.classList.add('mic-on');
+}
+
 // Build request headers including the user's Supabase login token (the AI
 // and billing functions require it — anonymous requests are rejected
 // server-side). getSession() reads the cached session and transparently
@@ -1085,7 +1120,7 @@ function vDocChat(){
     (loaded
       ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
         '<div class="chat-msgs" id="dcmsgs" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
-        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/><button class="btn btn-p" onclick="doDocChat()" id="dcbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
+        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
       : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="dc-upload"><div class="upload-zone" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
@@ -1326,7 +1361,7 @@ function vResearch(){
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/><button class="btn btn-p" onclick="doR()" id="rbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Referencing real UK statutes and case law · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Referencing real UK statutes and case law · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
