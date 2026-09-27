@@ -662,7 +662,7 @@ function go(v){
   else if(v==='compare')  { m.innerHTML = vCompare(); }
   else if(v==='tools')    { m.innerHTML = vTools(); }
   else if(v==='history')  { m.innerHTML = vHistory(); }
-  else if(v==='settings') { m.innerHTML = vSettings(); }
+  else if(v==='settings') { m.innerHTML = vSettings(); loadTeamInvites(); }
   else if(v==='billing')  { m.innerHTML = vBilling(); }
   m.scrollTop = 0;
 }
@@ -1533,16 +1533,16 @@ function vSettings(){
           '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Account details</div>' +
           '<div class="field"><label>First name</label><input class="inp" id="s-first" value="'+firstName+'"/></div>' +
           '<div class="field"><label>Last name</label><input class="inp" id="s-last" value="'+lastName+'"/></div>' +
-          '<div class="field"><label>Work email</label><input class="inp" type="email" value="'+email+'"/></div>' +
-          '<div class="field"><label>Firm / organisation</label><input class="inp" value="'+(firm||'')+'"/></div>' +
-          '<button class="btn btn-p" onclick="alert(\'Changes saved!\')">Save changes</button>' +
+          '<div class="field"><label>Work email</label><input class="inp" type="email" value="'+email+'" disabled/></div>' +
+          '<div class="field"><label>Firm / organisation</label><input class="inp" id="s-firm" value="'+(firm||'')+'"/></div>' +
+          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-p" id="s-account-btn" onclick="saveAccountSettings()">Save changes</button><span style="font-size:12px;color:var(--muted)" id="s-account-status"></span></div>' +
         '</div>' +
         '<div class="card">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Security</div>' +
           '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Update your password</div>' +
-          '<div class="field"><label>Current password</label><input class="inp" type="password" placeholder="••••••••"/></div>' +
-          '<div class="field"><label>New password</label><input class="inp" type="password" placeholder="••••••••"/></div>' +
-          '<button class="btn btn-g" onclick="alert(\'Password updated!\')">Update password</button>' +
+          '<div class="field"><label>Current password</label><input class="inp" type="password" id="s-curpass" placeholder="••••••••"/></div>' +
+          '<div class="field"><label>New password</label><input class="inp" type="password" id="s-newpass" placeholder="••••••••"/></div>' +
+          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" id="s-pass-btn" onclick="updatePassword()">Update password</button><span style="font-size:12px;color:var(--muted)" id="s-pass-status"></span></div>' +
         '</div>' +
       '</div>' +
       '<div>' +
@@ -1555,7 +1555,9 @@ function vSettings(){
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Team members</div>' +
           '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Your '+planName+' supports '+planUsers+'</div>' +
           '<div class="doc-row" style="cursor:default"><div class="doc-icon" style="background:linear-gradient(135deg,#3558a8,#4f72c4)"><span style="font-size:11px;font-weight:700;color:#fff">'+initials+'</span></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+fullName+'</div><div style="font-size:11px;color:var(--muted)">'+(email||'—')+' · Admin</div></div><span class="tag tag-b">Admin</span></div>' +
-          '<button class="btn btn-g" style="width:100%;margin-top:12px" onclick="alert(\'Invite sent!\')">+ Invite team member</button>' +
+          '<div id="team-invites-list"></div>' +
+          '<div class="field" style="margin-top:12px;margin-bottom:8px"><input class="inp" type="email" id="s-invite-email" placeholder="colleague@yourfirm.co.uk"/></div>' +
+          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" style="flex-shrink:0" id="s-invite-btn" onclick="inviteTeamMember()">+ Invite team member</button><span style="font-size:12px;color:var(--muted)" id="s-invite-status"></span></div>' +
         '</div>' +
         '<div class="card">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--red)">Danger zone</div>' +
@@ -1565,6 +1567,101 @@ function vSettings(){
       '</div>' +
     '</div>' +
   '</div>';
+}
+async function saveAccountSettings(){
+  var btn = document.getElementById('s-account-btn');
+  var statusEl = document.getElementById('s-account-status');
+  var fEl = document.getElementById('s-first'), lEl = document.getElementById('s-last'), firmEl = document.getElementById('s-firm');
+  var newFirst = fEl ? fEl.value.trim() : firstName;
+  var newLast = lEl ? lEl.value.trim() : lastName;
+  var newFirm = firmEl ? firmEl.value.trim() : firm;
+  if(!newFirst){ if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = 'First name is required.'; } return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+  if(statusEl){ statusEl.textContent = ''; }
+  try {
+    var u = (await _sb.auth.getUser()).data.user;
+    if(!u) throw new Error('Not signed in');
+    var upd = await _sb.auth.updateUser({ data: { firstName: newFirst, lastName: newLast, firm: newFirm } });
+    if(upd.error) throw upd.error;
+    await _sb.from('profiles').update({ first_name: newFirst, last_name: newLast, firm: newFirm }).eq('id', u.id);
+    firstName = newFirst; lastName = newLast; firm = newFirm;
+    fullName = (firstName + ' ' + lastName).trim();
+    initials = ((firstName[0]||'D') + (lastName[0]||'A')).toUpperCase();
+    S.firstName = firstName; S.lastName = lastName; S.firm = firm;
+    localStorage.setItem('dave_session', JSON.stringify(S));
+    var tbAv = document.getElementById('tb-av'); if(tbAv) tbAv.textContent = initials;
+    var sbAv = document.getElementById('sb-av'); if(sbAv) sbAv.textContent = initials;
+    var sbName = document.getElementById('sb-name'); if(sbName) sbName.textContent = fullName;
+    if(statusEl){ statusEl.style.color = '#3cb464'; statusEl.textContent = 'Saved ✓'; }
+  } catch(e){
+    if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Could not save — please try again.'; }
+  }
+  if(btn){ btn.disabled = false; btn.textContent = 'Save changes'; }
+  setTimeout(function(){ if(statusEl) statusEl.textContent = ''; }, 3000);
+}
+async function updatePassword(){
+  var btn = document.getElementById('s-pass-btn');
+  var statusEl = document.getElementById('s-pass-status');
+  var curEl = document.getElementById('s-curpass'), newEl = document.getElementById('s-newpass');
+  var cur = curEl ? curEl.value : '', next = newEl ? newEl.value : '';
+  if(!cur || !next){ if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Enter your current and new password.'; } return; }
+  if(next.length < 8){ if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = 'New password must be at least 8 characters.'; } return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Updating…'; }
+  if(statusEl){ statusEl.textContent = ''; }
+  try {
+    // Re-verify identity with the current password before changing it
+    var check = await _sb.auth.signInWithPassword({ email: email, password: cur });
+    if(check.error) throw new Error('wrong-current');
+    var upd = await _sb.auth.updateUser({ password: next });
+    if(upd.error) throw upd.error;
+    if(curEl) curEl.value = ''; if(newEl) newEl.value = '';
+    if(statusEl){ statusEl.style.color = '#3cb464'; statusEl.textContent = 'Password updated ✓'; }
+  } catch(e){
+    var msg = (e && e.message === 'wrong-current') ? 'Current password is incorrect.' : 'Could not update password — please try again.';
+    if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = msg; }
+  }
+  if(btn){ btn.disabled = false; btn.textContent = 'Update password'; }
+}
+async function loadTeamInvites(){
+  var list = document.getElementById('team-invites-list');
+  if(!list) return;
+  try {
+    var u = (await _sb.auth.getUser()).data.user;
+    if(!u) return;
+    var res = await _sb.from('team_invites').select('invited_email,status,created_at').eq('inviter_id', u.id).order('created_at', { ascending: false });
+    var rows = (res && res.data) || [];
+    list.innerHTML = rows.map(function(r){
+      return '<div class="doc-row" style="cursor:default"><div class="doc-icon" style="background:var(--card2)"><span style="font-size:11px;font-weight:700;color:var(--muted)">'+(r.invited_email[0]||'?').toUpperCase()+'</span></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+escHtml(r.invited_email)+'</div><div style="font-size:11px;color:var(--muted)">Invited '+new Date(r.created_at).toLocaleDateString('en-GB')+'</div></div><span class="tag tag-a">Pending</span></div>';
+    }).join('');
+  } catch(e){}
+}
+async function inviteTeamMember(){
+  var btn = document.getElementById('s-invite-btn');
+  var statusEl = document.getElementById('s-invite-status');
+  var emailEl = document.getElementById('s-invite-email');
+  var invitedEmail = emailEl ? emailEl.value.trim() : '';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invitedEmail)){
+    if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Enter a valid email address.'; }
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+  if(statusEl){ statusEl.textContent = ''; }
+  try {
+    var _h = await _aiHeaders();
+    var r = await fetch('/.netlify/functions/invite-team-member', {
+      method: 'POST', headers: _h, body: JSON.stringify({ email: invitedEmail })
+    });
+    var d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Could not send the invite.');
+    var u = (await _sb.auth.getUser()).data.user;
+    if(u){ await _sb.from('team_invites').insert({ inviter_id: u.id, invited_email: invitedEmail }); }
+    if(emailEl) emailEl.value = '';
+    if(statusEl){ statusEl.style.color = '#3cb464'; statusEl.textContent = 'Invite sent ✓'; }
+    loadTeamInvites();
+  } catch(e){
+    if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = e.message || 'Could not send the invite.'; }
+  }
+  if(btn){ btn.disabled = false; btn.textContent = '+ Invite team member'; }
 }
 async function signOut(){
   if(confirm('Sign out of Dave.AI?')){
@@ -1648,7 +1745,7 @@ function vBilling(){
     '</div>' +
     '<div class="card" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;background:rgba(79,114,196,.04)">' +
       '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Enterprise</div><div style="font-size:12px;color:var(--muted)">10+ users · Custom SLA · White-labelling · API access · On-premise option</div></div>' +
-      '<button class="btn btn-g" style="white-space:nowrap;flex-shrink:0" onclick="alert(\'Contact support@daveai.law for Enterprise pricing.\')">Contact us →</button>' +
+      '<button class="btn btn-g" style="white-space:nowrap;flex-shrink:0" onclick="window.location.href=\'mailto:support@daveai.law?subject=' + encodeURIComponent('Enterprise enquiry') + '\'">Contact us →</button>' +
     '</div>' +
     '<div class="card">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Billing history</div>' +

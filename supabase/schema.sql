@@ -88,3 +88,20 @@ select u.id, u.email,
        coalesce((u.raw_user_meta_data->>'trialStart')::timestamptz, now())
 from auth.users u
 on conflict (id) do nothing;
+
+-- 6) TEAM INVITES: tracks who a user has invited to join their Dave.AI team
+create table if not exists public.team_invites (
+  id            uuid primary key default gen_random_uuid(),
+  inviter_id    uuid not null references auth.users(id) on delete cascade,
+  invited_email text not null,
+  status        text default 'pending',
+  created_at    timestamptz default now()
+);
+create index if not exists team_invites_inviter_id_idx on public.team_invites(inviter_id);
+
+alter table public.team_invites enable row level security;
+
+drop policy if exists team_invites_select_own on public.team_invites;
+drop policy if exists team_invites_insert_own on public.team_invites;
+create policy team_invites_select_own on public.team_invites for select using (auth.uid() = inviter_id);
+create policy team_invites_insert_own on public.team_invites for insert with check (auth.uid() = inviter_id);
