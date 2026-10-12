@@ -129,7 +129,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="signin-card">
     <h1 class="card-title">Sign in to Dave.AI</h1>
     <p class="card-sub" id="card-sub">Enter your email and password to continue.</p>
 
@@ -160,6 +160,25 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
     </div>
   </div>
 
+  <div class="card" id="setpw-card" style="display:none">
+    <h1 class="card-title" id="setpw-title">Set a new password</h1>
+    <p class="card-sub" id="setpw-sub">Choose a new password for your Dave.AI account. It must be at least 8 characters.</p>
+
+    <div class="field">
+      <label for="np1">New password</label>
+      <input type="password" class="inp" id="np1" placeholder="At least 8 characters" autocomplete="new-password" minlength="8"/>
+    </div>
+    <div class="field">
+      <label for="np2">Confirm new password</label>
+      <input type="password" class="inp" id="np2" placeholder="Type it again" autocomplete="new-password" minlength="8"
+             onkeydown="if(event.key==='Enter') doSetPassword()"/>
+    </div>
+
+    <div class="err-box" id="setpw-err" role="alert"></div>
+
+    <button class="btn" id="setpw-btn" onclick="doSetPassword()">Save password and continue →</button>
+  </div>
+
   <a class="back-link" href="index.html">
     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     Back to Dave.AI home
@@ -173,6 +192,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
 
 <script src="vendor/supabase.js"></script>
 <script>
+// Read the auth link details before the Supabase client consumes the URL hash
+var _authHash = window.location.hash || '';
 const _sb = supabase.createClient(
   'https://wyribnzwosqzfnhomhig.supabase.co',
   ('eyJhbGciOiJIUzI1NiIs' +
@@ -188,6 +209,52 @@ const _sb = supabase.createClient(
   'haBSneWo')
 );
 var _fromPayment = false;
+var _settingPassword = false;
+
+// Password-reset and team-invite links land here: show "set new password"
+// instead of jumping straight to the dashboard.
+_sb.auth.onAuthStateChange(function(event){
+  if(event === 'PASSWORD_RECOVERY') showSetPassword('recovery');
+});
+
+function showSetPassword(kind){
+  _settingPassword = true;
+  document.getElementById('signin-card').style.display = 'none';
+  document.getElementById('setpw-card').style.display = 'block';
+  if(kind === 'invite'){
+    document.getElementById('setpw-title').textContent = 'Welcome to Dave.AI';
+    document.getElementById('setpw-sub').textContent = 'You have been invited to join your team. Choose a password for your account. It must be at least 8 characters.';
+  }
+  var f = document.getElementById('np1'); if(f) f.focus();
+}
+
+async function doSetPassword(){
+  var p1 = document.getElementById('np1');
+  var p2 = document.getElementById('np2');
+  var errBox = document.getElementById('setpw-err');
+  var btn = document.getElementById('setpw-btn');
+  function fail(msg){ errBox.textContent = msg; errBox.style.display = 'block'; }
+
+  errBox.style.display = 'none';
+  p1.classList.remove('err-field'); p2.classList.remove('err-field');
+
+  if(p1.value.length < 8){ p1.classList.add('err-field'); p1.focus(); return fail('Your password must be at least 8 characters.'); }
+  if(p1.value !== p2.value){ p2.classList.add('err-field'); p2.focus(); return fail('The two passwords do not match.'); }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  var sess = await _sb.auth.getSession();
+  if(!(sess.data && sess.data.session)){
+    btn.disabled = false; btn.textContent = 'Save password and continue →';
+    return fail('This link has expired or was already used. Go back to sign in and use "Forgot password?" to get a new one.');
+  }
+  var res = await _sb.auth.updateUser({ password: p1.value });
+  if(res.error){
+    btn.disabled = false; btn.textContent = 'Save password and continue →';
+    return fail(res.error.message || 'Could not save your password. Please try again.');
+  }
+  window.location.href = 'dashboard.html';
+}
 
 (function init(){
   var qs = window.location.search;
@@ -205,22 +272,24 @@ var _fromPayment = false;
     _fromPayment = true;
     document.getElementById('success-badge').style.display = 'flex';
     document.getElementById('card-sub').textContent = 'Enter your email and password to access your new membership.';
-    // If session data was passed back (via success.html relay)
-    var raw = params.get('session');
-    if(raw){
-      try{
-        var s = JSON.parse(decodeURIComponent(raw));
-        s.planActive = true;
-        localStorage.setItem('dave_session', JSON.stringify(s));
-      }catch(e){}
-    }
+    history.replaceState({}, '', window.location.pathname);
+  }
+
+  // Password-reset / invite link (implicit flow puts type= in the hash)
+  var hp = new URLSearchParams(_authHash.replace(/^#/, ''));
+  var linkType = hp.get('type');
+  if(linkType === 'recovery' || linkType === 'invite'){
+    showSetPassword(linkType);
+  } else if(hp.get('error_code') || hp.get('error_description')){
+    var es = document.getElementById('card-sub');
+    if(es){ es.textContent = 'That link has expired or was already used. Enter your email and use "Forgot password?" to get a new one.'; es.style.color = 'rgba(255,200,120,0.8)'; }
     history.replaceState({}, '', window.location.pathname);
   }
 
   // Returning user with active Supabase session → go straight to dashboard
-  if(!_fromPayment){
+  if(!_fromPayment && !_settingPassword){
     _sb.auth.getSession().then(function(res){
-      if(res.data && res.data.session){
+      if(res.data && res.data.session && !_settingPassword){
         window.location.href = 'dashboard.html';
       }
     });
@@ -263,6 +332,24 @@ async function doLogin(){
   var result = await _sb.auth.signInWithPassword({ email: email, password: pass });
 
   if(result.error){
+    var notConfirmed = result.error.code === 'email_not_confirmed' || /not confirmed/i.test(result.error.message || '');
+    if(notConfirmed){
+      showErr('Please confirm your email first — check your inbox (and spam). ');
+      var errBoxEl = document.getElementById('err-box');
+      var rs = document.createElement('button');
+      rs.type = 'button';
+      rs.textContent = 'Resend confirmation email';
+      rs.style.cssText = 'background:none;border:none;padding:0;color:#7aaaf8;text-decoration:underline;cursor:pointer;font:inherit';
+      rs.onclick = async function(){
+        rs.disabled = true; rs.textContent = 'Sending…';
+        var r = await _sb.auth.resend({ type: 'signup', email: email });
+        showErr(r.error ? 'Could not resend the email. Please try again in a minute.' : 'Confirmation email sent to ' + email + '. Check your inbox (and spam).');
+      };
+      errBoxEl.appendChild(rs);
+      btn.disabled = false;
+      btn.textContent = 'Sign in to Dave.AI →';
+      return;
+    }
     showErr('Incorrect email or password. Please try again.');
     emailEl.classList.add('err-field');
     passEl.classList.add('err-field');

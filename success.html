@@ -106,19 +106,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
 </div>
 
 <script>
-// Relay any session data passed in URL from Stripe
-(function(){
-  var params = new URLSearchParams(window.location.search);
-  var raw = params.get('session');
-  if(raw){
-    try{
-      var s = JSON.parse(decodeURIComponent(raw));
-      s.planActive = true;
-      localStorage.setItem('dave_session', JSON.stringify(s));
-    }catch(e){}
-  }
-})();
-
+// No session data is read from the URL: plan/access comes from the server
+// profile (see dashboard.html loadProfile), never from link parameters.
 var secs = 4;
 var timer = setInterval(function(){
   secs--;
