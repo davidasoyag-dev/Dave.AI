@@ -564,7 +564,8 @@ function addDoc(doc){
   if(!doc.created) doc.created = new Date().toISOString();
   docs.unshift(doc);
   var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
-  (async function(){
+  // Keep the insert promise so delDoc can wait for the id before deleting
+  doc._saving = (async function(){
     try {
       var u = await _sb.auth.getUser();
       var uid = u && u.data && u.data.user ? u.data.user.id : null;
@@ -769,10 +770,22 @@ async function _aiHeaders(forceRefresh){
 // ── Claude API helper ──
 // Note: usage limit is checked/counted by the calling feature (Draft & Review
 // count toward the plan limit; Research is unlimited), not here.
+// On failure callAI/callAIStream do NOT return error text as an answer: callAI
+// returns null and callAIStream returns null (nothing arrived → caller may fall
+// back) or false (service overloaded → don't fall back). The friendly reason is
+// in _aiErr; use aiOk(r) before saving/counting and aiErrText(r) to show it.
+var AI_FAIL_MSG = 'The AI service is temporarily unavailable. Please try again in a moment.';
+var AI_BUSY_MSG = 'Dave.AI is very busy right now, please try again in a moment.';
+var AI_PARTIAL_NOTE = '\n\n[Response may be incomplete. Try again.]';
+var _aiErr = '';
+function aiOk(r){ return typeof r === 'string' && r.trim() !== '' && r.indexOf('No response received') !== 0; }
+function aiErrText(r){ return _aiErr || (typeof r === 'string' && r.trim() ? r : AI_FAIL_MSG); }
 async function callAI(sys, usr, maxTok, webSearch){
+  _aiErr = '';
   var _h = await _aiHeaders();
   var attempts = 2, refreshedAuth = false;
   for(var i = 0; i < attempts; i++){
+    var busy = false, waitMs = 2000;
     try {
       var controller = new AbortController();
       var timeout = setTimeout(function(){ controller.abort(); }, 29000);
@@ -800,16 +813,24 @@ async function callAI(sys, usr, maxTok, webSearch){
         window.location.href = 'login.html?expired=1';
         return null;
       }
+      if(r.status === 429 || r.status === 529){
+        // Overloaded: back off (honour Retry-After if sent) instead of hammering
+        busy = true;
+        var ra = parseFloat(r.headers.get('retry-after'));
+        waitMs = (ra > 0 ? Math.min(ra, 10) * 1000 : 3000) + Math.floor(Math.random() * 1000);
+      }
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       return d.content && d.content[0] ? d.content[0].text : 'No response received. Please try again.';
     } catch(e) {
+      clearTimeout(timeout);
       if(i < attempts - 1){
-        // Wait 2 seconds then retry
-        await new Promise(function(res){ setTimeout(res, 2000); });
+        // Wait (2s, or longer with jitter when overloaded) then retry
+        await new Promise(function(res){ setTimeout(res, waitMs); });
         continue;
       }
-      return 'The AI service is temporarily unavailable. Please try again in a moment.';
+      _aiErr = busy ? AI_BUSY_MSG : AI_FAIL_MSG;
+      return null;
     }
   }
 }
@@ -874,12 +895,20 @@ function mdToPlain(src){
 }
 
 // Streaming variant — calls onChunk(fullTextSoFar) as text arrives.
-// Returns the full text on success, or null on failure (caller can fall back to callAI).
+// Returns the full text on success. On failure: null if nothing arrived (caller
+// can fall back to callAI), false if the service is overloaded (show
+// aiErrText(), don't fall back), or the partial text ending in AI_PARTIAL_NOTE
+// if the stream broke after some text arrived.
 async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
+  _aiErr = '';
+  var full = '';
+  var idle = null;
+  var controller = new AbortController();
+  // Idle timeout: abort only if no data arrives for 25s (reset on every chunk)
+  function armIdle(){ clearTimeout(idle); idle = setTimeout(function(){ controller.abort(); }, 25000); }
   try {
     var _h = await _aiHeaders();
-    var controller = new AbortController();
-    var timeout = setTimeout(function(){ controller.abort(); }, 45000);
+    armIdle();
     var r = await fetch('/.netlify/functions/ai-stream', {
       method: 'POST',
       headers: _h,
@@ -896,13 +925,14 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
     // than sign them out on the fast streaming path, fall back to callAI(),
     // which refreshes the session and retries before giving up.
     if(r.status === 401) return null;
+    if(r.status === 429 || r.status === 529){ _aiErr = AI_BUSY_MSG; return false; }
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
 
     var reader = r.body.getReader();
     var decoder = new TextDecoder();
     var buffer = '';
-    var full = '';
     while(true){
+      armIdle();
       var res = await reader.read();
       if(res.done) break;
       buffer += decoder.decode(res.value, { stream: true });
@@ -922,11 +952,18 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch){
         } catch(e) { /* ignore keep-alives / partial frames */ }
       }
     }
-    clearTimeout(timeout);
     if(!full) return null;       // nothing streamed — let caller fall back
     return full;
   } catch(e) {
-    return null;                 // signal failure → caller falls back to callAI
+    if(full){
+      // Keep what already arrived rather than throwing it away and re-running
+      var partial = full + AI_PARTIAL_NOTE;
+      try { if(onChunk) onChunk(partial); } catch(e2){}
+      return partial;
+    }
+    return null;                 // nothing arrived → caller falls back to callAI
+  } finally {
+    clearTimeout(idle);
   }
 }
 
@@ -1059,16 +1096,15 @@ async function doDraft(){
       out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
       r = await callAI(sys, usr, 2600);
     }
-    if(r){
+    if(aiOk(r)){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
-      // Only treat as a real document (save + count) if it isn't an error message
-      var ok = r.indexOf('temporarily unavailable')===-1 && r.indexOf('No response received')===-1;
-      if(ok){
-        window._lastDraftText = r;
-        window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
-        incrementUsage(); // count this document toward the plan limit
-        var rf=document.getElementById('draft-refine'); if(rf) rf.style.display='block';
-      }
+      // Only a real answer is saved + counted (failures return null/false, never text)
+      window._lastDraftText = r;
+      window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+      incrementUsage(); // count this document toward the plan limit
+      var rf=document.getElementById('draft-refine'); if(rf) rf.style.display='block';
+    } else {
+      out.innerHTML='<div class="msg-a-body">'+mdToHtml(aiErrText(r))+'</div>';
     }
   }catch(e){ out.textContent='Error: '+e.message; }
   btn.disabled=false; btn.innerHTML='Generate document';
@@ -1096,13 +1132,13 @@ async function doRefineDraft(){
     var started=false;
     var r=await callAIStream(sys, usr, 2600, function(text){ if(!started){out.innerHTML='<div class="msg-a-body" id="d-streaming"></div>';started=true;} var t=document.getElementById('d-streaming'); if(t)t.innerHTML=mdToHtml(text); out.scrollTop=out.scrollHeight; });
     if(r===null){ r=await callAI(sys,usr,2600); }
-    if(r){
+    if(aiOk(r)){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
-      if(r.indexOf('temporarily unavailable')===-1 && r.indexOf('No response received')===-1){
-        window._lastDraftText=r;
-        var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
-        window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
-      }
+      window._lastDraftText=r;
+      var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
+      window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+    } else {
+      out.innerHTML='<div class="msg-a-body">'+mdToHtml(aiErrText(r))+'</div>';
     }
     if(inp) inp.value='';
   }catch(e){ out.textContent='Error: '+e.message; }
@@ -1143,8 +1179,10 @@ async function doDocChat(){
   try{
     var target=document.getElementById('dc-streaming');
     var a=await callAIStream(sys, usr, 1200, function(text){ if(target){target.innerHTML=mdToHtml(text); if(el)el.scrollTop=el.scrollHeight;} });
-    if(!a){ a=await callAI(sys,usr,1200); if(target)target.innerHTML=mdToHtml(a); }
-    dcMsgs.push({role:'assistant',content:a||'The service is temporarily unavailable. Please try again in a moment.'});
+    if(a===null){ a=await callAI(sys,usr,1200); }
+    if(!aiOk(a)) a=aiErrText(a); // friendly error shown in the chat only (never saved)
+    if(target)target.innerHTML=mdToHtml(a);
+    dcMsgs.push({role:'assistant',content:a});
   }catch(e){ dcMsgs.push({role:'assistant',content:'Error: '+e.message}); }
   go('docchat');
 }
@@ -1174,8 +1212,10 @@ async function doCompare(){
   var usr='VERSION A:\n"""\n'+a.slice(0,7000)+'\n"""\n\nVERSION B:\n"""\n'+b.slice(0,7000)+'\n"""';
   try{
     var r=await callAIStream(sys, usr, 1600, function(text){ res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(text)+'</div></div>'; });
-    if(!r){ r=await callAI(sys,usr,1600); res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(r)+'</div></div>'; }
-    cmpOut=res.innerHTML;
+    if(r===null){ r=await callAI(sys,usr,1600); }
+    var cmpOk=aiOk(r);
+    res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(cmpOk?r:aiErrText(r))+'</div></div>';
+    cmpOut=cmpOk?res.innerHTML:'';
   }catch(e){ res.innerHTML='<div class="card"><div style="color:var(--red);padding:16px;font-size:12px">Error: '+e.message+'</div></div>'; }
   if(btn){btn.disabled=false;btn.textContent='Compare versions';}
 }
@@ -1199,7 +1239,8 @@ async function doQuick(inId,outId,btnId,sys){
   try{
     var wrap=function(html){ return '<div class="msg-a-body" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">'+html+'</div>'; };
     var r=await callAIStream(sys, v, 1000, function(text){ out.innerHTML=wrap(mdToHtml(text)); });
-    if(!r){ r=await callAI(sys,v,1000); out.innerHTML=wrap(mdToHtml(r)); }
+    if(r===null){ r=await callAI(sys,v,1000); }
+    out.innerHTML=wrap(mdToHtml(aiOk(r)?r:aiErrText(r)));
   }catch(e){ out.innerHTML='<div style="color:var(--red);font-size:12px">Error: '+e.message+'</div>'; }
   if(btn){btn.disabled=false;btn.textContent=o;}
 }
@@ -1315,8 +1356,9 @@ async function doReview(){
     // Stream to keep the connection alive (avoids the gateway/client timeout
     // seen on longer analyses); fall back to the standard call if streaming fails.
     raw = await callAIStream(rvSys, rvUsr, 1200, null);
-    if(!raw){ raw = await callAI(rvSys, rvUsr, 1200); }
+    if(raw===null){ raw = await callAI(rvSys, rvUsr, 1200); }
     clearInterval(rvTimer);
+    if(!aiOk(raw)){ var rvErr=aiErrText(raw); raw=''; throw new Error(rvErr); }
     var d = parseReviewJSON(raw);
     document.getElementById('rv-res').innerHTML='<div class="card">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Analysis complete</div>' +
@@ -1335,7 +1377,7 @@ async function doReview(){
     var esc=(raw||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     if(esc.trim()){
       document.getElementById('rv-res').innerHTML='<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Analysis</div><div style="font-size:12px;color:var(--muted);line-height:1.7;white-space:pre-wrap">'+esc+'</div></div>';
-      addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:raw});
+      if(raw.indexOf(AI_PARTIAL_NOTE)===-1) addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:raw});
     } else {
       document.getElementById('rv-res').innerHTML='<div class="card"><div style="color:var(--red);padding:20px;font-size:12px">The review could not be completed. Please try again. [build r3]</div></div>';
     }
@@ -1437,8 +1479,9 @@ async function doR(){
     var a=await callAIStream(rSys, q, 1300, function(text){
       if(target){ target.innerHTML=mdToHtml(stripFollowups(text)); if(el) el.scrollTop=el.scrollHeight; }
     }, true);
-    if(!a){ a=await callAI(rSys, q, 1300, true); if(target) target.innerHTML=mdToHtml(stripFollowups(a)); }
-    if(a){
+    if(a===null){ a=await callAI(rSys, q, 1300, true); }
+    if(aiOk(a)){
+      if(target) target.innerHTML=mdToHtml(stripFollowups(a));
       // Split out the follow-up questions
       var followups=[];
       var fm=a.match(/\n*FOLLOWUPS:\s*([^\n]+)\s*$/i);
@@ -1448,7 +1491,7 @@ async function doR(){
       // Auto-save to vault (without the followups line)
       addDoc({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
     } else {
-      chatMsgs.push({role:'assistant',content:'The research service is temporarily unavailable. Please try again in a moment.'});
+      chatMsgs.push({role:'assistant',content:aiErrText(a)});
     }
   }catch(e){chatMsgs.push({role:'assistant',content:'Error: '+e.message});}
   go('research'); renderChat(); if(btn)btn.disabled=false;
@@ -1478,21 +1521,26 @@ function vHistory(){
     '</div>' +
   '</div>';
 }
+// Stable per-document key for the Vault buttons (indexes shift when the list is filtered)
+var _docSeq=0;
+function docKey(d){ if(!d._k) d._k=++_docSeq; return d._k; }
+function docIndex(k){ for(var j=0;j<docs.length;j++){ if(docs[j]._k===k) return j; } return -1; }
 function renderDocs(list){
   if(list.length===0)return'<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Documents you draft or review will appear here automatically.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft your first document →</button></div>';
-  return'<div class="card">'+list.map(function(d,i){
+  return'<div class="card">'+list.map(function(d){
+    var k=docKey(d);
     var ic=d.type==='Draft'?'var(--blue2)':d.type==='Review'?'#3cb464':'#a78bfa';
     var bg=d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
-    return '<div class="doc-row" style="cursor:pointer" onclick="viewDoc('+i+')">' +
+    return '<div class="doc-row" style="cursor:pointer" onclick="viewDoc('+k+')">' +
       '<div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
-      '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+d.name+'</div><div style="font-size:11px;color:var(--muted)">'+d.type+' · '+d.date+'</div></div>' +
-      '<span class="tag tag-b">'+d.type+'</span>' +
-      '<button class="btn btn-g" style="font-size:10px;padding:4px 10px;margin-left:8px" onclick="event.stopPropagation();delDoc('+i+')">Delete</button>' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+escHtml(d.name)+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div>' +
+      '<span class="tag tag-b">'+escHtml(d.type)+'</span>' +
+      '<button class="btn btn-g" style="font-size:10px;padding:4px 10px;margin-left:8px" onclick="event.stopPropagation();delDoc('+k+')">Delete</button>' +
     '</div>';
   }).join('')+'</div>';
 }
-function viewDoc(i){
-  var d = docs[i];
+function viewDoc(k){
+  var d = docs[docIndex(k)];
   if(!d) return;
   document.getElementById('doc-modal-title').textContent = d.name;
   var body = d.content || '';
@@ -1518,8 +1566,28 @@ function dlDocModal(){
   a.download = title.replace(/[^a-z0-9]/gi,'_') + '.txt';
   a.click();
 }
-function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return d.name.toLowerCase().includes(q)||d.type.toLowerCase().includes(q);}));}
-function delDoc(i){if(confirm('Delete this document?')){var d=docs[i];docs.splice(i,1);var el=document.getElementById('doc-cnt');if(el)el.textContent=docs.length;if(d&&d.id){try{_sb.from('documents').delete().eq('id',d.id).then(function(){});}catch(e){}}go('history');}}
+function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return (d.name||'').toLowerCase().includes(q)||(d.type||'').toLowerCase().includes(q);}));}
+async function delDoc(k){
+  var i=docIndex(k); if(i<0) return;
+  var d=docs[i];
+  if(!confirm('Delete "'+(d.name||'this document')+'"? This cannot be undone.')) return;
+  docs.splice(i,1);
+  var el=document.getElementById('doc-cnt'); if(el) el.textContent=docs.length;
+  go('history');
+  try{
+    if(d._saving) await d._saving; // a just-created doc may not have its server id yet
+    if(d.id){
+      var res=await _sb.from('documents').delete().eq('id',d.id);
+      if(res && res.error) throw res.error;
+    }
+  }catch(e){
+    // Server delete failed: put the document back so the list matches what's stored
+    docs.splice(Math.min(i,docs.length),0,d);
+    var el2=document.getElementById('doc-cnt'); if(el2) el2.textContent=docs.length;
+    if(currentView==='history') go('history');
+    alert('Could not delete "'+(d.name||'this document')+'". Please check your connection and try again.');
+  }
+}
 
 // ══════════════════════════════════════════════
 //  SETTINGS VIEW
