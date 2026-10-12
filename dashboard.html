@@ -8,8 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 <script src="vendor/supabase.js"></script>
-<script src="vendor/pdf.min.js"></script>
-<script src="vendor/mammoth.browser.min.js"></script>
 <script>
 const _sb = supabase.createClient(
   'https://wyribnzwosqzfnhomhig.supabase.co',
@@ -443,6 +441,9 @@ select.inp{cursor:pointer;}
 </div>
 
 <script>
+// Reload if restored from back/forward cache so session/UI state is fresh.
+window.addEventListener('pageshow', function(e){ if(e.persisted) location.reload(); });
+
 // ══ STRIPE PAYMENT LINKS ══
 // Update these success URLs in your Stripe dashboard to point to:
 //   https://your-netlify-domain.netlify.app/success.html
@@ -1234,8 +1235,28 @@ function rvTab(t,btn){ document.querySelectorAll('#rv-upload,#rv-paste').forEach
 function rvDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) rvLoad(e.dataTransfer.files[0]); }
 function rvFileSelect(inp){ if(inp.files[0]) rvLoad(inp.files[0]); }
 
+// Lazy-load a script once; returns a cached Promise per src.
+var _scriptLoads = {};
+function loadScript(src){
+  if(_scriptLoads[src]) return _scriptLoads[src];
+  _scriptLoads[src] = new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ delete _scriptLoads[src]; if(s.parentNode) s.parentNode.removeChild(s); reject(new Error('Could not load ' + src)); };
+    document.head.appendChild(s);
+  });
+  return _scriptLoads[src];
+}
+
 // Universal text extractor — handles TXT, PDF and Word (.docx). Returns a Promise<string>.
+// PDF / Word libraries are loaded on demand before reading.
 function extractFileText(file){
+  var name = (file.name||'').toLowerCase();
+  var lib = name.endsWith('.pdf') ? 'vendor/pdf.min.js' : (name.endsWith('.docx') ? 'vendor/mammoth.browser.min.js' : null);
+  return (lib ? loadScript(lib) : Promise.resolve()).then(function(){ return readFileText(file); });
+}
+function readFileText(file){
   var name = (file.name||'').toLowerCase();
   return new Promise(function(resolve, reject){
     try {
