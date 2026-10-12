@@ -460,6 +460,17 @@ var STRIPE = {
   firm:    'https://buy.stripe.com/test_8x27sLaKhfCNbBk2du8bS02'
 };
 
+var PAYMENTS_LIVE = false; // set to true when Stripe live payments are switched on
+
+// Entry point for every upgrade / choose-plan button.
+function goToCheckout(key){
+  if(!PAYMENTS_LIVE){
+    alert('Paid plans are launching soon. We\'ll email you before anything is charged. Questions? support@daveai.law');
+    return;
+  }
+  window.location.href = stripeUrl(key);
+}
+
 function stripeUrl(key){
   var url = STRIPE[key] || STRIPE.pro;
   var s = JSON.parse(localStorage.getItem('dave_session') || '{}');
@@ -594,7 +605,7 @@ function applyTrialState(){
     var teoPlans = [
       {key:'starter', name:'Starter', price:'£49', users:'1 user'},
       {key:'pro',     name:'Pro',     price:'£149', users:'up to 5 users', popular:true},
-      {key:'firm',    name:'Firm',    price:'£299', users:'unlimited users'}
+      {key:'firm',    name:'Firm',    price:'£299', users:'up to 10 users'}
     ];
     var tp = document.getElementById('teo-plans');
     if(tp) tp.innerHTML = teoPlans.map(function(p){
@@ -603,7 +614,7 @@ function applyTrialState(){
         +'<div class="ms-plan-name">'+p.name+'</div>'
         +'<div class="ms-plan-price">'+p.price+'<sub>/mo</sub></div>'
         +'<div class="ms-plan-users">'+p.users+'</div>'
-        +'<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\''+p.key+'\')">Activate '+p.name+' →</button>'
+        +'<button class="ms-plan-btn" onclick="goToCheckout(\''+p.key+'\')">Activate '+p.name+' →</button>'
         +'</div>';
     }).join('');
     ov.style.display = 'flex';
@@ -1093,20 +1104,20 @@ function vDash(){
         '<div class="ms-plan-name">Starter</div>' +
         '<div class="ms-plan-price">£49<sub>/mo</sub></div>' +
         '<div class="ms-plan-users">1 user · 20 docs/month</div>' +
-        '<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\'starter\')">Select Starter</button>' +
+        '<button class="ms-plan-btn" onclick="goToCheckout(\'starter\')">Select Starter</button>' +
       '</div>' +
       '<div class="ms-plan popular">' +
         '<div class="ms-popular-tag">Most popular</div>' +
         '<div class="ms-plan-name">Pro</div>' +
         '<div class="ms-plan-price">£149<sub>/mo</sub></div>' +
-        '<div class="ms-plan-users">5 users · Unlimited docs</div>' +
-        '<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\'pro\')">Select Pro</button>' +
+        '<div class="ms-plan-users">Up to 5 users · Unlimited docs (fair use)</div>' +
+        '<button class="ms-plan-btn" onclick="goToCheckout(\'pro\')">Select Pro</button>' +
       '</div>' +
       '<div class="ms-plan">' +
         '<div class="ms-plan-name">Firm</div>' +
         '<div class="ms-plan-price">£299<sub>/mo</sub></div>' +
-        '<div class="ms-plan-users">10 users · Analytics</div>' +
-        '<button class="ms-plan-btn" onclick="window.location.href=stripeUrl(\'firm\')">Select Firm</button>' +
+        '<div class="ms-plan-users">Up to 10 users · Unlimited docs (fair use)</div>' +
+        '<button class="ms-plan-btn" onclick="goToCheckout(\'firm\')">Select Firm</button>' +
       '</div>' +
     '</div>' +
   '</div>' : '';
@@ -1900,10 +1911,10 @@ async function openBillingPortal(){
 
 function vBilling(){
   var plans = [
-    {key:'starter',name:'Starter',price:'£49',users:'1 user',feats:['Contract drafting','Document review','Legal research','20 docs/month','Email support']},
-    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['Everything in Starter','Unlimited documents','Document history','Priority support','Team collaboration']},
-    {key:'firm',name:'Firm',price:'£299',users:'Up to 10 users',feats:['Everything in Pro','Team analytics','Custom templates','Dedicated support','Advanced API access']},
-    {key:'enterprise',name:'Enterprise',price:'Custom',users:'10+ users',feats:['Everything in Firm','Custom SLA','White-labelling','On-premise option','Bespoke integrations']}
+    {key:'starter',name:'Starter',price:'£49',users:'1 user',feats:['20 documents per month','Contract & document drafting','Document review & analysis','Legal research assistant','Email support','Document history (30 days)']},
+    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['Unlimited documents (fair use)','All Starter features','Unlimited document history','Team document sharing (coming soon)','Advanced risk analysis','Priority support']},
+    {key:'firm',name:'Firm',price:'£299',users:'Up to 10 users',feats:['Everything in Pro','Up to 10 users','Team collaboration tools (coming soon)','Direct founder support','Custom integrations (coming soon)','API access (coming soon)']},
+    {key:'enterprise',name:'Enterprise',price:'Custom',users:'10+ users',feats:['Everything in Firm','Unlimited users','Custom SLA (coming soon)','White-labelling (coming soon)','Bespoke integrations (coming soon)']}
   ];
 
   var trialBanner = !planActive ? '<div class="card" style="margin-bottom:20px;background:rgba(200,150,60,0.06);border-color:rgba(200,150,60,0.28)">' +
@@ -1936,15 +1947,16 @@ function vBilling(){
         '<button class="btn '+(isCur?'btn-p':'btn-g')+'" style="width:100%;margin-top:16px;white-space:nowrap" onclick="'+
           ((isCur && planActive)
             ? 'alert(\'This is your current active plan.\')'
-            : 'window.location.href=stripeUrl(\''+p.key+'\')') +
+            : 'goToCheckout(\''+p.key+'\')') +
         '">'+
           (isCur ? (planActive ? '✓ Active plan' : 'Activate plan') : 'Select '+p.name) +
         '</button>' +
       '</div>';
     }).join('') +
     '</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">Fair use: up to 300 AI actions per user per month on Pro and Firm. All plans: up to 100 AI actions per day.</div>' +
     '<div class="card" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;background:rgba(79,114,196,.04)">' +
-      '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Enterprise</div><div style="font-size:12px;color:var(--muted)">10+ users · Custom SLA · White-labelling · API access · On-premise option</div></div>' +
+      '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Enterprise</div><div style="font-size:12px;color:var(--muted)">10+ users · Custom SLA (coming soon) · White-labelling (coming soon) · API access (coming soon)</div></div>' +
       '<button class="btn btn-g" style="white-space:nowrap;flex-shrink:0" onclick="window.location.href=\'mailto:support@daveai.law?subject=' + encodeURIComponent('Enterprise enquiry') + '\'">Contact us →</button>' +
     '</div>' +
     '<div class="card">' +
