@@ -214,14 +214,15 @@ begin
   end if;
 
   -- Retry of an action already counted in the last 10 minutes (same id and
-  -- feature, at most 3 uses: 1 streaming attempt + 2 fallback attempts).
+  -- feature, at most 2 uses: the streaming attempt + one buffered fallback).
+  -- Any further use of the same id is counted as a new action.
   if p_request_id is not null then
     select * into v_req
       from public.ai_requests r
      where r.user_id = v_uid and r.request_id = p_request_id;
     if found
        and v_req.feature = p_feature
-       and v_req.hits < 3
+       and v_req.hits < 2
        and v_req.created_at > now() - interval '10 minutes' then
       update public.ai_requests r
          set hits = r.hits + 1
