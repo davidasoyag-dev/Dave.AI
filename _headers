@@ -4,3 +4,16 @@
 
 /robots.txt
   Content-Type: text/plain; charset=utf-8
+
+# ── Caching (perf) ──
+/vendor/*
+  Cache-Control: public, max-age=604800
+
+/*.jpg
+  Cache-Control: public, max-age=604800
+
+/favicon*
+  Cache-Control: public, max-age=604800
+
+/dashboard.html
+  Cache-Control: no-cache
