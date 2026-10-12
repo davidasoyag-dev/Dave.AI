@@ -1517,11 +1517,23 @@ function toggleFAQ(el) {
   document.querySelectorAll('.faq-a.open').forEach(function(a) { a.classList.remove('open'); });
   document.querySelectorAll('.faq-icon.open').forEach(function(i) { i.classList.remove('open'); });
   // Open this one if it was closed
+  document.querySelectorAll('.faq-q').forEach(function(q) { q.setAttribute('aria-expanded', 'false'); });
   if (!isOpen) {
     answer.classList.add('open');
     icon.classList.add('open');
+    el.setAttribute('aria-expanded', 'true');
   }
 }
+
+// Make FAQ questions keyboard and screen-reader operable
+document.querySelectorAll('.faq-q').forEach(function(q) {
+  q.setAttribute('role', 'button');
+  q.setAttribute('tabindex', '0');
+  q.setAttribute('aria-expanded', 'false');
+  q.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFAQ(q); }
+  });
+});
 
 
 </script>
@@ -1694,6 +1706,10 @@ function toggleFAQ(el) {
 .su-tabs{display:flex;border-bottom:1px solid rgba(79,114,196,0.18);margin-bottom:20px;}
 .su-tab{flex:1;padding:9px;font-size:12px;font-weight:500;color:rgba(200,216,255,0.4);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans','Instrument Sans',sans-serif;transition:all .15s;margin-bottom:-1px;}
 .su-tab.on{color:#eef2ff;border-bottom-color:#7aaaf8;}
+.su-terms-note{font-size:10px;color:rgba(200,216,255,0.6);text-align:center;line-height:1.5;margin-bottom:8px;}
+.su-terms-note a{color:#7aaaf8;text-decoration:none;}
+/* keyboard focus */
+:focus-visible{outline:2px solid #7aaaf8;outline-offset:2px;}
 </style>
 
 <!-- Modal markup -->
@@ -1759,25 +1775,26 @@ function toggleFAQ(el) {
         <div class="su-plan-bar"><div class="su-pb-left"><div class="su-pb-dot"></div><div><div class="su-pb-name" id="su-pb-name">Pro Plan</div><div class="su-pb-sub">14-day free trial · No card required</div></div></div><div><div class="su-pb-price" id="su-pb-price">£149/mo</div><div class="su-pb-change" onclick="suGoStep(1)">Change plan</div></div></div>
         <h2 class="su-title">Create your account</h2>
         <p class="su-sub">Sign up with Google or fill in your details below.</p>
+        <p class="su-terms-note">By continuing you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
         <div class="su-soc-row" style="grid-template-columns:1fr">
           <button class="su-soc-btn" onclick="suSocial('google')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
         </div>
         <div class="su-divider"><div class="su-div-line"></div><span class="su-div-text">or sign up with email</span><div class="su-div-line"></div></div>
         <div class="su-field-2">
-          <div class="su-field"><label class="su-label">First name</label><input class="su-input" type="text" id="su-first" placeholder="John" autocomplete="off" oninput="suValidate()"/></div>
-          <div class="su-field"><label class="su-label">Last name</label><input class="su-input" type="text" id="su-last" placeholder="Smith" autocomplete="off"/></div>
+          <div class="su-field"><label class="su-label" for="su-first">First name</label><input class="su-input" type="text" id="su-first" placeholder="John" autocomplete="given-name" oninput="suValidate()"/></div>
+          <div class="su-field"><label class="su-label" for="su-last">Last name</label><input class="su-input" type="text" id="su-last" placeholder="Smith" autocomplete="family-name"/></div>
         </div>
-        <div class="su-field"><label class="su-label">Work email</label><input class="su-input" type="email" id="su-email" placeholder="example@gmail.com" autocomplete="off" oninput="suValidate()"/></div>
-        <div class="su-field"><label class="su-label">Firm / organisation</label><input class="su-input" type="text" id="su-firm" placeholder="Smith &amp; Associates LLP" autocomplete="off"/></div>
+        <div class="su-field"><label class="su-label" for="su-email">Work email</label><input class="su-input" type="email" id="su-email" placeholder="example@gmail.com" autocomplete="email" oninput="suValidate()"/></div>
+        <div class="su-field"><label class="su-label" for="su-firm">Firm / organisation</label><input class="su-input" type="text" id="su-firm" placeholder="Smith &amp; Associates LLP" autocomplete="organization"/></div>
         <div class="su-field">
-          <label class="su-label">Password</label>
-          <div class="su-pass-wrap"><input class="su-input" type="password" id="su-pass" placeholder="Create a password" oninput="suStrength(this.value);suValidate()"/><button class="su-eye" onclick="suToggleEye()" type="button" id="su-eye-btn"><svg id="su-eye-ico" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          <label class="su-label" for="su-pass">Password</label>
+          <div class="su-pass-wrap"><input class="su-input" type="password" id="su-pass" placeholder="Create a password" autocomplete="new-password" oninput="suStrength(this.value);suValidate()"/><button class="su-eye" onclick="suToggleEye()" type="button" id="su-eye-btn" aria-label="Show or hide password"><svg id="su-eye-ico" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           <div class="su-str-bar" style="margin-top:6px"><div class="su-str-seg" id="su-ss1"></div><div class="su-str-seg" id="su-ss2"></div><div class="su-str-seg" id="su-ss3"></div><div class="su-str-seg" id="su-ss4"></div></div>
           <div class="su-str-txt" id="su-str-lbl">Minimum 8 characters</div>
         </div>
-        <div class="su-check-row" onclick="suToggleTerms()"><div class="su-checkbox" id="su-terms"></div><div class="su-check-text">I agree to Dave.AI's <a href="terms.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Privacy Policy</a>. My documents will not be used to train AI models.</div></div>
+        <div class="su-check-row" onclick="suToggleTerms()"><div class="su-checkbox" id="su-terms" role="checkbox" tabindex="0" aria-checked="false" aria-labelledby="su-terms-lbl" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();suToggleTerms();}"></div><div class="su-check-text" id="su-terms-lbl">I agree to Dave.AI's <a href="terms.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">Privacy Policy</a>. My documents will not be used to train AI models.</div></div>
         <button class="su-btn" id="su-s2-btn" onclick="suSignUp()" disabled>Start my 14-day free trial →</button>
-        <div id="su-s2-err" style="display:none;font-size:12px;color:#f08888;text-align:center;margin-top:8px;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)"></div>
+        <div id="su-s2-err" role="alert" style="display:none;font-size:12px;color:#f08888;text-align:center;margin-top:8px;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)"></div>
         <button class="su-btn-ghost" onclick="suGoStep(1)">← Back to plans</button>
         <p class="su-footnote">No credit card required · Cancel anytime · UK GDPR compliant</p>
       </div>
@@ -1875,13 +1892,14 @@ function toggleFAQ(el) {
         <div class="su-tabs"><button class="su-tab" onclick="suLoginTab('login')" id="su-tab-login">Sign in</button><button class="su-tab" onclick="suLoginTab('signup')" id="su-tab-signup">Create account</button></div>
         <h2 class="su-title">Welcome back</h2>
         <p class="su-sub">Sign in to your Dave.AI account.</p>
+        <p class="su-terms-note">By continuing you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
         <button class="su-soc-btn" onclick="suSocial('google')" style="width:100%;margin-bottom:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
         <div class="su-divider"><div class="su-div-line"></div><span class="su-div-text">or sign in with email</span><div class="su-div-line"></div></div>
-        <div class="su-field"><label class="su-label">Email</label><input class="su-input" type="email" id="li-email" placeholder="example@gmail.com" autocomplete="off"/></div>
-        <div class="su-field"><label class="su-label">Password</label><input class="su-input" type="password" id="li-pass" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')landingLogin()"/></div>
-        <div id="li-err" style="display:none;font-size:12px;color:#f08888;margin:6px 0;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)"></div>
+        <div class="su-field"><label class="su-label" for="li-email">Email</label><input class="su-input" type="email" id="li-email" placeholder="example@gmail.com" autocomplete="off"/></div>
+        <div class="su-field"><label class="su-label" for="li-pass">Password</label><input class="su-input" type="password" id="li-pass" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')landingLogin()"/></div>
+        <div id="li-err" role="alert" style="display:none;font-size:12px;color:#f08888;margin:6px 0;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)"></div>
         <button class="su-btn" id="li-btn" style="margin-top:8px" onclick="landingLogin()">Sign in to Dave.AI →</button>
-        <p class="su-footnote" style="margin-top:12px"><a onclick="suGoStep(1)">← Back to sign up</a></p>
+        <p class="su-footnote" style="margin-top:12px"><a href="#" onclick="suGoStep(1);return false;">← Back to sign up</a></p>
       </div>
 
     </div><!-- su-right -->
@@ -1995,6 +2013,7 @@ function suToggleTerms(){
   suTerms=!suTerms;
   var cb=document.getElementById('su-terms');
   cb.className='su-checkbox'+(suTerms?' on':'');
+  cb.setAttribute('aria-checked', suTerms?'true':'false');
   cb.innerHTML=suTerms?'<svg width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':'';
   suValidate();
 }
@@ -2133,6 +2152,9 @@ async function suSignUp(){
   btn.disabled = true;
   btn.textContent = 'Creating your account…';
   errEl.style.display = 'none';
+  errEl.style.color = '#f08888';
+  errEl.style.background = 'rgba(224,90,80,0.07)';
+  errEl.style.borderColor = 'rgba(224,90,80,0.18)';
 
   var meta = {
     firstName: first, lastName: last, firm: firm,
@@ -2141,16 +2163,35 @@ async function suSignUp(){
     planActive: false, trialStart: new Date().toISOString()
   };
 
+  var result;
   try {
-    var result = await _sb.auth.signUp({ email: email, password: pass, options: { data: meta, emailRedirectTo: 'https://daveai.law/login.html' } });
+    result = await _sb.auth.signUp({ email: email, password: pass, options: { data: meta, emailRedirectTo: 'https://daveai.law/login.html' } });
+  } catch(e){
+    result = { error: { message: 'Could not create your account. Please check your connection and try again.' } };
+  }
 
-    if(result.error && result.error.message !== 'User already registered'){
-      // Try signing in — account may already exist
-    } else if(!result.error){
-      // Try immediate sign in (works if email confirmation is disabled)
-      await _sb.auth.signInWithPassword({ email: email, password: pass });
-    }
-  } catch(e){ /* continue regardless — session stored in localStorage */ }
+  var already = result.error
+    ? (result.error.code === 'user_already_exists' || /already registered|already exists/i.test(result.error.message || ''))
+    // With email confirmation on, an existing email returns a user with no identities
+    : !!(result.data && result.data.user && result.data.user.identities && result.data.user.identities.length === 0);
+  if(result.error || already){
+    errEl.textContent = already
+      ? 'An account with this email already exists. Sign in instead.'
+      : (result.error.message || 'Could not create your account. Please try again.');
+    errEl.style.display = 'block';
+    btn.textContent = 'Start my 14-day free trial →';
+    suValidate();
+    return;
+  }
+
+  var hasSession = !!(result.data && result.data.session);
+  if(!hasSession){
+    // Try immediate sign in (works if email confirmation is disabled)
+    try {
+      var si = await _sb.auth.signInWithPassword({ email: email, password: pass });
+      hasSession = !!(si && !si.error && si.data && si.data.session);
+    } catch(e){}
+  }
 
   localStorage.setItem('dave_session', JSON.stringify(Object.assign({email: email}, meta)));
 
@@ -2180,6 +2221,18 @@ async function suSignUp(){
       sent_at:    new Date().toLocaleString('en-GB')
     });
   } catch(e){ console.warn('Admin notification error:', e); }
+
+  if(!hasSession){
+    // Email confirmation required — no session yet, so don't claim the trial is active
+    errEl.textContent = 'Account created. Check your inbox at ' + email + ' to confirm your email, then sign in to start your trial.';
+    errEl.style.color = '#80e0a0';
+    errEl.style.background = 'rgba(60,180,100,0.08)';
+    errEl.style.borderColor = 'rgba(60,180,100,0.2)';
+    errEl.style.display = 'block';
+    btn.textContent = 'Check your inbox to confirm your email';
+    btn.disabled = true;
+    return;
+  }
 
   suGoStep(3);
 }
