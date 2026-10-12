@@ -551,9 +551,12 @@ var initials   = ((firstName[0]||'D') + (lastName[0]||'A')).toUpperCase();
 var email      = S.email      || '';
 var firm       = S.firm       || '';
 var plan       = S.plan       || 'pro';   // display only until loadProfile() sets it
-var planName   = S.planName   || 'Pro Plan';
-var planPrice  = S.planPrice  || '£149/mo';
-var planUsers  = S.planUsers  || 'up to 5 users';
+// Plan labels come from browser storage, so only accept plain short text
+// (they are also rendered as HTML in a few places).
+function safePlanTxt(v, d){ v = String(v == null ? '' : v); return /^[A-Za-z0-9 £.,\/+\-]{1,40}$/.test(v) ? v : d; }
+var planName   = safePlanTxt(S.planName,  'Pro Plan');
+var planPrice  = safePlanTxt(S.planPrice, '£149/mo');
+var planUsers  = safePlanTxt(S.planUsers, 'up to 5 users');
 // Paid access and the trial come ONLY from the profiles row (loadProfile), never
 // from dave_session or signup metadata, which the browser controls. Until the
 // profile loads (or if it can't be loaded) the user is treated as on trial.
@@ -806,6 +809,8 @@ async function loadUsage(){
     if(res.error) throw res.error;
     aiUsage = res.data || [];
     updateUsageBadge();
+    var su = getUsage(), st = document.getElementById('st-ai-today'), sm = document.getElementById('st-ai-month');
+    if(st) st.textContent = su.today; if(sm) sm.textContent = su.month;
   } catch(e){ /* keep the last known counts; the server still enforces the limits */ }
 }
 // Re-read the counts shortly after an AI request (coalesces stream + fallback)
@@ -1171,12 +1176,14 @@ function vDash(){
     return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   })();
 
+  var usageNow = getUsage(); // real counts from the ai_usage table (loadUsage)
+
   var recentHtml = docs.length === 0
     ? '<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Draft your first document to get started.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft something →</button></div>'
     : docs.slice(0,5).map(function(d){
         var ic = d.type==='Draft'?'var(--blue2)':d.type==='Review'?'#3cb464':'#a78bfa';
         var bg = d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
-        return '<div class="doc-row"><div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+d.type+' · '+d.date+'</div></div><span class="tag tag-b" style="flex-shrink:0">'+d.type.split(' ')[0]+'</span></div>';
+        return '<div class="doc-row"><div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(d.name)+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div><span class="tag tag-b" style="flex-shrink:0">'+escHtml(String(d.type||'').split(' ')[0])+'</span></div>';
       }).join('');
 
   var trialBanner = !planActive
@@ -1213,14 +1220,14 @@ function vDash(){
 
   return '<div class="view">' +
     '<div class="view-head">' +
-      '<div><div class="view-title">'+greeting+', '+firstName+'</div><div class="view-sub">'+(new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</div></div>' +
+      '<div><div class="view-title">'+greeting+', '+escHtml(firstName)+'</div><div class="view-sub">'+(new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</div></div>' +
       '<div>'+trialBanner+'</div>' +
     '</div>' +
     '<div class="grid4" style="margin-bottom:24px">' +
-      '<div class="stat"><div class="stat-lbl">Documents</div><div class="stat-val">'+docs.length+'</div><div class="stat-sub">created</div></div>' +
-      '<div class="stat"><div class="stat-lbl">Hours saved</div><div class="stat-val">'+(docs.length*1.8).toFixed(1)+'</div><div class="stat-sub">vs manual drafting</div></div>' +
-      '<div class="stat"><div class="stat-lbl">Cost saved</div><div class="stat-val">£'+(docs.length*220).toLocaleString()+'</div><div class="stat-sub">vs solicitor billing</div></div>' +
-      '<div class="stat"><div class="stat-lbl">'+(planActive?'Membership':'Days left')+'</div><div class="stat-val">'+(planActive?'Active':trialDays)+'</div><div class="stat-sub">'+(planActive?planName:'of 14-day trial')+'</div></div>' +
+      '<div class="stat"><div class="stat-lbl">Documents saved</div><div class="stat-val">'+docs.length+'</div><div class="stat-sub">in your history</div></div>' +
+      '<div class="stat"><div class="stat-lbl">AI actions today</div><div class="stat-val" id="st-ai-today">'+usageNow.today+'</div><div class="stat-sub">counted by the server</div></div>' +
+      '<div class="stat"><div class="stat-lbl">AI actions this month</div><div class="stat-val" id="st-ai-month">'+usageNow.month+'</div><div class="stat-sub">counted by the server</div></div>' +
+      '<div class="stat"><div class="stat-lbl">'+(planActive?'Membership':'Days left')+'</div><div class="stat-val">'+(planActive?'Active':trialDays)+'</div><div class="stat-sub">'+(planActive?escHtml(planName):'of 14-day trial')+'</div></div>' +
     '</div>' +
     '<div style="font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:10px">Tools</div>' +
     '<div class="qa-grid">' +
@@ -1237,9 +1244,9 @@ function vDash(){
       '<div class="card">' +
         '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Recent activity</div>' +
         '<div class="act-row"><div class="act-dot" style="background:#3cb464"></div><div class="act-text">Account created · Trial started</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+planName+' '+(planActive?'activated':'trial started')+'</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#7aaaf8"></div><div class="act-text">Welcome email sent to '+(email||'your inbox')+'</div><div class="act-time">Today</div></div>' +
-        (docs.length > 0 ? '<div class="act-row"><div class="act-dot" style="background:#a78bfa"></div><div class="act-text">First document: '+docs[0].name+'</div><div class="act-time">'+docs[0].date+'</div></div>' : '') +
+        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+escHtml(planName)+' '+(planActive?'activated':'trial started')+'</div><div class="act-time">Today</div></div>' +
+        '<div class="act-row"><div class="act-dot" style="background:#7aaaf8"></div><div class="act-text">Welcome email sent to '+escHtml(email||'your inbox')+'</div><div class="act-time">Today</div></div>' +
+        (docs.length > 0 ? '<div class="act-row"><div class="act-dot" style="background:#a78bfa"></div><div class="act-text">First document: '+escHtml(docs[0].name)+'</div><div class="act-time">'+escHtml(docs[0].date)+'</div></div>' : '') +
       '</div>' +
     '</div>' +
     membershipStrip +
@@ -1843,10 +1850,10 @@ function vSettings(){
       '<div>' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Account details</div>' +
-          '<div class="field"><label>First name</label><input class="inp" id="s-first" value="'+firstName+'"/></div>' +
-          '<div class="field"><label>Last name</label><input class="inp" id="s-last" value="'+lastName+'"/></div>' +
-          '<div class="field"><label>Work email</label><input class="inp" type="email" value="'+email+'" disabled/></div>' +
-          '<div class="field"><label>Firm / organisation</label><input class="inp" id="s-firm" value="'+(firm||'')+'"/></div>' +
+          '<div class="field"><label>First name</label><input class="inp" id="s-first" value="'+escHtml(firstName)+'"/></div>' +
+          '<div class="field"><label>Last name</label><input class="inp" id="s-last" value="'+escHtml(lastName)+'"/></div>' +
+          '<div class="field"><label>Work email</label><input class="inp" type="email" value="'+escHtml(email)+'" disabled/></div>' +
+          '<div class="field"><label>Firm / organisation</label><input class="inp" id="s-firm" value="'+escHtml(firm||'')+'"/></div>' +
           '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-p" id="s-account-btn" onclick="saveAccountSettings()">Save changes</button><span style="font-size:12px;color:var(--muted)" id="s-account-status"></span></div>' +
         '</div>' +
         '<div class="card">' +
@@ -1865,8 +1872,8 @@ function vSettings(){
         '</div>' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Team members</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Your '+planName+' supports '+planUsers+'</div>' +
-          '<div class="doc-row" style="cursor:default"><div class="doc-icon" style="background:linear-gradient(135deg,#3558a8,#4f72c4)"><span style="font-size:11px;font-weight:700;color:#fff">'+initials+'</span></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+fullName+'</div><div style="font-size:11px;color:var(--muted)">'+(email||'—')+' · Admin</div></div><span class="tag tag-b">Admin</span></div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Your '+escHtml(planName)+' supports '+escHtml(planUsers)+'</div>' +
+          '<div class="doc-row" style="cursor:default"><div class="doc-icon" style="background:linear-gradient(135deg,#3558a8,#4f72c4)"><span style="font-size:11px;font-weight:700;color:#fff">'+escHtml(initials)+'</span></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+escHtml(fullName)+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml(email||'—')+' · Admin</div></div><span class="tag tag-b">Admin</span></div>' +
           '<div id="team-invites-list"></div>' +
           '<div class="field" style="margin-top:12px;margin-bottom:8px"><input class="inp" type="email" id="s-invite-email" placeholder="colleague@yourfirm.co.uk"/></div>' +
           '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" style="flex-shrink:0" id="s-invite-btn" onclick="inviteTeamMember()">+ Invite team member</button><span style="font-size:12px;color:var(--muted)" id="s-invite-status"></span></div>' +
@@ -2075,10 +2082,10 @@ function showWelcomeBanner(type){
   var b = document.createElement('div');
   b.className = 'welcome-banner ' + type;
   if(type === 'paid'){
-    b.innerHTML = '<div class="wb-title">Welcome to Dave<em>.AI</em>, '+firstName+'!</div>' +
+    b.innerHTML = '<div class="wb-title">Welcome to Dave<em>.AI</em>, '+escHtml(firstName)+'!</div>' +
                   '<div class="wb-sub">Enjoy your membership — full access is now unlocked.</div>';
   } else {
-    b.innerHTML = '<div class="wb-title">Welcome to Dave<em>.AI</em>, '+firstName+'!</div>' +
+    b.innerHTML = '<div class="wb-title">Welcome to Dave<em>.AI</em>, '+escHtml(firstName)+'!</div>' +
                   '<div class="wb-sub">Your 14-day free trial is active. No charge until '+trialEndStr+'.</div>';
   }
   document.body.appendChild(b);
