@@ -814,7 +814,7 @@ async function callAI(sys, usr, maxTok, webSearch){
   }
 }
 
-function escHtml(x){ return (x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // Lightweight Markdown -> HTML for chat answers (headings, lists, bold, code, links).
 function mdToHtml(src){
@@ -826,10 +826,16 @@ function mdToHtml(src){
   function cells(row){ return row.trim().replace(/^\||\|$/g, '').split('|').map(function(c){ return c.trim(); }); }
   function inline(x){
     return x
-      .replace(/\b([A-Z][A-Za-z&'’]+(?:\s[A-Z][A-Za-z&'’]+)*\sAct\s\d{4})\b/g, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
+      .replace(/\b([A-Z](?:[A-Za-z&'’]|&#39;)+(?:\s[A-Z](?:[A-Za-z&'’]|&#39;)+)*\sAct\s\d{4})\b/g, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
       .replace(/\b(s\.?\s?\d+[A-Z]?(?:\(\d+\))?|section\s\d+[A-Z]?)\b/gi, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
       .replace(/(\[\d{4}\])/g, '<span class="md-cite" onclick="askCite(this.textContent)">$1</span>')
-      .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/https?:\/\/(?:(?!&quot;|&#39;|&lt;|&gt;)[^\s<)])+/g, function(m){
+        // m is already HTML-escaped; only link plain http(s) URLs, with an escaped href
+        var raw = m.replace(/&amp;/g, '&');
+        if(!/^https?:\/\/[^\s"'<>]+$/.test(raw)) return m;
+        var safe = escHtml(raw);
+        return '<a href="' + safe + '" target="_blank" rel="noopener noreferrer">' + safe + '</a>';
+      })
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
@@ -1176,7 +1182,7 @@ async function doCompare(){
     var r=await callAIStream(sys, usr, 1600, function(text){ res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(text)+'</div></div>'; });
     if(!r){ r=await callAI(sys,usr,1600); res.innerHTML='<div class="card"><div class="msg-a-body">'+mdToHtml(r)+'</div></div>'; }
     cmpOut=res.innerHTML;
-  }catch(e){ res.innerHTML='<div class="card"><div style="color:var(--red);padding:16px;font-size:12px">Error: '+e.message+'</div></div>'; }
+  }catch(e){ res.innerHTML='<div class="card"><div style="color:var(--red);padding:16px;font-size:12px">Error: '+escHtml(e.message)+'</div></div>'; }
   if(btn){btn.disabled=false;btn.textContent='Compare versions';}
 }
 
@@ -1200,7 +1206,7 @@ async function doQuick(inId,outId,btnId,sys){
     var wrap=function(html){ return '<div class="msg-a-body" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">'+html+'</div>'; };
     var r=await callAIStream(sys, v, 1000, function(text){ out.innerHTML=wrap(mdToHtml(text)); });
     if(!r){ r=await callAI(sys,v,1000); out.innerHTML=wrap(mdToHtml(r)); }
-  }catch(e){ out.innerHTML='<div style="color:var(--red);font-size:12px">Error: '+e.message+'</div>'; }
+  }catch(e){ out.innerHTML='<div style="color:var(--red);font-size:12px">Error: '+escHtml(e.message)+'</div>'; }
   if(btn){btn.disabled=false;btn.textContent=o;}
 }
 function doExplain(){ doQuick('expIn','expOut','expbtn','You are a senior UK solicitor. Explain the following clause or legal wording in clear, plain English for a non-lawyer: what it means, what it requires, and any practical catch. Keep it concise and use short paragraphs or bullets. Do not add a disclaimer.'); }
@@ -1320,10 +1326,11 @@ async function doReview(){
     var d = parseReviewJSON(raw);
     document.getElementById('rv-res').innerHTML='<div class="card">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Analysis complete</div>' +
-      '<div style="font-size:12px;color:var(--muted);line-height:1.65;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:16px">'+d.summary+'</div>' +
+      '<div style="font-size:12px;color:var(--muted);line-height:1.65;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:16px">'+escHtml(d.summary)+'</div>' +
       '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px">Risk flags</div>' +
-      (d.risks||[]).map(function(r){var col=r.level==='high'?'#e05a50':r.level==='medium'?'#c8963c':'#3cb464';var lbl=r.level==='high'?'High':'Medium'==='medium'?'Medium':'Low';return '<div class="risk risk-'+(r.level==='high'?'h':r.level==='medium'?'m':'l')+'"><div class="risk-ttl"><span style="color:'+col+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:6px">'+r.level+'</span>'+r.title+'</div><div class="risk-det">'+r.detail+'</div></div>';}).join('') +
-      '<div style="margin-top:16px;padding:12px;background:rgba(79,114,196,.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">'+d.recommendation+'</div>' +
+      (Array.isArray(d.risks)?d.risks:[]).map(function(r){r=r||{};var lv=String(r.level||'').toLowerCase();if(lv!=='high'&&lv!=='medium'&&lv!=='low')lv='medium';var col=lv==='high'?'#e05a50':lv==='medium'?'#c8963c':'#3cb464';return '<div class="risk risk-'+(lv==='high'?'h':lv==='medium'?'m':'l')+'"><div class="risk-ttl"><span style="color:'+col+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:6px">'+lv+'</span>'+escHtml(r.title)+'</div><div class="risk-det">'+escHtml(r.detail)+'</div></div>';}).join('') +
+      '<div style="margin-top:16px;padding:12px;background:rgba(79,114,196,.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">'+escHtml(d.recommendation)+'</div>' +
+      '<div class="md-note" style="margin:12px 0 0;font-size:10px;color:var(--dim);line-height:1.6">AI-generated review. Not legal advice. Verify against the full contract before relying on it.</div>' +
     '</div>';
     // Auto-save to vault
     addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});

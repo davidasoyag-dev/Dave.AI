@@ -13,6 +13,7 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIs' +
   'eznOrFcC6GalW7wJvgAz' +
   'haBSneWo';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DAILY_INVITE_CAP = 10;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -79,11 +80,28 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Please enter a valid email address.' }) };
   }
 
-  const origin = (event.headers.origin || 'https://daveai.law').replace(/\/$/, '');
+  // Per-user cap: max DAILY_INVITE_CAP invites per user per UTC day (counted with the service key)
+  const svcHeaders = {
+    'apikey': SERVICE_ROLE_KEY,
+    'Authorization': 'Bearer ' + SERVICE_ROLE_KEY
+  };
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const countPath = '/rest/v1/team_invites?select=id' +
+    '&inviter_id=eq.' + encodeURIComponent(user.id) +
+    '&created_at=gte.' + encodeURIComponent(dayStart.toISOString());
+  const countRes = await request('GET', SUPABASE_HOST, countPath, svcHeaders);
+  if (countRes.status !== 200 || !Array.isArray(countRes.json)) {
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Could not send the invite. Please try again.' }) };
+  }
+  if (countRes.json.length >= DAILY_INVITE_CAP) {
+    return { statusCode: 429, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Daily invite limit reached. Please try again tomorrow.' }) };
+  }
+
   const body = JSON.stringify({
     email: invitedEmail,
     data: { invited_by_email: user.email, invited_by_firm: (user.user_metadata && user.user_metadata.firm) || '' },
-    redirect_to: origin + '/login.html'
+    redirect_to: 'https://daveai.law/login.html'
   });
 
   const res = await request('POST', SUPABASE_HOST, '/auth/v1/invite', {
@@ -94,6 +112,17 @@ exports.handler = async (event) => {
   }, body);
 
   if (res.status === 200 || res.status === 201) {
+    // Record the invite server-side so the daily cap can't be bypassed
+    const row = JSON.stringify({ inviter_id: user.id, invited_email: invitedEmail });
+    const ins = await request('POST', SUPABASE_HOST, '/rest/v1/team_invites', {
+      ...svcHeaders,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+      'Content-Length': Buffer.byteLength(row)
+    }, row);
+    if (ins.status < 200 || ins.status >= 300) {
+      console.error('team_invites insert failed', ins.status);
+    }
     return { statusCode: 200, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ ok: true }) };
   }
 
