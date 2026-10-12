@@ -21,7 +21,16 @@ const FEATURE_MAX_TOKENS = {
   draft: 4000, refine: 4000, review: 4000, research: 2000,
   docchat: 2000, compare: 2500, tools: 1500
 };
-const MAX_TOTAL_CHARS = 450000;   // system + all message text
+// Input cap per feature: system + all message text, in characters. Sized
+// from what dashboard.html actually sends, plus ~20% headroom:
+//   review / docchat: up to 150k of document + prompt + question
+//   compare: 2 x 70k versions + prompt
+//   research: prompt + up to ~20k of history + the question
+//   draft / refine / tools: prompt + one textarea or the current draft
+const FEATURE_MAX_CHARS = {
+  review: 185000, docchat: 185000, compare: 170000,
+  research: 60000, draft: 60000, refine: 60000, tools: 60000
+};
 const MAX_SYSTEM_CHARS = 20000;
 const MAX_MESSAGES = 13;
 
@@ -110,7 +119,7 @@ function buildAnthropicBody(payload) {
     messages.push({ role: m.role, content: m.content });
   }
   if (messages[messages.length - 1].role !== 'user') return { error: 'Invalid request.' };
-  if (total > MAX_TOTAL_CHARS) {
+  if (total > FEATURE_MAX_CHARS[feature]) {
     return { error: 'This document is too long for Dave.AI to process in one go. Please shorten it and try again.' };
   }
   const cap = FEATURE_MAX_TOKENS[feature];
