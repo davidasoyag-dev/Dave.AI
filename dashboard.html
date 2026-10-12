@@ -1855,8 +1855,6 @@ async function inviteTeamMember(){
     });
     var d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Could not send the invite.');
-    var u = (await _sb.auth.getUser()).data.user;
-    if(u){ await _sb.from('team_invites').insert({ inviter_id: u.id, invited_email: invitedEmail }); }
     if(emailEl) emailEl.value = '';
     if(statusEl){ statusEl.style.color = '#3cb464'; statusEl.textContent = 'Invite sent ✓'; }
     loadTeamInvites();

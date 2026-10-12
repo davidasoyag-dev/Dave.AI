@@ -325,7 +325,7 @@ async function showForgot(){
 
   // Show success message
   var sub = document.getElementById('card-sub');
-  sub.innerHTML = 'A password reset link has been sent to <strong style="color:#7aaaf8">' + email + '</strong>. Check your inbox and follow the link to reset your password.';
+  sub.innerHTML = 'A password reset link has been sent to <strong style="color:#7aaaf8">' + email.replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }) + '</strong>. Check your inbox and follow the link to reset your password.';
   sub.style.color = 'rgba(200,216,255,0.7)';
 }
 </script>
