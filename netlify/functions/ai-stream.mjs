@@ -23,7 +23,8 @@ async function verifyUser(req){
   if(!token) return null;
   try {
     const r = await fetch(SUPABASE_URL + '/auth/v1/user', {
-      headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_ANON }
+      headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_ANON },
+      signal: AbortSignal.timeout(5000)
     });
     if(!r.ok) return null;
     const u = await r.json();
@@ -113,22 +114,32 @@ export default async (req) => {
   // previous no-thinking behaviour unless the caller asks for something else.
   if (payload.model === MODEL && !payload.thinking) payload.thinking = { type: 'between_tools' };
 
-  const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify(payload)
-  });
+  let upstream;
+  try {
+    upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'Could not reach the AI service. Please try again.' }), {
+      status: 502, headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
 
   // On error, return the upstream error body as-is (not a stream)
   if (!upstream.ok) {
-    const errBody = await upstream.text();
+    const errBody = await upstream.text().catch(() => '');
+    const errHeaders = { ...cors, 'Content-Type': 'application/json' };
+    const retryAfter = upstream.headers.get('retry-after');
+    if (retryAfter) errHeaders['Retry-After'] = retryAfter;
     return new Response(errBody, {
       status: upstream.status,
-      headers: { ...cors, 'Content-Type': 'application/json' }
+      headers: errHeaders
     });
   }
 

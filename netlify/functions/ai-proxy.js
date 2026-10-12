@@ -36,6 +36,8 @@ function getJson(hostname, path, headers) {
       });
     });
     req.on('error', () => resolve({ status: 0, json: null }));
+    // Don't let a slow Supabase/Brave response eat the function's time budget
+    req.setTimeout(5000, () => { req.destroy(); resolve({ status: 0, json: null }); });
     req.end();
   });
 }
@@ -88,9 +90,14 @@ function callAnthropic(body) {
     }, (res) => {
       let data = '';
       res.on('data', c => data += c);
-      res.on('end', () => resolve({ statusCode: res.statusCode, body: data }));
+      res.on('end', () => resolve({ statusCode: res.statusCode, body: data, retryAfter: res.headers['retry-after'] }));
     });
     req.on('error', (e) => resolve({ statusCode: 500, body: JSON.stringify({ error: e.message }) }));
+    // Give up before Netlify's ~30s limit so the browser gets a clean JSON error
+    req.setTimeout(27000, () => {
+      req.destroy();
+      resolve({ statusCode: 504, body: JSON.stringify({ error: 'The AI service took too long to respond. Please try again.' }) });
+    });
     req.write(body);
     req.end();
   });
@@ -142,9 +149,11 @@ exports.handler = async (event) => {
   const body = JSON.stringify(payload);
   const result = await callAnthropic(body);
 
+  const outHeaders = { 'Content-Type': 'application/json', ...cors };
+  if (result.retryAfter) outHeaders['Retry-After'] = String(result.retryAfter);
   return {
     statusCode: result.statusCode,
-    headers: { 'Content-Type': 'application/json', ...cors },
+    headers: outHeaders,
     body: result.body
   };
 };
