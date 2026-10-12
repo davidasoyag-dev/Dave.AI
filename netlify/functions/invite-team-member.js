@@ -14,6 +14,9 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIs' +
   'haBSneWo';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DAILY_INVITE_CAP = 10;
+// Seats per team plan, including the inviter. Enterprise has no seat limit.
+// Pro: up to 5 users (4 invites). Firm: up to 10 users (9 invites).
+const PLAN_SEATS = { pro: 5, firm: 10, enterprise: Infinity };
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -80,11 +83,44 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Please enter a valid email address.' }) };
   }
 
-  // Per-user cap: max DAILY_INVITE_CAP invites per user per UTC day (counted with the service key)
   const svcHeaders = {
     'apikey': SERVICE_ROLE_KEY,
     'Authorization': 'Bearer ' + SERVICE_ROLE_KEY
   };
+
+  // Seats: only an active Pro, Firm or Enterprise plan can invite, up to the
+  // plan's user limit. Plan is read from the inviter's profile (server-side).
+  const profRes = await request('GET', SUPABASE_HOST,
+    '/rest/v1/profiles?select=plan,plan_active&id=eq.' + encodeURIComponent(user.id), svcHeaders);
+  if (profRes.status !== 200 || !Array.isArray(profRes.json)) {
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Could not send the invite. Please try again.' }) };
+  }
+  const prof = profRes.json[0] || null;
+  const teamPlan = prof && prof.plan_active === true ? String(prof.plan || '').toLowerCase() : '';
+  if (!Object.prototype.hasOwnProperty.call(PLAN_SEATS, teamPlan)) {
+    return { statusCode: 403, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Inviting team members needs an active Pro, Firm or Enterprise plan. You can upgrade under Billing & Plans.' }) };
+  }
+  const seats = PLAN_SEATS[teamPlan];
+  if (seats !== Infinity) {
+    const allRes = await request('GET', SUPABASE_HOST,
+      '/rest/v1/team_invites?select=invited_email,status&inviter_id=eq.' + encodeURIComponent(user.id), svcHeaders);
+    if (allRes.status !== 200 || !Array.isArray(allRes.json)) {
+      return { statusCode: 500, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: 'Could not send the invite. Please try again.' }) };
+    }
+    const invited = new Set();
+    allRes.json.forEach((r) => {
+      if (r && r.status !== 'revoked' && typeof r.invited_email === 'string') invited.add(r.invited_email.trim().toLowerCase());
+    });
+    // Re-inviting someone already counted doesn't use a new seat
+    if (!invited.has(invitedEmail) && invited.size >= seats - 1) {
+      const msg = teamPlan === 'pro'
+        ? 'Your Pro plan includes up to 5 users (you plus 4 colleagues), and all seats are used. Upgrade to Firm to add more.'
+        : 'Your Firm plan includes up to 10 users (you plus 9 colleagues), and all seats are used. Contact support@daveai.law about Enterprise for more.';
+      return { statusCode: 403, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify({ error: msg }) };
+    }
+  }
+
+  // Per-user cap: max DAILY_INVITE_CAP invites per user per UTC day (counted with the service key)
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
   const countPath = '/rest/v1/team_invites?select=id' +
