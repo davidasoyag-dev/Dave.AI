@@ -152,7 +152,7 @@ _sb = supabase.createClient(
           "name": "How does the free trial work?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Sign up and get full access to every feature for 14 days with no credit card required. At the end of your trial, choose a plan to continue."
+            "text": "Sign up and get full access to every feature for 14 days with no credit card required. The trial includes up to 25 AI actions a day. At the end of your trial, choose a plan to continue."
           }
         },
         {
@@ -772,7 +772,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     <div class="reveal sec-header-center">
       <p class="sec-label">Pricing</p>
       <p class="sec-title">Simple, transparent plans</p>
-      <p class="sec-sub">All plans include a 14-day free trial. No credit card required until trial ends.</p>
+      <p class="sec-sub">All plans include a 14-day free trial. No credit card required.</p>
     </div>
     <div class="price-grid">
       <div class="reveal d1">
@@ -802,7 +802,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
           <div class="price-trial-badge">14-day free trial</div>
           <div class="price-divider"></div>
           <ul class="price-features">
-            <li>Unlimited documents</li>
+            <li>Unlimited documents (fair use)</li>
             <li>All Starter features</li>
             <li>Unlimited document history</li>
             <li>Team document sharing (coming soon)</li>
@@ -844,7 +844,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
             <li style="color:rgba(255,255,255,0.6);">Custom onboarding & training</li>
             <li style="color:rgba(255,255,255,0.6);">SLA & uptime guarantee (coming soon)</li>
             <li style="color:rgba(255,255,255,0.6);">Direct founder support</li>
-            <li style="color:rgba(255,255,255,0.6);">API access & integrations</li>
+            <li style="color:rgba(255,255,255,0.6);">API access & integrations (coming soon)</li>
           </ul>
           <button class="btn-plan-outline" style="border-color:rgba(79,114,196,0.5);color:#7aaaf8;" onclick="openSignup('enterprise')">Contact us →</button>
         </div>
@@ -853,6 +853,8 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     </div>
     <div class="reveal" style="text-align:center;margin-top:20px;">
       <p style="font-size:13px;color:#8d9bbf;">All prices exclude VAT · Cancel anytime · Switch plans at any time · Enterprise pricing on request</p>
+      <p style="font-size:13px;color:#8d9bbf;margin-top:6px;">Fair use: up to 300 AI actions per user per month on Pro and Firm. All plans: up to 100 AI actions per day.</p>
+      <p style="font-size:13px;color:#8d9bbf;margin-top:6px;">Paid plans are launching soon. Start with the free trial; we'll contact you before any charge.</p>
     </div>
   </div>
 </div>
@@ -868,10 +870,10 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     <div id="faq-list">
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>Is Dave.AI accurate for UK law?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Dave.AI is built and configured specifically for the law of England and Wales. It's instructed to reference UK Acts, statutory instruments and English case law rather than US or international sources, and can draw on live search for recent changes. As with any AI tool, all output should be reviewed by a qualified solicitor before use.</div></div>
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>Will my client data be kept confidential?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Yes. Your documents are encrypted in transit and at rest. To generate results, the text you submit is processed by our AI provider, Anthropic, who do not use it to train their models — and we never use your documents to train anything. We handle personal data in line with UK GDPR; see our Privacy Policy for the full detail, including a Data Processing Agreement for firms that need one.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does the 14-day free trial work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Sign up and get full access to every feature for 14 days — no credit card required. At the end of your trial, choose a plan and enter your payment details. If you don't upgrade, your account simply pauses. No surprise charges.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does the 14-day free trial work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Sign up and get full access to every feature for 14 days — no credit card required. The trial includes up to 25 AI actions a day. At the end of your trial, choose a plan and enter your payment details. If you don't upgrade, your account simply pauses. No surprise charges.</div></div>
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>Can I switch plans later?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Yes, at any time. Upgrade or downgrade from your billing settings whenever your needs change.</div></div>
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does Dave.AI compare to other legal AI platforms?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Enterprise legal AI platforms are typically built for large firms — high per-seat pricing and long commitments. Dave.AI starts at £49/month for a solo solicitor, is built specifically for the law of England and Wales, and has no lock-in. For larger firms needing 10+ users, we offer custom pricing — just get in touch and we'll put together a proposal.</div></div>
-          <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does Enterprise pricing work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Enterprise is for firms with 10 or more users who need a tailored solution. Pricing is agreed based on your team size, usage requirements, and any custom integrations or SLA guarantees you need. Contact us and we'll put together a proposal within 48 hours.</div></div>
+          <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does Enterprise pricing work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Enterprise is for firms with 10 or more users who need a tailored solution. Pricing is agreed based on your team size, usage requirements, and any custom integrations or SLA guarantees you need. Contact us and we'll put together a proposal within 2 working days.</div></div>
     </div>
   </div>
 </div>
@@ -1763,7 +1765,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
           <div class="su-pc" id="su-pc-starter" onclick="suPick('starter')"><div class="su-pc-radio" id="su-pr-starter"></div><div class="su-pc-name">Starter</div><div class="su-pc-price">£49<sub>/mo</sub></div><div class="su-pc-users">1 user</div></div>
           <div class="su-pc popular" id="su-pc-pro" onclick="suPick('pro')"><div class="su-pc-radio" id="su-pr-pro"></div><div class="su-pc-name">Pro</div><div class="su-pc-price">£149<sub>/mo</sub></div><div class="su-pc-users">Up to 5 users</div></div>
           <div class="su-pc" id="su-pc-firm" onclick="suPick('firm')"><div class="su-pc-radio" id="su-pr-firm"></div><div class="su-pc-name">Firm</div><div class="su-pc-price">£299<sub>/mo</sub></div><div class="su-pc-users">Up to 10 users</div></div>
-          <div class="su-pc" id="su-pc-enterprise" onclick="suPick('enterprise')"><div class="su-pc-radio" id="su-pr-enterprise"></div><div class="su-pc-name">Enterprise</div><div class="su-pc-price" style="font-size:16px;padding-top:4px">Custom</div><div class="su-pc-users">10+ users · SLA</div></div>
+          <div class="su-pc" id="su-pc-enterprise" onclick="suPick('enterprise')"><div class="su-pc-radio" id="su-pr-enterprise"></div><div class="su-pc-name">Enterprise</div><div class="su-pc-price" style="font-size:16px;padding-top:4px">Custom</div><div class="su-pc-users">10+ users</div></div>
         </div>
         <button class="su-btn" id="su-s1-btn" onclick="suGoStep(2)" style="margin-top:8px">Continue <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
         <p class="su-footnote">All plans include a 14-day free trial · No credit card required</p>
@@ -1802,12 +1804,12 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
       <div id="su-ent" class="su-panel" style="display:none">
         <div class="su-plan-bar">
           <div class="su-pb-left"><div class="su-pb-dot" style="background:#a78bfa"></div>
-            <div><div class="su-pb-name">Enterprise Plan</div><div class="su-pb-sub">Custom pricing · Dedicated SLA · 10+ users</div></div>
+            <div><div class="su-pb-name">Enterprise Plan</div><div class="su-pb-sub">Custom pricing · Dedicated SLA (coming soon) · 10+ users</div></div>
           </div>
           <div><div class="su-pb-change" onclick="suGoStep(1)">Change plan</div></div>
         </div>
         <h2 class="su-title">Get a custom quote</h2>
-        <p class="su-sub">Tell us about your firm and we'll put together a tailored Enterprise proposal — usually within 24 hours.</p>
+        <p class="su-sub">Tell us about your firm and we'll put together a tailored Enterprise proposal — usually within 2 working days.</p>
 
         <div class="su-field-2">
           <div class="su-field"><label class="su-label">First name</label><input class="su-input" type="text" id="ent-first" placeholder="John" oninput="entValidate()"/></div>
@@ -1841,14 +1843,14 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
 
         <div class="su-field">
           <label class="su-label">Anything else we should know? <span style="color:rgba(200,216,255,0.25);font-size:8px;text-transform:none;letter-spacing:0">(optional)</span></label>
-          <textarea class="su-input" id="ent-notes" placeholder="e.g. API access, white-labelling, on-premise requirements, SLA needs..." rows="3" style="resize:none;line-height:1.5"></textarea>
+          <textarea class="su-input" id="ent-notes" placeholder="e.g. API access, white-labelling, SLA needs..." rows="3" style="resize:none;line-height:1.5"></textarea>
         </div>
 
         <button class="su-btn" id="ent-btn" onclick="entSubmit()" disabled style="margin-top:4px">
           Request Enterprise quote →
         </button>
         <button class="su-btn-ghost" onclick="suGoStep(1)">← Back to plans</button>
-        <p class="su-footnote">We'll respond within 24 hours · No commitment required</p>
+        <p class="su-footnote">We'll respond within 2 working days · No commitment required</p>
       </div>
 
       <!-- Enterprise sent confirmation -->
@@ -1860,12 +1862,12 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <p class="su-wlc-sub">Thanks <strong id="ent-sent-name">John</strong>. We've received your Enterprise enquiry for <strong id="ent-sent-firm">your firm</strong>.</p>
         <div class="su-trial-badge" style="text-align:left;margin-bottom:20px">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#3cb464" stroke-width="1.8"/><polyline points="9 12 11 14 15 10" stroke="#3cb464" stroke-width="2.2" stroke-linecap="round"/></svg>
-          <div class="su-tb-text"><b>What happens next?</b> Our team will review your requirements and send a tailored proposal to <span id="ent-sent-email" style="color:#7aaaf8"></span> within 24 hours.</div>
+          <div class="su-tb-text"><b>What happens next?</b> Our team will review your requirements and send a tailored proposal to <span id="ent-sent-email" style="color:#7aaaf8"></span> within 2 working days.</div>
         </div>
         <div class="su-ob" style="text-align:left;margin-bottom:24px">
           <div class="su-ob-step"><div class="su-ob-num">1</div><div><div class="su-ob-title">Custom pricing</div><div class="su-ob-desc">We'll build a quote based on your team size, use case and any custom requirements.</div></div></div>
           <div class="su-ob-step"><div class="su-ob-num">2</div><div><div class="su-ob-title">Platform walkthrough</div><div class="su-ob-desc">We'll schedule a 30-minute demo tailored to your firm's workflow and priorities.</div></div></div>
-          <div class="su-ob-step"><div class="su-ob-num">3</div><div><div class="su-ob-title">Onboarding & SLA</div><div class="su-ob-desc">Dedicated onboarding, custom SLA and API access.</div></div></div>
+          <div class="su-ob-step"><div class="su-ob-num">3</div><div><div class="su-ob-title">Onboarding & SLA</div><div class="su-ob-desc">Dedicated onboarding, plus custom SLA and API access (coming soon).</div></div></div>
         </div>
         <button class="su-btn" onclick="closeSignup()">Close</button>
       </div>
@@ -1875,7 +1877,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
       <div id="su-s3" class="su-panel" style="display:none;text-align:center;">
         <div class="su-wlc-icon"><svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/><rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/><rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/><path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/><line x1="4" y1="8" x2="1.5" y2="8" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="1.5" cy="8" r=".9" fill="white"/><line x1="4" y1="12" x2="1.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="1.5" cy="12" r=".9" fill="white"/><circle cx="20.5" cy="12" r="1.1" fill="white"/><line x1="20.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/></svg></div>
         <h2 class="su-wlc-title">Welcome to Dave<em>.AI</em></h2>
-        <p class="su-wlc-sub">Your 14-day free trial is active. No charge until <strong id="su-trial-end"></strong>.</p>
+        <p class="su-wlc-sub">Your 14-day free trial is active until <strong id="su-trial-end"></strong>. No charge unless you choose a paid plan.</p>
         <div class="su-trial-badge" style="text-align:left"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#3cb464" stroke-width="1.8"/><polyline points="9 12 11 14 15 10" stroke="#3cb464" stroke-width="2.2" stroke-linecap="round"/></svg><div class="su-tb-text"><b>Trial started.</b> Full access on your <span id="su-wlc-plan">Pro</span> plan. Cancel any time.</div></div>
         <div class="su-ob" style="text-align:left;margin-bottom:24px;">
           <div class="su-ob-step"><div class="su-ob-num">1</div><div><div class="su-ob-title">Draft your first document</div><div class="su-ob-desc">Go to Draft → describe what you need. A full UK-law first draft in minutes.</div></div></div>
