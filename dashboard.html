@@ -193,6 +193,8 @@ select.inp{cursor:pointer;}
 /* ── Doc rows ── */
 .doc-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
 .doc-row:hover{background:var(--card2);border-color:var(--border);}
+.doc-open{display:block;max-width:100%;background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;font-size:13px;font-weight:500;}
+.doc-open:hover{text-decoration:underline;}
 .doc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 /* ── Tags ── */
@@ -325,6 +327,9 @@ select.inp{cursor:pointer;}
   .trial-expired-plans{grid-template-columns:1fr;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .cards-grid{grid-template-columns:1fr;}
+  .grid2{grid-template-columns:1fr;}
+  .qa-grid{grid-template-columns:1fr;}
+  .view{padding:18px 16px;}
 }
 @media(min-width:1600px){
   :root{--sidebar:256px;}
@@ -374,7 +379,7 @@ select.inp{cursor:pointer;}
       <span class="tb-logo-name">Dave<em>.AI</em></span>
     </a>
     <div class="tb-search">
-      <svg width="13" height="13" fill="none" stroke="#a8b4cc" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg width="13" height="13" fill="none" stroke="#5a6684" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="search" id="tb-q" placeholder="Search documents…" aria-label="Search documents" oninput="tbSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();tbSearch(this.value);}"/>
     </div>
     <div class="tb-right">
@@ -866,11 +871,11 @@ function updateUsageBadge(){
   else { limit = Infinity; used = u.month; }
   if(limit === Infinity){
     el.textContent = used + ' AI actions this month';
-    el.style.color = '#a8b4cc';
+    el.style.color = '#5a6684';
   } else {
     var remaining = Math.max(0, limit - used);
     el.textContent = remaining + ' / ' + limit + ' AI actions left ' + period;
-    el.style.color = remaining <= 3 ? '#c0392b' : remaining <= 5 ? '#96620a' : '#a8b4cc';
+    el.style.color = remaining <= 3 ? '#c0392b' : remaining <= 5 ? '#96620a' : '#5a6684';
   }
 }
 
@@ -1279,6 +1284,7 @@ function vDash(){
 //  DRAFT VIEW
 // ══════════════════════════════════════════════
 function vDraft(){
+  window._draft = null; // a fresh Draft view has nothing to save yet
   return '<div class="view">' +
     '<div class="view-head"><div><div class="view-title">Contract Drafting</div><div class="view-sub">Select a document type, describe your requirements, and receive a first draft under English law (or the law you specify).</div></div></div>' +
     '<div class="grid2">' +
@@ -1327,6 +1333,7 @@ async function doDraft(){
       window._draft = {name:type+' — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
       incrementUsage(); // count this document toward the plan limit
       var rf=document.getElementById('draft-refine'); if(rf) rf.style.display='block';
+      var sb=document.getElementById('dbtn-save'); if(sb){ sb.disabled=false; sb.textContent='Save to History'; }
     } else {
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(aiErrText(r))+'</div>';
     }
@@ -1335,8 +1342,9 @@ async function doDraft(){
 }
 function saveDoc(){
   if(!window._draft) return;
-  addDoc(window._draft);
-  var b=document.getElementById('dbtn-save'); b.textContent='✓ Saved!'; b.disabled=true;
+  addDoc(Object.assign({}, window._draft)); // save a copy so later edits can't change the saved record
+  window._draft = null; // prevents saving the same draft twice
+  var b=document.getElementById('dbtn-save'); if(b){ b.textContent='✓ Saved!'; b.disabled=true; }
 }
 function dlDoc(){
   var txt=mdToPlain(window._lastDraftText||document.getElementById('dout').textContent);
@@ -1362,6 +1370,7 @@ async function doRefineDraft(){
       window._lastDraftText=r;
       var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
       window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
+      var sb=document.getElementById('dbtn-save'); if(sb){ sb.disabled=false; sb.textContent='Save to History'; }
     } else {
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(aiErrText(r))+'</div>';
     }
@@ -1383,7 +1392,7 @@ function vDocChat(){
         '<div class="chat-msgs" id="dcmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
         '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
       : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
-        '<div id="dc-upload"><div class="upload-zone" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
+        '<div id="dc-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a document (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'dc-file\')" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
         '</div>'
     ) +
@@ -1494,7 +1503,7 @@ function vReview(){
     '<div class="grid2">' +
       '<div><div class="card">' +
         '<div class="tabs"><button class="tab on" onclick="rvTab(\'upload\',this)">Upload file</button><button class="tab" onclick="rvTab(\'paste\',this)">Paste text</button></div>' +
-        '<div id="rv-upload"><div class="upload-zone" onclick="document.getElementById(\'rv-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="rvDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop your contract here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="rv-file" style="display:none" accept=".txt,.pdf,.docx" onchange="rvFileSelect(this)"/></div><div id="rv-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
+        '<div id="rv-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a contract (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'rv-file\')" onclick="document.getElementById(\'rv-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="rvDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop your contract here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="rv-file" style="display:none" accept=".txt,.pdf,.docx" onchange="rvFileSelect(this)"/></div><div id="rv-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="rv-paste" style="display:none"><textarea class="inp" id="rv-text" rows="8" placeholder="Paste the contract text here…"></textarea></div>' +
         '<button class="btn btn-p" style="margin-top:14px;width:100%" onclick="doReview()" id="rvbtn">Analyse document</button>' +
       '</div></div>' +
@@ -1779,14 +1788,14 @@ function vHistory(){
     '<div class="card" style="margin-bottom:14px"><input class="inp" id="hs" placeholder="Search documents…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
     '<div id="hl">'+renderDocs(docs)+'</div>' +
     // Document viewer modal
-    '<div id="doc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:20px">' +
+    '<div id="doc-modal" role="dialog" aria-modal="true" aria-labelledby="doc-modal-title" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:20px">' +
       '<div style="background:#0d1326;border:1px solid rgba(79,114,196,0.25);border-radius:18px;width:100%;max-width:760px;max-height:85vh;display:flex;flex-direction:column">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(79,114,196,0.12)">' +
           '<div id="doc-modal-title" style="font-size:14px;font-weight:600"></div>' +
           '<div style="display:flex;gap:8px">' +
             '<button class="btn btn-g" style="font-size:11px" onclick="copyDocModal(this)">Copy</button>' +
             '<button class="btn btn-g" style="font-size:11px" onclick="dlDocModal()">Download</button>' +
-            '<button class="btn btn-g" style="font-size:11px" onclick="closeDocModal()">✕ Close</button>' +
+            '<button class="btn btn-g" style="font-size:11px" id="doc-modal-close" onclick="closeDocModal()">✕ Close</button>' +
           '</div>' +
         '</div>' +
         '<div id="doc-modal-body" style="padding:24px;overflow-y:auto;font-size:13px;line-height:1.8;color:rgba(200,216,255,0.85);white-space:pre-wrap;font-family:monospace"></div>' +
@@ -1806,15 +1815,17 @@ function renderDocs(list){
     var bg=d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
     return '<div class="doc-row" style="cursor:pointer" onclick="viewDoc('+k+')">' +
       '<div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
-      '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+escHtml(d.name)+'</div><div style="font-size:11px;color:var(--muted)">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div>' +
+      '<div style="flex:1"><button type="button" class="doc-open" onclick="event.stopPropagation();viewDoc('+k+',this)">'+escHtml(d.name)+'</button><div style="font-size:11px;color:var(--muted)">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div>' +
       '<span class="tag tag-b">'+escHtml(d.type)+'</span>' +
       '<button class="btn btn-g" style="font-size:10px;padding:4px 10px;margin-left:8px" onclick="event.stopPropagation();delDoc('+k+')">Delete</button>' +
     '</div>';
   }).join('')+'</div>';
 }
-function viewDoc(k){
+var _docModalReturn = null;
+function viewDoc(k, opener){
   var d = docs[docIndex(k)];
   if(!d) return;
+  _docModalReturn = opener || document.activeElement;
   document.getElementById('doc-modal-title').textContent = d.name;
   var body = d.content || '';
   // If it's a Review, parse the JSON and show it nicely
@@ -1828,8 +1839,24 @@ function viewDoc(k){
   }
   document.getElementById('doc-modal-body').textContent = body;
   document.getElementById('doc-modal').style.display = 'flex';
+  var cb = document.getElementById('doc-modal-close'); if(cb) cb.focus();
 }
-function closeDocModal(){ document.getElementById('doc-modal').style.display = 'none'; }
+function closeDocModal(){
+  var m = document.getElementById('doc-modal'); if(m) m.style.display = 'none';
+  var r = _docModalReturn; _docModalReturn = null;
+  if(r && document.body.contains(r) && r.focus) r.focus();
+}
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  var m = document.getElementById('doc-modal');
+  if(m && m.style.display === 'flex'){ e.preventDefault(); closeDocModal(); }
+});
+// Upload zones: Enter/Space opens the hidden file input (keyboard access)
+function uzKey(e, id){
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  e.preventDefault();
+  var f = document.getElementById(id); if(f) f.click();
+}
 function copyDocModal(btn){ copyText(document.getElementById('doc-modal-body').textContent, btn); }
 function dlDocModal(){
   var title = document.getElementById('doc-modal-title').textContent;
@@ -1889,8 +1916,7 @@ function vSettings(){
       '<div>' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Preferences</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Control how Dave.AI works for you</div>' +
-          [['Email notifications','Receive updates about your documents',true],['Auto-save drafts','Automatically save as you generate',true],['UK GDPR mode','Ensure all outputs comply with UK GDPR',true],['Product updates','Receive emails about new features',false]].map(function(s,i){return '<div class="s-row"><div><div style="font-size:13px;font-weight:500">'+s[0]+'</div><div style="font-size:11px;color:var(--muted)">'+s[1]+'</div></div><div class="toggle '+(s[2]?'on':'')+'" onclick="this.classList.toggle(\'on\')"></div></div>';}).join('') +
+          '<div style="font-size:11px;color:var(--muted)">More preferences coming soon.</div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Team members</div>' +
@@ -2039,8 +2065,8 @@ async function openBillingPortal(){
 
 function vBilling(){
   var plans = [
-    {key:'starter',name:'Starter',price:'£49',users:'1 user',feats:['20 documents per month','Contract & document drafting','Document review & analysis','Legal research assistant','Email support','Document history (30 days)']},
-    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['Unlimited documents (fair use)','All Starter features','Unlimited document history','Team document sharing (coming soon)','Advanced risk analysis','Priority support']},
+    {key:'starter',name:'Starter',price:'£49',users:'1 user',feats:['20 AI actions per month (legal research not counted)','Contract & document drafting','Document review & analysis','Legal research assistant','Email support','Document history (30 days)']},
+    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['300 AI actions per user / month','All Starter features','Unlimited document history','Team document sharing (coming soon)','Advanced risk analysis','Priority support']},
     {key:'firm',name:'Firm',price:'£299',users:'Up to 10 users',feats:['Everything in Pro','Up to 10 users','Team collaboration tools (coming soon)','Direct founder support','Custom integrations (coming soon)','API access (coming soon)']},
     {key:'enterprise',name:'Enterprise',price:'Custom',users:'10+ users',feats:['Everything in Firm','Unlimited users','Custom SLA (coming soon)','White-labelling (coming soon)','Bespoke integrations (coming soon)']}
   ];
