@@ -147,8 +147,16 @@ create table if not exists public.ai_requests (
   feature     text        not null,
   hits        integer     not null default 1,
   created_at  timestamptz not null default now(),
+  body_hash    text,        -- SHA-256 of the forwarded body; a free repeat needs the same hash
+  refund_token text,        -- secret for refund_ai_action; only the AI functions ever see it
+  counted_day  date,        -- the ai_usage day row this action was counted in
+  refunded_at  timestamptz, -- set once the action has been refunded
   primary key (user_id, request_id)
 );
+alter table public.ai_requests add column if not exists body_hash    text;
+alter table public.ai_requests add column if not exists refund_token text;
+alter table public.ai_requests add column if not exists counted_day  date;
+alter table public.ai_requests add column if not exists refunded_at  timestamptz;
 
 alter table public.ai_requests enable row level security;
 revoke all on public.ai_requests from anon, authenticated;
@@ -156,15 +164,21 @@ revoke all on public.ai_requests from anon, authenticated;
 -- 9) consume_ai_action: called by the AI functions (with the user's own token)
 --    before every Anthropic call. Decides whether the caller may run one more
 --    AI action and, if so, counts it. Returns jsonb:
---      {allowed:true,  plan, used_today, used_month}
+--      {allowed:true,  plan, used_today, used_month, refund_token}
 --      {allowed:true,  plan, repeat:true}            (retry of an already-counted action)
 --      {allowed:false, reason, limit?}
 --    Limits: everyone 100/day; trial 25/day; starter 20/month (research not
 --    counted); pro and firm fair use 300/month; other active plans day cap only.
 --    Days and months are UK calendar days/months (Europe/London).
+--    A free repeat needs the same request_id, feature AND body hash
+--    (p_body_hash, SHA-256 hex of the forwarded system + messages).
+--    refund_ai_action (section 10) gives back an action whose AI call failed.
 drop function if exists public.consume_ai_action(text);
+drop function if exists public.consume_ai_action(text, text);
 
-create or replace function public.consume_ai_action(p_feature text, p_request_id text default null)
+create or replace function public.consume_ai_action(p_feature text,
+                                                    p_request_id text default null,
+                                                    p_body_hash text default null)
 returns jsonb
 language plpgsql
 security definer
@@ -181,6 +195,7 @@ declare
   v_used_month   integer;
   v_used_metered integer;
   v_req          public.ai_requests%rowtype;
+  v_token        text;
 begin
   if v_uid is null then
     return jsonb_build_object('allowed', false, 'reason', 'not_signed_in');
@@ -191,6 +206,9 @@ begin
   end if;
   if p_request_id is not null
      and (length(p_request_id) > 64 or p_request_id !~ '^[A-Za-z0-9_-]+$') then
+    return jsonb_build_object('allowed', false, 'reason', 'bad_request');
+  end if;
+  if p_body_hash is not null and p_body_hash !~ '^[0-9a-f]{64}$' then
     return jsonb_build_object('allowed', false, 'reason', 'bad_request');
   end if;
 
@@ -213,9 +231,9 @@ begin
     return jsonb_build_object('allowed', false, 'reason', 'trial_ended');
   end if;
 
-  -- Retry of an action already counted in the last 10 minutes (same id and
-  -- feature, at most 2 uses: the streaming attempt + one buffered fallback).
-  -- Any further use of the same id is counted as a new action.
+  -- Retry of an action already counted in the last 10 minutes (same id,
+  -- feature and body hash, not refunded, at most 2 uses: the streaming
+  -- attempt + one buffered fallback). Anything else is a new action.
   if p_request_id is not null then
     select * into v_req
       from public.ai_requests r
@@ -223,7 +241,10 @@ begin
     if found
        and v_req.feature = p_feature
        and v_req.hits < 2
-       and v_req.created_at > now() - interval '10 minutes' then
+       and v_req.created_at > now() - interval '10 minutes'
+       and v_req.refunded_at is null
+       and v_req.body_hash is not null
+       and v_req.body_hash = p_body_hash then
       update public.ai_requests r
          set hits = r.hits + 1
        where r.user_id = v_uid and r.request_id = p_request_id;
@@ -260,10 +281,20 @@ begin
   on conflict (user_id, day, feature) do update set count = u.count + 1;
 
   if p_request_id is not null then
-    insert into public.ai_requests as r (user_id, request_id, feature, hits, created_at)
-    values (v_uid, p_request_id, p_feature, 1, now())
+    v_token := replace(gen_random_uuid()::text, '-', '');
+    insert into public.ai_requests as r
+           (user_id, request_id, feature, hits, created_at,
+            body_hash, refund_token, counted_day, refunded_at)
+    values (v_uid, p_request_id, p_feature, 1, now(),
+            p_body_hash, v_token, v_today, null)
     on conflict (user_id, request_id) do update
-      set feature = excluded.feature, hits = 1, created_at = now();
+      set feature      = excluded.feature,
+          hits         = 1,
+          created_at   = now(),
+          body_hash    = excluded.body_hash,
+          refund_token = excluded.refund_token,
+          counted_day  = excluded.counted_day,
+          refunded_at  = null;
     -- Housekeeping: request ids are only needed for 10 minutes
     delete from public.ai_requests r
      where r.user_id = v_uid and r.created_at < now() - interval '1 day';
@@ -272,9 +303,72 @@ begin
   return jsonb_build_object('allowed', true,
                             'plan', case when v_active then v_plan else 'trial' end,
                             'used_today', v_used_today + 1,
-                            'used_month', v_used_month + 1);
+                            'used_month', v_used_month + 1,
+                            'refund_token', v_token);
 end;
 $$;
 
-revoke all on function public.consume_ai_action(text, text) from public, anon;
-grant execute on function public.consume_ai_action(text, text) to authenticated;
+revoke all on function public.consume_ai_action(text, text, text) from public, anon;
+grant execute on function public.consume_ai_action(text, text, text) to authenticated;
+
+-- 10) refund_ai_action: called by the AI functions (with the user's own
+--    token) when the Anthropic call failed. Gives back the one action that
+--    consume_ai_action counted for this request_id. Returns jsonb:
+--      {refunded:true}  or  {refunded:false, reason}
+drop function if exists public.refund_ai_action(text);
+
+create or replace function public.refund_ai_action(p_request_id text, p_refund_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_req  public.ai_requests%rowtype;
+begin
+  if v_uid is null then
+    return jsonb_build_object('refunded', false, 'reason', 'not_signed_in');
+  end if;
+  if p_request_id is null or p_refund_token is null
+     or length(p_request_id) > 64 or length(p_refund_token) > 64 then
+    return jsonb_build_object('refunded', false, 'reason', 'bad_request');
+  end if;
+
+  -- Same lock order as consume_ai_action (profile first), so a refund and
+  -- a new action from the same user cannot interleave or deadlock.
+  perform 1 from public.profiles p where p.id = v_uid for update;
+  if not found then
+    return jsonb_build_object('refunded', false, 'reason', 'not_found');
+  end if;
+
+  select * into v_req
+    from public.ai_requests r
+   where r.user_id = v_uid and r.request_id = p_request_id
+     for update;
+  if not found
+     or v_req.refund_token is null
+     or v_req.refund_token <> p_refund_token
+     or v_req.refunded_at is not null
+     or v_req.hits <> 1
+     or v_req.counted_day is null
+     or v_req.created_at <= now() - interval '10 minutes' then
+    return jsonb_build_object('refunded', false, 'reason', 'not_refundable');
+  end if;
+
+  update public.ai_usage u
+     set count = greatest(u.count - 1, 0)
+   where u.user_id = v_uid
+     and u.day = v_req.counted_day
+     and u.feature = v_req.feature;
+
+  update public.ai_requests r
+     set refunded_at = now(), refund_token = null
+   where r.user_id = v_uid and r.request_id = p_request_id;
+
+  return jsonb_build_object('refunded', true);
+end;
+$$;
+
+revoke all on function public.refund_ai_action(text, text) from public, anon;
+grant execute on function public.refund_ai_action(text, text) to authenticated;
