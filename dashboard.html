@@ -891,7 +891,7 @@ function incrementUsage(){
 // Friendly pre-check before an AI action (feature: draft | refine | review |
 // research | docchat | compare | tools). The server enforces the same limits.
 function checkUsageLimit(feature){
-  if(profileSettled && !planActive && trialDays === 0){ applyTrialState(true); return false; }
+  if(profileLoaded && !planActive && trialDays === 0){ applyTrialState(true); return false; }
   var u = getUsage(), msg = '', upsell = false;
   if(u.today >= DAILY_LIMIT){
     msg = 'You have reached today\'s limit of ' + DAILY_LIMIT + ' AI actions. It resets at midnight UK time.';
