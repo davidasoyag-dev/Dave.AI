@@ -337,20 +337,37 @@ select.inp{cursor:pointer;}
   .stat-val{font-size:34px;}
   .card-title-text{font-size:15px;}
 }
+/* ops 2026-10-13-b: a11y + trial overlay */
+h2.trial-expired-title{margin-top:0;color:inherit;}
+h2.trial-expired-title:focus{outline:none;}
+.teo-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;}
+.teo-actions .btn{text-decoration:none;}
+button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-webkit-appearance:none;appearance:none;}
+.qa:focus-visible{outline:2px solid #7aaaf8;outline-offset:2px;}
+.linklike{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;}
+.linklike:focus-visible{outline:2px solid #7aaaf8;outline-offset:2px;border-radius:3px;}
+.linklike.ms-dismiss{font-size:10px;color:var(--dim);}
+.linklike.ms-dismiss:hover{color:var(--muted);}
+/* end ops 2026-10-13-b */
 </style>
 </head>
 <body>
 
 <!-- Trial expired overlay -->
-<div class="trial-expired-overlay" id="trial-expired-overlay" style="display:none">
+<div class="trial-expired-overlay" id="trial-expired-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="teo-title">
   <div class="trial-expired-box">
     <div class="trial-expired-icon">
-      <svg width="28" height="28" fill="none" stroke="#c8963c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2.5"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg>
+      <svg aria-hidden="true" width="28" height="28" fill="none" stroke="#c8963c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2.5"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg>
     </div>
-    <div class="trial-expired-title">Your free trial has ended</div>
+    <h2 class="trial-expired-title" id="teo-title" tabindex="-1">Your free trial has ended</h2>
     <div class="trial-expired-sub">Your 14-day trial is up. Choose a plan below to keep full access to Dave.AI — contract drafting, document review and AI legal research.</div>
     <div class="trial-expired-plans" id="teo-plans"></div>
-    <div style="font-size:11px;color:var(--dim)">Secure checkout · Cancel anytime · Designed with UK GDPR in mind</div>
+    <div class="teo-actions">
+      <button type="button" class="btn btn-g" onclick="downloadMyDocs()">Download my documents</button>
+      <a class="btn btn-g" href="mailto:support@daveai.law">Contact us</a>
+      <button type="button" class="btn btn-g" onclick="signOut()">Sign out</button>
+    </div>
+    <div style="font-size:11px;color:var(--dim)" id="teo-foot">Secure checkout · Cancel anytime · Designed with UK GDPR in mind</div>
   </div>
 </div>
 
@@ -569,6 +586,7 @@ var planActive = false;
 var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
 if(isNaN(trialStart.getTime())) trialStart = new Date();
 var profileSettled = false; // true once loadProfile() has succeeded or failed
+var profileLoaded = false;  // true only once loadProfile() has succeeded
 var trialEnd, trialDays = 0, trialEndStr = '';
 // Documents now live in Supabase — per account, server-side, private via Row Level
 // Security. They load asynchronously after the page renders (see loadDocsFromServer).
@@ -614,7 +632,9 @@ function applyTrialState(forceExpired){
   trialDays = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
   trialEndStr = trialEnd.toLocaleDateString('en-GB', {day:'numeric', month:'long'});
   var ov = document.getElementById('trial-expired-overlay'); if(!ov) return;
-  if(forceExpired === true || (profileSettled && !planActive && trialDays === 0)){
+  // Only show after a SUCCESSFUL profile load (or a server 402); a failed load
+  // must not lock the user out (the server still enforces the trial).
+  if(forceExpired === true || (profileLoaded && !planActive && trialDays === 0)){
     var teoPlans = [
       {key:'starter', name:'Starter', price:'£49', users:'1 user'},
       {key:'pro',     name:'Pro',     price:'£149', users:'up to 5 users', popular:true},
@@ -630,10 +650,38 @@ function applyTrialState(forceExpired){
         +'<button class="ms-plan-btn" onclick="goToCheckout(\''+p.key+'\')">Activate '+p.name+' →</button>'
         +'</div>';
     }).join('');
+    var tf = document.getElementById('teo-foot');
+    if(tf) tf.textContent = PAYMENTS_LIVE
+      ? 'Secure checkout · Cancel anytime · Designed with UK GDPR in mind'
+      : 'Paid plans are launching soon — email support@daveai.law to continue';
+    var wasHidden = ov.style.display === 'none';
     ov.style.display = 'flex';
+    if(wasHidden){ var th = document.getElementById('teo-title'); if(th) th.focus(); }
   } else {
     ov.style.display = 'none';
   }
+}
+
+// Export the user's saved documents as one plain-text file (used from the
+// trial-expired overlay so an expired user can still take their work away).
+async function downloadMyDocs(){
+  if(!docs.length) await loadDocsFromServer();
+  if(!docs.length){ alert('You have no saved documents to download.'); return; }
+  var sep = '\n\n' + new Array(61).join('=') + '\n\n';
+  var txt = 'Dave.AI: my documents (exported ' + new Date().toLocaleString('en-GB') + ')' + sep +
+    docs.map(function(d){
+      var when = d.created ? new Date(d.created).toLocaleString('en-GB') : (d.date || '');
+      return 'Title: ' + (d.name || 'Untitled') + '\nType: ' + (d.type || '') + '\nDate: ' + when + '\n\n' + String(d.content == null ? '' : d.content);
+    }).join(sep) + '\n';
+  var blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'daveai-documents-' + new Date().toISOString().slice(0,10) + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 }
 applyTrialState();
 
@@ -652,6 +700,7 @@ async function loadProfile(){
     plan = planActive ? (srvPlan || plan) : (p.chosen_plan || (srvPlan !== 'trial' && srvPlan) || plan);
     S.trialStart = trialStart.toISOString();
     try { localStorage.setItem('dave_session', JSON.stringify(S)); } catch(e){}
+    profileLoaded = true;
   } catch(e){
     // Profile unavailable: never grant paid access; stay on trial rules
     planActive = false;
@@ -887,8 +936,8 @@ var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 var _voiceRec = null;
 function micBtn(inputId, btnId){
   if(!SpeechRec) return '';
-  return '<button type="button" class="btn btn-g mic-btn" id="'+btnId+'" title="Speak your question" onclick="toggleVoice(\''+inputId+'\',\''+btnId+'\')">' +
-    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>';
+  return '<button type="button" class="btn btn-g mic-btn" id="'+btnId+'" title="Speak your question" aria-label="Speak your question" aria-pressed="false" onclick="toggleVoice(\''+inputId+'\',\''+btnId+'\')">' +
+    '<svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>';
 }
 function toggleVoice(inputId, btnId){
   var btn = document.getElementById(btnId);
@@ -906,10 +955,10 @@ function toggleVoice(inputId, btnId){
     input.value = base + text;
   };
   rec.onerror = function(){ /* mic denied / no speech detected — fail quietly, onend still fires */ };
-  rec.onend = function(){ _voiceRec = null; if(btn) btn.classList.remove('mic-on'); };
+  rec.onend = function(){ _voiceRec = null; if(btn){ btn.classList.remove('mic-on'); btn.setAttribute('aria-pressed','false'); } };
   rec.start();
   _voiceRec = rec;
-  if(btn) btn.classList.add('mic-on');
+  if(btn){ btn.classList.add('mic-on'); btn.setAttribute('aria-pressed','true'); }
 }
 
 // Build request headers including the user's Supabase login token (the AI
@@ -1214,13 +1263,13 @@ function vDash(){
       }).join('');
 
   var trialBanner = !planActive
-    ? '<div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.25);border-radius:9px;padding:8px 14px;font-size:11px;color:#c8963c;display:flex;align-items:center;gap:8px;white-space:nowrap">Trial ends '+trialEndStr+'<span style="color:var(--blue2);cursor:pointer;font-weight:600" onclick="go(\'billing\')"> · Upgrade →</span></div>'
+    ? '<div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.25);border-radius:9px;padding:8px 14px;font-size:11px;color:#c8963c;display:flex;align-items:center;gap:8px;white-space:nowrap">Trial ends '+trialEndStr+'<button type="button" class="linklike" style="color:var(--blue2);cursor:pointer;font-weight:600" onclick="go(\'billing\')"> · Upgrade →</button></div>'
     : '<div style="background:rgba(60,180,100,0.08);border:1px solid rgba(60,180,100,0.22);border-radius:9px;padding:8px 14px;font-size:11px;color:#5ae090;display:flex;align-items:center;gap:7px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>Membership active</div>';
 
   var membershipStrip = !planActive ? '<div class="membership-strip" id="ms-strip">' +
     '<div class="ms-header">' +
       '<div class="ms-title"><svg width="13" height="13" fill="none" stroke="#c8963c" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg> Upgrade your plan — trial ends '+trialEndStr+'<span class="ms-title-badge">'+trialDays+' days left</span></div>' +
-      '<span class="ms-dismiss" onclick="document.getElementById(\'ms-strip\').style.display=\'none\'">Dismiss ×</span>' +
+      '<button type="button" class="linklike ms-dismiss" onclick="document.getElementById(\'ms-strip\').style.display=\'none\'">Dismiss ×</button>' +
     '</div>' +
     '<div class="ms-plans">' +
       '<div class="ms-plan">' +
@@ -1258,14 +1307,14 @@ function vDash(){
     '</div>' +
     '<div style="font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:10px">Tools</div>' +
     '<div class="qa-grid">' +
-      '<div class="qa" onclick="go(\'draft\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div style="flex:1"><div class="qa-label">Draft</div><div class="qa-desc">NDA, employment, lease</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
-      '<div class="qa" onclick="go(\'review\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div style="flex:1"><div class="qa-label">Review</div><div class="qa-desc">Risk flags & clause analysis</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
-      '<div class="qa" onclick="go(\'research\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="flex:1"><div class="qa-label">Research</div><div class="qa-desc">UK case law & legislation</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
-      '<div class="qa" onclick="go(\'history\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div><div style="flex:1"><div class="qa-label">History</div><div class="qa-desc">'+docs.length+' document'+(docs.length===1?'':'s')+' saved</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+      '<button type="button" class="qa" onclick="go(\'draft\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div style="flex:1"><div class="qa-label">Draft</div><div class="qa-desc">NDA, employment, lease</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'review\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div style="flex:1"><div class="qa-label">Review</div><div class="qa-desc">Risk flags & clause analysis</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'research\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="flex:1"><div class="qa-label">Research</div><div class="qa-desc">UK case law & legislation</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'history\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div><div style="flex:1"><div class="qa-label">History</div><div class="qa-desc">'+docs.length+' document'+(docs.length===1?'':'s')+' saved</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
     '</div>' +
     '<div class="grid2">' +
       '<div class="card">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:13px;font-weight:600">Recent documents</div><span style="font-size:11px;color:var(--blue2);cursor:pointer" onclick="go(\'history\')">View all →</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:13px;font-weight:600">Recent documents</div><button type="button" class="linklike" style="font-size:11px;color:var(--blue2);cursor:pointer" onclick="go(\'history\')">View all →</button></div>' +
         recentHtml +
       '</div>' +
       '<div class="card">' +
@@ -1390,7 +1439,7 @@ function vDocChat(){
     (loaded
       ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
         '<div class="chat-msgs" id="dcmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
-        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
+        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" aria-label="Ask about this document" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
       : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="dc-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a document (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'dc-file\')" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
@@ -1672,7 +1721,7 @@ function vResearch(){
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
