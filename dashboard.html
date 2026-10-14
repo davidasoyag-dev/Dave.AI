@@ -624,6 +624,7 @@ var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
 if(isNaN(trialStart.getTime())) trialStart = new Date();
 var profileSettled = false; // true once loadProfile() has succeeded (a failed load retries)
 var profileLoaded = false;  // true only once loadProfile() has succeeded
+var trialStartKnown = false; // the trial start date came from the server profile
 var trialEnd, trialDays = 0, trialEndStr = '';
 // Documents now live in Supabase — per account, server-side, private via Row Level
 // Security. They load asynchronously after the page renders (see loadDocsFromServer).
@@ -803,7 +804,7 @@ async function loadProfile(){
     if(res.error) throw res.error;
     var p = res.data; if(!p) throw new Error('No profile');
     planActive = p.plan_active === true;
-    if(p.trial_start){ var ts = new Date(p.trial_start); if(!isNaN(ts.getTime())) trialStart = ts; }
+    if(p.trial_start){ var ts = new Date(p.trial_start); if(!isNaN(ts.getTime())){ trialStart = ts; trialStartKnown = true; } }
     // Paid: the plan the server says they pay for. Trial: the plan they picked
     // at signup (display only; limits use the trial rules).
     var srvPlan = String(p.plan || '').toLowerCase();
@@ -1456,6 +1457,16 @@ function vDash(){
         return '<div class="doc-row"><div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(d.name)+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div><span class="tag tag-b" style="flex-shrink:0">'+escHtml(String(d.type||'').split(' ')[0])+'</span></div>';
       }).join('');
 
+  // Recent activity: only real events (the last 5 saved documents, and the trial start date from the server)
+  var actLabel = { Draft:'Draft saved', Review:'Contract reviewed', Research:'Research question' };
+  var activityHtml = docs.slice(0,5).map(function(d){
+    var col = d.type==='Draft'?'#4f72c4':d.type==='Review'?'#3cb464':'#a78bfa';
+    var nm = String(d.name||'Untitled').replace(/^(Research|Review) —\s*/, '');
+    return '<div class="act-row"><div class="act-dot" style="background:'+col+'"></div><div class="act-text">'+escHtml((actLabel[d.type]||d.type||'Document')+' · '+nm)+'</div><div class="act-time">'+escHtml(d.date||'')+'</div></div>';
+  }).join('');
+  if(!activityHtml) activityHtml = '<div style="font-size:12px;color:var(--muted);padding:10px 0">'+((!docsLoaded && !docsLoadError) ? 'Loading…' : 'Your recent drafts, reviews and research will appear here.')+'</div>';
+  if(trialStartKnown && !planActive) activityHtml += '<div class="act-row"><div class="act-dot" style="background:#c8963c"></div><div class="act-text">Free trial started</div><div class="act-time">'+escHtml(trialStart.toLocaleDateString('en-GB'))+'</div></div>';
+
   var trialBanner = !planActive
     ? '<div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.25);border-radius:9px;padding:8px 14px;font-size:11px;color:#8a5a00;display:flex;align-items:center;gap:8px;white-space:nowrap">Trial ends '+trialEndStr+'<button type="button" class="linklike" style="color:var(--blue2);cursor:pointer;font-weight:600" onclick="go(\'billing\')"> · Upgrade →</button></div>'
     : '<div style="background:rgba(60,180,100,0.08);border:1px solid rgba(60,180,100,0.22);border-radius:9px;padding:8px 14px;font-size:11px;color:#1e6b34;display:flex;align-items:center;gap:7px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>Membership active</div>';
@@ -1504,6 +1515,9 @@ function vDash(){
       '<button type="button" class="qa" onclick="go(\'draft\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div style="flex:1"><div class="qa-label">Draft</div><div class="qa-desc">NDA, employment, lease</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
       '<button type="button" class="qa" onclick="go(\'review\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div style="flex:1"><div class="qa-label">Review</div><div class="qa-desc">Risk flags & clause analysis</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
       '<button type="button" class="qa" onclick="go(\'research\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="flex:1"><div class="qa-label">Research</div><div class="qa-desc">UK case law & legislation</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'docchat\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div style="flex:1"><div class="qa-label">Ask a Doc</div><div class="qa-desc">Questions about a contract</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'compare\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="8 7 4 11 8 15"/><polyline points="16 7 20 11 16 15"/></svg></div><div style="flex:1"><div class="qa-label">Compare</div><div class="qa-desc">What changed between two versions</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'tools\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 4V2M15 10V8M11 6h2M17 6h2M20 15v-2M20 21v-2M17 18h2M23 18h-2M8 3l1.5 3.5L13 8l-3.5 1.5L8 13l-1.5-3.5L3 8l3.5-1.5z"/></svg></div><div style="flex:1"><div class="qa-label">Quick Tools</div><div class="qa-desc">Plain English · make it formal</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
       '<button type="button" class="qa" onclick="go(\'history\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div><div style="flex:1"><div class="qa-label">History</div><div class="qa-desc">'+docs.length+' document'+(docs.length===1?'':'s')+' saved</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
     '</div>' +
     '<div class="grid2">' +
@@ -1513,10 +1527,7 @@ function vDash(){
       '</div>' +
       '<div class="card">' +
         '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Recent activity</div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#3cb464"></div><div class="act-text">Account created · Trial started</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+(planActive ? escHtml(planName)+' activated' : 'Free trial started')+'</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#7aaaf8"></div><div class="act-text">Welcome email sent to '+escHtml(email||'your inbox')+'</div><div class="act-time">Today</div></div>' +
-        (docs.length > 0 ? '<div class="act-row"><div class="act-dot" style="background:#a78bfa"></div><div class="act-text">First document: '+escHtml(docs[0].name)+'</div><div class="act-time">'+escHtml(docs[0].date)+'</div></div>' : '') +
+        activityHtml +
       '</div>' +
     '</div>' +
     membershipStrip +
@@ -1671,7 +1682,7 @@ var dcDoc='', dcName='', dcMsgs=[];
 function vDocChat(){
   var loaded=!!dcDoc;
   return '<div class="view" style="display:flex;flex-direction:column;height:calc(100vh - var(--topbar))">' +
-    '<div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div class="view-title">Ask a Document</div><div class="view-sub">Upload or paste a contract, then ask questions about it in plain English.</div></div>'+(loaded?'<button class="btn btn-g" style="white-space:nowrap" onclick="dcReset()">New document</button>':'')+'</div>' +
+    '<div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div class="view-title">Ask a Doc</div><div class="view-sub">Upload or paste a contract, then ask questions about it in plain English.</div></div>'+(loaded?'<button class="btn btn-g" style="white-space:nowrap" onclick="dcReset()">New document</button>':'')+'</div>' +
     (loaded
       ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
         '<div class="chat-msgs" id="dcmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
@@ -1724,13 +1735,13 @@ async function doDocChat(){
 var cmpOut='';
 function vCompare(){
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">Compare Contracts</div><div class="view-sub">Paste two versions of a contract. Dave.AI highlights what changed and who each change favours.</div></div></div>' +
+    '<div class="view-head"><div><div class="view-title">Compare</div><div class="view-sub">Paste two versions of a contract. Dave.AI highlights what changed and who each change favours.</div></div></div>' +
     '<div class="grid2">' +
       '<div class="card"><div class="field" style="margin-bottom:0"><label>Version A — e.g. original / their draft</label><textarea class="inp" id="cmpA" rows="12" placeholder="Paste the first version…"></textarea></div></div>' +
       '<div class="card"><div class="field" style="margin-bottom:0"><label>Version B — e.g. revised / your draft</label><textarea class="inp" id="cmpB" rows="12" placeholder="Paste the second version…"></textarea></div></div>' +
     '</div>' +
     '<div style="margin-top:14px;display:flex;gap:10px"><button class="btn btn-p" onclick="doCompare()" id="cmpbtn">Compare versions</button><button class="btn btn-g" onclick="cmpOut=\'\';document.getElementById(\'cmpA\').value=\'\';document.getElementById(\'cmpB\').value=\'\';document.getElementById(\'cmp-res\').innerHTML=\'\'">Clear</button></div>' +
-    '<div id="cmp-res" style="margin-top:18px">'+(cmpOut||'')+'</div>' +
+    '<div id="cmp-res" aria-live="polite" style="margin-top:18px">'+(cmpOut||'')+'</div>' +
   '</div>';
 }
 async function doCompare(){
@@ -1763,8 +1774,8 @@ function vTools(){
   return '<div class="view">' +
     '<div class="view-head"><div><div class="view-title">Quick Tools</div><div class="view-sub">Fast helpers for everyday legal writing.</div></div></div>' +
     '<div class="grid2">' +
-      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" style="margin-top:14px"></div></div>' +
-      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" aria-live="polite" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" aria-live="polite" style="margin-top:14px"></div></div>' +
     '</div>' +
   '</div>';
 }
@@ -2124,8 +2135,8 @@ async function doR(){
 // ══════════════════════════════════════════════
 function vHistory(){
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">Document history</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
-    '<div class="card" style="margin-bottom:14px"><input class="inp" id="hs" placeholder="Search documents…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
+    '<div class="view-head"><div><div class="view-title">History</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    '<div class="card" style="margin-bottom:14px"><input class="inp" type="search" id="hs" aria-label="Search your saved documents by name or content" placeholder="Search by name or content…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
     '<div id="hl">'+renderDocs(docs)+'</div>' +
     // Document viewer modal
     '<div id="doc-modal" role="dialog" aria-modal="true" aria-labelledby="doc-modal-title" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:20px">' +
@@ -2203,7 +2214,7 @@ function dlDocModal(){
   a.download = title.replace(/[^a-z0-9]/gi,'_') + '.txt';
   a.click();
 }
-function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return (d.name||'').toLowerCase().includes(q)||(d.type||'').toLowerCase().includes(q);}));}
+function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return (d.name||'').toLowerCase().includes(q)||(d.type||'').toLowerCase().includes(q)||String(d.content==null?'':d.content).toLowerCase().includes(q);}));}
 async function delDoc(k){
   var i=docIndex(k); if(i<0) return;
   var d=docs[i];
