@@ -38,8 +38,8 @@ _sb = supabase.createClient(
 <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png"/>
 
 <!-- Primary SEO -->
-<meta name="description" content="AI legal software for UK solicitors. Draft contracts, review documents &amp; research UK law in seconds. 14-day free trial — no card required."/>
-<meta name="keywords" content="AI legal software UK, legal AI UK, AI solicitor, Dave AI, DaveAI, UK law AI, AI contract drafting, legal research AI, AI for lawyers UK, contract review AI, AI law firm UK, legal technology UK, LawTech UK, AI NDA generator, employment contract AI, UK legislation AI"/>
+<meta name="description" content="AI legal software for UK solicitors. Draft contracts, review documents &amp; research UK law, with a first draft in minutes. 14-day free trial — no card required."/>
+<meta name="keywords" content="AI legal software UK, legal AI UK, AI legal assistant for solicitors, Dave AI, DaveAI, UK law AI, AI contract drafting, legal research AI, AI for lawyers UK, contract review AI, AI law firm UK, legal technology UK, LawTech UK, AI NDA generator, employment contract AI, UK legislation AI"/>
 <meta name="author" content="Dave.AI"/>
 <meta name="robots" content="index, follow"/>
 <meta name="google-site-verification" content="hppjn5KAJlCf5iF2WDUBYekIQkRvdfKeicL6u6xCvMU"/>
@@ -49,8 +49,11 @@ _sb = supabase.createClient(
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://daveai.law/"/>
 <meta property="og:title" content="Dave.AI — AI Legal Software for UK Solicitors & Law Firms"/>
-<meta property="og:description" content="Draft contracts, review documents and research UK law in seconds. AI built specifically for UK legal professionals. Try free for 14 days."/>
-<meta property="og:image" content="https://daveai.law/favicon-512.png"/>
+<meta property="og:description" content="Draft contracts, review documents and research UK law, with a first draft in minutes. AI built specifically for UK legal professionals. Try free for 14 days."/>
+<meta property="og:image" content="https://daveai.law/images/og-image.jpg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="London skyline at night"/>
 <meta property="og:site_name" content="Dave.AI"/>
 <meta property="og:locale" content="en_GB"/>
 
@@ -58,8 +61,9 @@ _sb = supabase.createClient(
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:url" content="https://daveai.law/"/>
 <meta name="twitter:title" content="Dave.AI — AI Legal Software for UK Solicitors"/>
-<meta name="twitter:description" content="Draft contracts, review documents and research UK law in seconds. Built for UK legal professionals."/>
-<meta name="twitter:image" content="https://daveai.law/favicon-512.png"/>
+<meta name="twitter:description" content="Draft contracts, review documents and research UK law, with a first draft in minutes. Built for UK legal professionals."/>
+<meta name="twitter:image" content="https://daveai.law/images/og-image.jpg"/>
+<meta name="twitter:image:alt" content="London skyline at night"/>
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
@@ -88,7 +92,7 @@ _sb = supabase.createClient(
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
       "url": "https://daveai.law",
-      "description": "AI legal software for UK solicitors. Draft NDAs, employment contracts and legal documents instantly. Review contracts for risk. Research UK law with cited case law and statutes.",
+      "description": "AI legal software for UK solicitors. Draft NDAs, employment contracts and legal documents, with a first draft in minutes. Review contracts for risk. Research UK law with cited case law and statutes.",
       "offers": [
         {
           "@type": "Offer",
@@ -113,10 +117,13 @@ _sb = supabase.createClient(
         }
       ],
       "featureList": [
-        "AI Contract Drafting",
-        "Document Risk Review",
-        "UK Legal Research",
-        "Document Vault",
+        "Draft: AI contract and document drafting under English law",
+        "Review: contract risk review",
+        "Research: UK legal research with citations",
+        "Ask a Doc: ask questions about a contract or document",
+        "Compare: compare two versions of a contract",
+        "Quick Tools: plain-English explanations and formal rewording",
+        "Document History",
         "Designed with UK GDPR in mind"
       ],
       "screenshot": "https://daveai.law/favicon-512.png"
@@ -127,43 +134,6 @@ _sb = supabase.createClient(
       "url": "https://daveai.law",
       "name": "Dave.AI",
       "description": "AI legal software for UK solicitors and law firms"
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What is Dave.AI?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Dave.AI is an AI-powered legal software platform built for UK solicitors and law firms. It drafts contracts, reviews documents for risk, and researches UK law with citations to UK legislation and case law, so you can verify them."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is Dave.AI compliant with UK law and GDPR?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Dave.AI is built for England & Wales law and designed with UK GDPR in mind. Our privacy policy explains how we handle your data and which providers process it. AI-generated drafts are a starting point and should be reviewed by a qualified professional."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does the free trial work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Sign up and get full access to every feature for 14 days with no credit card required. The trial includes up to 25 AI actions a day. At the end of your trial, choose a plan to continue."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can Dave.AI draft NDAs and employment contracts?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Dave.AI can draft Mutual NDAs, One-way NDAs, Employment Contracts, Freelance Agreements, Settlement Agreements, Lease Agreements, Shareholder Agreements, Letters Before Action, Terms and Conditions, and Privacy Policies — all governed by English law."
-          }
-        }
-      ]
     }
   ]
 }
@@ -199,7 +169,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
 .d4{transition-delay:.32s}.d5{transition-delay:.40s}.d6{transition-delay:.48s}
 
 /* ── Preloader ── */
-#preloader{position:fixed;inset:0;background:#06091a;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 0.65s cubic-bezier(.4,0,.2,1);}
+#preloader{position:fixed;inset:0;background:#06091a;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 0.3s cubic-bezier(.4,0,.2,1);}
 #preloader.fade-out{opacity:0;pointer-events:none;}
 .pl-icon{width:72px;height:72px;background:#4f72c4;border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 48px rgba(79,114,196,0.6);animation:plPulse 1.8s ease-in-out infinite;}
 .pl-name{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#eef2ff;letter-spacing:-.025em;margin-top:16px;}
@@ -326,6 +296,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
 .price-amount sup{font-size:20px;vertical-align:super;}
 .price-period{font-size:12px;color:#8d9bbf;margin-bottom:8px;}
 .price-trial-badge{display:inline-block;background:#f0f4ff;border:1px solid rgba(79,114,196,.25);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--blue);font-weight:600;margin-bottom:18px;}
+.price-soon{font-size:11px;color:#8d9bbf;line-height:1.5;margin:-10px 0 16px;}
 .price-divider{height:1px;background:#f0f4ff;margin-bottom:18px;}
 .price-features{list-style:none;margin-bottom:22px;}
 .price-features li{font-size:13px;color:#344066;padding:5px 0;display:flex;align-items:center;gap:8px;}
@@ -367,6 +338,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
   .btn-primary,.btn-outline{font-size:14px;padding:13px 24px;}
   .hero-badges{flex-wrap:wrap;gap:8px;}
   .faq-q{font-size:14px;}
+  .impact-num{font-size:30px !important;}
 }
 @media(min-width:481px) and (max-width:768px){
   .hero-title{font-size:clamp(34px,7vw,48px);}
@@ -435,7 +407,9 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
 .cursor{display:inline-block;width:2px;height:14px;background:#4f72c4;margin-left:1px;animation:blink 0.8s step-end infinite;vertical-align:middle;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 /* Demo player tabs */
-#dtabs .tab{flex:1;padding:10px 6px;font-size:11.5px;font-weight:500;color:#6674a0;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;text-align:center;}
+#dtabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#dtabs::-webkit-scrollbar{display:none;}
+#dtabs .tab{flex:1 0 auto;padding:10px 6px;font-size:11.5px;font-weight:500;color:#6674a0;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;text-align:center;}
 #dtabs .tab.on{color:#3558a8;border-bottom-color:#4f72c4;background:rgba(79,114,196,0.08);}
 #dtabs .tab:hover:not(.on){background:rgba(79,114,196,0.05);}
 /* Demo frame content */
@@ -584,7 +558,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
       AI-Powered Legal Intelligence
     </div>
     <h1 class="hero-title">Legal work,<br>first draft in <span>minutes</span></h1>
-    <p class="hero-sub">Dave.AI helps UK solicitors, paralegals and small firms draft contracts, review documents and research the law in seconds — AI built specifically for English law, at a price that works for small firms.</p>
+    <p class="hero-sub">Dave.AI helps UK solicitors, paralegals and small firms draft contracts, review documents and research the law, with a first draft in minutes — AI built specifically for English law, at a price that works for small firms.</p>
     <div class="hero-btns">
       <button class="btn-primary" onclick="openSignup()">Start free trial →</button>
       <button class="btn-outline" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">See what's inside</button>
@@ -611,7 +585,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
         <div class="stat-card"><p class="counter-num" data-target="10" data-suffix="">0</p><p class="stat-label">UK document types you can draft, from NDAs to employment contracts</p><div class="stat-track"><div class="stat-fill" data-w="100"></div></div></div>
       </div>
       <div class="reveal d2">
-        <div class="stat-card"><p class="counter-num" data-target="3" data-suffix="">0</p><p class="stat-label">tools in one platform: drafting, document review and legal research</p><div class="stat-track"><div class="stat-fill" data-w="100"></div></div></div>
+        <div class="stat-card"><p class="counter-num" data-target="3" data-suffix="">0</p><p class="stat-label">core tools in one platform: Draft, Review and Research, plus Ask a Doc, Compare and Quick Tools</p><div class="stat-track"><div class="stat-fill" data-w="100"></div></div></div>
       </div>
       <div class="reveal d3">
         <div class="stat-card"><p class="counter-num" data-target="14" data-suffix="-day">0</p><p class="stat-label">free trial with full access, no credit card required</p><div class="stat-track"><div class="stat-fill" data-w="100"></div></div></div>
@@ -632,10 +606,13 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
       <p class="sec-sub">Built specifically for UK legal work. Every feature designed around real solicitor workflows.</p>
     </div>
     <div class="feats-grid">
-      <div class="reveal d1"><div class="feat-card"><div class="feat-icon" style="background:#eef3ff;"><svg width="22" height="22" fill="none" stroke="#4f72c4" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><p class="feat-title">Contract Drafting</p><p class="feat-desc">Generate NDAs, employment contracts and letters under UK law in seconds. 10 document types supported.</p></div></div>
-      <div class="reveal d2"><div class="feat-card"><div class="feat-icon" style="background:#edfcf4;"><svg width="22" height="22" fill="none" stroke="#2d8a58" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><p class="feat-title">Document Review</p><p class="feat-desc">Upload a contract (PDF, DOCX or TXT) and get an instant risk report, clause breakdown, and plain-English summary.</p></div></div>
-      <div class="reveal d3"><div class="feat-card"><div class="feat-icon" style="background:#f5eeff;"><svg width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><p class="feat-title">Legal Research</p><p class="feat-desc">Search UK legislation and case law. Get structured answers with citations to UK legislation and case law, so you can verify them.</p></div></div>
+      <div class="reveal d1"><div class="feat-card"><div class="feat-icon" style="background:#eef3ff;"><svg width="22" height="22" fill="none" stroke="#4f72c4" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><p class="feat-title">Draft</p><p class="feat-desc">Generate NDAs, employment contracts and letters under UK law, with a first draft in minutes. 10 document types supported.</p></div></div>
+      <div class="reveal d2"><div class="feat-card"><div class="feat-icon" style="background:#edfcf4;"><svg width="22" height="22" fill="none" stroke="#2d8a58" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><p class="feat-title">Review</p><p class="feat-desc">Upload a contract (PDF, DOCX or TXT) and get a risk report, clause breakdown, and plain-English summary.</p></div></div>
+      <div class="reveal d3"><div class="feat-card"><div class="feat-icon" style="background:#f5eeff;"><svg width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><p class="feat-title">Research</p><p class="feat-desc">Search UK legislation and case law. Get structured answers with citations to UK legislation and case law, so you can verify them.</p></div></div>
       <div class="reveal d4"><div class="feat-card"><div class="feat-icon" style="background:#fff4eb;"><svg width="22" height="22" fill="none" stroke="#c2620a" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div><p class="feat-title">Document History</p><p class="feat-desc">Every draft and review saved, searchable and ready to reuse. Your data sticks with you.</p></div></div>
+      <div class="reveal d5"><div class="feat-card"><div class="feat-icon" style="background:#eef3ff;"><svg width="22" height="22" fill="none" stroke="#4f72c4" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><p class="feat-title">Ask a Doc</p><p class="feat-desc">Upload or paste a contract, then ask questions about it in plain English.</p></div></div>
+      <div class="reveal d6"><div class="feat-card"><div class="feat-icon" style="background:#edfcf4;"><svg width="22" height="22" fill="none" stroke="#2d8a58" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg></div><p class="feat-title">Compare</p><p class="feat-desc">Paste two versions of a contract to see what changed and who each change favours.</p></div></div>
+      <div class="reveal d6"><div class="feat-card"><div class="feat-icon" style="background:#f5eeff;"><svg width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><p class="feat-title">Quick Tools</p><p class="feat-desc">Explain a clause in plain English, or turn rough notes into formal legal wording.</p></div></div>
     </div>
   </div>
 </div>
@@ -650,7 +627,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     </div>
     <div class="feats-grid">
       <div class="reveal d1"><div class="feat-card"><p class="feat-title">Built for English law</p><p class="feat-desc">Drafts and answers cite UK Acts, statutory instruments and English case law — not US or generic sources.</p></div></div>
-      <div class="reveal d2"><div class="feat-card"><p class="feat-title">Fast, usable drafts</p><p class="feat-desc">Generate a complete, clause-numbered document in seconds — ready for you to review and edit. A strong first draft, not a finished product.</p></div></div>
+      <div class="reveal d2"><div class="feat-card"><p class="feat-title">Fast, usable drafts</p><p class="feat-desc">Generate a complete, clause-numbered document in minutes — ready for you to review and edit. A strong first draft, not a finished product.</p></div></div>
       <div class="reveal d3"><div class="feat-card"><p class="feat-title">Private by design</p><p class="feat-desc">Your documents are encrypted in transit and at rest, and are never used to train AI models. You stay in control of your data.</p></div></div>
       <div class="reveal d4"><div class="feat-card"><p class="feat-title">Priced for small firms</p><p class="feat-desc">From £49/month for a solo solicitor, with no enterprise minimums or long contracts. Cancel anytime.</p></div></div>
     </div>
@@ -669,19 +646,19 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     <!-- Big impact numbers row -->
     <div class="reveal" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:48px;">
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:34px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">Minutes</p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:34px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">Minutes</p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">to a complete, clause-numbered first draft</p>
       </div>
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">10 <span style="font-size:20px;color:#4f72c4;font-weight:700;">types</span></p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">10 <span style="font-size:20px;color:#4f72c4;font-weight:700;">types</span></p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">of UK document you can draft, from NDAs to employment contracts and leases</p>
       </div>
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">3<span style="font-size:20px;color:#4f72c4;font-weight:700;">-in-1</span></p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">3<span style="font-size:20px;color:#4f72c4;font-weight:700;">-in-1</span></p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">drafting, document review and legal research in a single platform</p>
       </div>
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">£49<span style="font-size:20px;color:#4f72c4;font-weight:700;">/mo</span></p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">£49<span style="font-size:20px;color:#4f72c4;font-weight:700;">/mo</span></p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">to start — a 14-day free trial first, no credit card required</p>
       </div>
     </div>
@@ -782,6 +759,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
           <p class="price-amount"><sup>£</sup>49</p>
           <p class="price-period">per month · 1 user</p>
           <div class="price-trial-badge">14-day free trial</div>
+          <p class="price-soon">Paid plan launching soon · free trial available now</p>
           <div class="price-divider"></div>
           <ul class="price-features">
             <li>20 AI actions per month (legal research not counted)</li>
@@ -801,13 +779,14 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
           <p class="price-amount"><sup>£</sup>149</p>
           <p class="price-period">per month · up to 5 users</p>
           <div class="price-trial-badge">14-day free trial</div>
+          <p class="price-soon">Paid plan launching soon · free trial available now</p>
           <div class="price-divider"></div>
           <ul class="price-features">
             <li>300 AI actions per user / month</li>
             <li>All Starter features</li>
             <li>Unlimited document history</li>
             <li>Team document sharing (coming soon)</li>
-            <li>Advanced risk analysis</li>
+            <li>Higher fair-use limit</li>
             <li>Priority support</li>
           </ul>
           <button class="btn-plan-primary" onclick="openSignup('pro')">Start free trial →</button>
@@ -819,6 +798,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
           <p class="price-amount"><sup>£</sup>299</p>
           <p class="price-period">per month · up to 10 users</p>
           <div class="price-trial-badge">14-day free trial</div>
+          <p class="price-soon">Paid plan launching soon · free trial available now</p>
           <div class="price-divider"></div>
           <ul class="price-features">
             <li>Everything in Pro</li>
@@ -871,7 +851,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     <div id="faq-list">
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>Is Dave.AI accurate for UK law?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Dave.AI is built and configured specifically for the law of England and Wales. It's instructed to reference UK Acts, statutory instruments and English case law rather than US or international sources, and can draw on live search for recent changes. As with any AI tool, all output should be reviewed by a qualified solicitor before use.</div></div>
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>Will my client data be kept confidential?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Yes. Your documents are encrypted in transit and at rest. To generate results, the text you submit is processed by our AI provider, Anthropic, who do not use it to train their models — and we never use your documents to train anything. We handle personal data in line with UK GDPR; see our Privacy Policy for the full detail, including a Data Processing Agreement for firms that need one.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does the 14-day free trial work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Sign up and get full access to every feature for 14 days — no credit card required. The trial includes up to 25 AI actions a day. At the end of your trial, choose a plan and enter your payment details. If you don't upgrade, your account simply pauses. No surprise charges.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does the 14-day free trial work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Sign up and get full access to every feature for 14 days — no credit card required. The trial includes up to 25 AI actions a day. At the end of your trial, choose a paid plan to continue (paid plans are launching soon; we'll contact you before any charge). If you don't upgrade, your account simply pauses. No surprise charges.</div></div>
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>Can I switch plans later?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Yes. Once paid plans launch, you can upgrade or downgrade at any time.</div></div>
       <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does Dave.AI compare to other legal AI platforms?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Enterprise legal AI platforms are typically built for large firms — high per-seat pricing and long commitments. Dave.AI starts at £49/month for a solo solicitor, is built specifically for the law of England and Wales, and has no lock-in. For larger firms needing 10+ users, we offer custom pricing — just get in touch and we'll put together a proposal.</div></div>
           <div class="faq-item reveal"><div class="faq-q" onclick="toggleFAQ(this)"><span>How does Enterprise pricing work?</span><div class="faq-icon"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div></div><div class="faq-a">Enterprise is for firms with 10 or more users who need a tailored solution. Pricing is agreed based on your team size, usage requirements, and any custom integrations or SLA guarantees you need. Contact us and we'll put together a proposal within 2 working days.</div></div>
@@ -1231,8 +1211,8 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
 var dDEMOS = [
   {
-    name: "Contract Drafting",
-    title: "dave.ai — Contract Drafting",
+    name: "Draft",
+    title: "dave.ai — Draft",
     dur: 65,
     tag: "First drafts in minutes,\nnot hours.",
     slides: [
@@ -1256,8 +1236,8 @@ var dDEMOS = [
     ]
   },
   {
-    name: "Document Review",
-    title: "dave.ai — Document Review",
+    name: "Review",
+    title: "dave.ai — Review",
     dur: 65,
     tag: "Catch risks before they\ncost you clients.",
     slides: [
@@ -1281,10 +1261,10 @@ var dDEMOS = [
     ]
   },
   {
-    name: "Legal Research",
-    title: "dave.ai — Legal Research",
+    name: "Research",
+    title: "dave.ai — Research",
     dur: 60,
-    tag: "UK law answered,\ninstantly and cited.",
+    tag: "UK law answered,\nwith citations to check.",
     slides: [
       // NOTE: demo copy only. A solicitor should check every authority, statutory figure and case summary in these demos before anyone relies on them.
       {t:0,  h:'<div class="inp">Ask any UK legal question...</div>'},
@@ -1305,7 +1285,7 @@ var dDEMOS = [
     ]
   },
   {
-    name: "Document History",
+    name: "History",
     title: "dave.ai — Document History",
     dur: 60,
     tag: "Your legal work,\nsaved and searchable in your history.",
@@ -1322,8 +1302,8 @@ var dDEMOS = [
       {t:34, h:'<div class="opn"><span style="color:#1a2840">9. GOVERNING LAW</span><br><span style="color:#344268">This contract is governed by the laws of England and Wales. Any disputes to be referred to ACAS Early Conciliation before proceedings.</span><br><br><span style="color:#237a3c;font-size:8px"> Saved draft · 9 clauses</span></div>'},
       {t:38, h:'<div class="row"><span class="rn">Employment Contract — J. Morris</span><span class="rd">01 May 2026</span></div><div class="row"><span class="rn">Employment Contract — S. Patel</span><span class="rd">28 Apr 2026</span></div><div class="row"><span class="rn">NDA — Orion Tech Ltd</span><span class="rd">02 May 2026</span></div><div class="row"><span class="rn"> Risk Review — service_agreement_v3</span><span class="rd">28 Apr 2026</span></div>'},
       {t:42, h:'<div class="row"><span class="rn">Employment Law Research</span><span class="rd">22 Apr 2026</span></div><div class="row"><span class="rn">Lease Agreement — Unit 4, Leeds</span><span class="rd">19 Apr 2026</span></div><div class="row"><span class="rn">Service Agreement — DevCo Solutions</span><span class="rd">29 Apr 2026</span></div><div class="row"><span class="rn">Settlement Agreement — R. Hughes</span><span class="rd">14 Apr 2026</span></div>'},
-      {t:46, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">DOCUMENT VAULT — 47 documents</span><br><br><span style="color:#344268">Contracts drafted: 18</span><br><span style="color:#344268">Risk reviews completed: 12</span><br><span style="color:#344268">Research memos saved: 9</span><br><span style="color:#344268">Miscellaneous: 8</span></div>'},
-      {t:51, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">SEARCH YOUR HISTORY</span><br><br><span style="color:#344268">Search by document name or type</span><br><br><span style="color:#6674a0">Open any document to copy or download it</span></div>'},
+      {t:46, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">DOCUMENT HISTORY — 47 documents</span><br><br><span style="color:#344268">Contracts drafted: 18</span><br><span style="color:#344268">Risk reviews completed: 12</span><br><span style="color:#344268">Research memos saved: 9</span><br><span style="color:#344268">Miscellaneous: 8</span></div>'},
+      {t:51, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">SEARCH YOUR HISTORY</span><br><br><span style="color:#344268">Search your saved documents by name or type</span><br><br><span style="color:#6674a0">Open any document to copy or download it</span></div>'},
       {t:55, h:'<div class="doc" style="font-size:8px"><span style="color:#3558a8;font-weight:700">Every draft, review and research memo saved in one place, searchable by name.</span><br><br><span style="color:#3558a8">Dave.AI Pro: £149/month.</span></div>'}
     ]
   }
@@ -1732,12 +1712,12 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <span class="su-left-logo-name">Dave<em>.AI</em></span>
       </div>
       <h2 class="su-left-heading">UK legal AI.<br><em>Built for solicitors.</em></h2>
-      <p class="su-left-sub">Draft contracts, review documents, research UK case law — all in seconds. Start with a 14-day free trial, no card required.</p>
+      <p class="su-left-sub">Draft contracts, review documents, research UK case law — first draft in minutes. Start with a 14-day free trial, no card required.</p>
       <div class="su-feats">
-        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="su-feat-title">Contract Drafting</div><div class="su-feat-desc">Full UK-law NDAs, employment contracts — first draft in minutes.</div></div></div>
-        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div><div class="su-feat-title">Document Review</div><div class="su-feat-desc">Upload a contract (PDF, DOCX or TXT). Instant risk flags and suggested amendments.</div></div></div>
-        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div><div class="su-feat-title">Legal Research</div><div class="su-feat-desc">Ask your UK law questions. Answers with citations to UK legislation and case law, so you can verify them.</div></div></div>
-        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div><div class="su-feat-title">Document Vault</div><div class="su-feat-desc">Every document saved and searchable in your history.</div></div></div>
+        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="su-feat-title">Draft</div><div class="su-feat-desc">Full UK-law NDAs, employment contracts — first draft in minutes.</div></div></div>
+        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div><div class="su-feat-title">Review</div><div class="su-feat-desc">Upload a contract (PDF, DOCX or TXT). Risk flags and suggested amendments.</div></div></div>
+        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div><div class="su-feat-title">Research</div><div class="su-feat-desc">Ask your UK law questions. Answers with citations to UK legislation and case law, so you can verify them.</div></div></div>
+        <div class="su-feat"><div class="su-feat-icon"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7aaaf8" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div><div class="su-feat-title">Document History</div><div class="su-feat-desc">Every document saved and searchable in your history.</div></div></div>
       </div>
       <div class="su-plan-box">
         <div class="su-plan-box-label">Selected plan</div>
@@ -1779,7 +1759,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <div class="su-plan-bar"><div class="su-pb-left"><div class="su-pb-dot"></div><div><div class="su-pb-name" id="su-pb-name">Pro Plan</div><div class="su-pb-sub">14-day free trial · No card required</div></div></div><div><div class="su-pb-price" id="su-pb-price">£149/mo</div><div class="su-pb-change" onclick="suGoStep(1)">Change plan</div></div></div>
         <h2 class="su-title">Create your account</h2>
         <p class="su-sub">Sign up with Google or fill in your details below.</p>
-        <p class="su-terms-note">By continuing you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+        <p class="su-terms-note">By continuing you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
         <div class="su-soc-row" style="grid-template-columns:1fr">
           <button class="su-soc-btn" onclick="suSocial('google')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
         </div>
@@ -1788,7 +1768,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
           <div class="su-field"><label class="su-label" for="su-first">First name</label><input class="su-input" type="text" id="su-first" placeholder="John" autocomplete="given-name" oninput="suValidate()"/></div>
           <div class="su-field"><label class="su-label" for="su-last">Last name</label><input class="su-input" type="text" id="su-last" placeholder="Smith" autocomplete="family-name"/></div>
         </div>
-        <div class="su-field"><label class="su-label" for="su-email">Work email</label><input class="su-input" type="email" id="su-email" placeholder="example@gmail.com" autocomplete="email" oninput="suValidate()"/></div>
+        <div class="su-field"><label class="su-label" for="su-email">Work email</label><input class="su-input" type="email" id="su-email" placeholder="name@yourfirm.co.uk" autocomplete="email" oninput="suValidate()"/></div>
         <div class="su-field"><label class="su-label" for="su-firm">Firm / organisation</label><input class="su-input" type="text" id="su-firm" placeholder="Smith &amp; Associates LLP" autocomplete="organization"/></div>
         <div class="su-field">
           <label class="su-label" for="su-pass">Password</label>
@@ -1815,14 +1795,14 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <p class="su-sub">Tell us about your firm and we'll put together a tailored Enterprise proposal — usually within 2 working days.</p>
 
         <div class="su-field-2">
-          <div class="su-field"><label class="su-label">First name</label><input class="su-input" type="text" id="ent-first" placeholder="John" autocomplete="given-name" oninput="entValidate()"/></div>
-          <div class="su-field"><label class="su-label">Last name</label><input class="su-input" type="text" id="ent-last" placeholder="Smith" autocomplete="family-name"/></div>
+          <div class="su-field"><label class="su-label" for="ent-first">First name</label><input class="su-input" type="text" id="ent-first" placeholder="John" autocomplete="given-name" oninput="entValidate()"/></div>
+          <div class="su-field"><label class="su-label" for="ent-last">Last name</label><input class="su-input" type="text" id="ent-last" placeholder="Smith" autocomplete="family-name"/></div>
         </div>
-        <div class="su-field"><label class="su-label">Work email</label><input class="su-input" type="email" id="ent-email" placeholder="example@gmail.com" autocomplete="email" oninput="entValidate()"/></div>
-        <div class="su-field"><label class="su-label">Firm / organisation</label><input class="su-input" type="text" id="ent-firm" placeholder="Smith &amp; Associates LLP" autocomplete="organization" oninput="entValidate()"/></div>
+        <div class="su-field"><label class="su-label" for="ent-email">Work email</label><input class="su-input" type="email" id="ent-email" placeholder="name@yourfirm.co.uk" autocomplete="email" oninput="entValidate()"/></div>
+        <div class="su-field"><label class="su-label" for="ent-firm">Firm / organisation</label><input class="su-input" type="text" id="ent-firm" placeholder="Smith &amp; Associates LLP" autocomplete="organization" oninput="entValidate()"/></div>
 
         <div class="su-field">
-          <label class="su-label">Number of users</label>
+          <label class="su-label" for="ent-users">Number of users</label>
           <select class="su-input" id="ent-users" onchange="entValidate()">
             <option value="" style="background:#162040">Select team size...</option>
             <option value="10-25" style="background:#162040">10 – 25 users</option>
@@ -1833,7 +1813,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         </div>
 
         <div class="su-field">
-          <label class="su-label">Primary use case</label>
+          <label class="su-label" for="ent-use">Primary use case</label>
           <select class="su-input" id="ent-use" onchange="entValidate()">
             <option value="" style="background:#162040">Select use case...</option>
             <option value="contracts" style="background:#162040">Contract drafting at volume</option>
@@ -1845,7 +1825,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         </div>
 
         <div class="su-field">
-          <label class="su-label">Anything else we should know? <span style="color:rgba(200,216,255,0.25);font-size:8px;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <label class="su-label" for="ent-notes">Anything else we should know? <span style="color:rgba(200,216,255,0.25);font-size:8px;text-transform:none;letter-spacing:0">(optional)</span></label>
           <textarea class="su-input" id="ent-notes" placeholder="e.g. API access, white-labelling, SLA needs..." rows="3" style="resize:none;line-height:1.5"></textarea>
         </div>
 
@@ -1884,8 +1864,8 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <div class="su-trial-badge" style="text-align:left"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#3cb464" stroke-width="1.8"/><polyline points="9 12 11 14 15 10" stroke="#3cb464" stroke-width="2.2" stroke-linecap="round"/></svg><div class="su-tb-text"><b>Trial started.</b> Full access on your <span id="su-wlc-plan">Pro</span> plan. Cancel any time.</div></div>
         <div class="su-ob" style="text-align:left;margin-bottom:24px;">
           <div class="su-ob-step"><div class="su-ob-num">1</div><div><div class="su-ob-title">Draft your first document</div><div class="su-ob-desc">Go to Draft → describe what you need. A full UK-law first draft in minutes.</div></div></div>
-          <div class="su-ob-step"><div class="su-ob-num">2</div><div><div class="su-ob-title">Upload a contract to review</div><div class="su-ob-desc">Drop any PDF into Document Review. Get instant risk flags and suggested amendments.</div></div></div>
-          <div class="su-ob-step"><div class="su-ob-num">3</div><div><div class="su-ob-title">Ask a UK law question</div><div class="su-ob-desc">Legal Research answers your UK law questions with citations to UK Acts and case law.</div></div></div>
+          <div class="su-ob-step"><div class="su-ob-num">2</div><div><div class="su-ob-title">Upload a contract to review</div><div class="su-ob-desc">Drop any PDF into Review. Get risk flags and suggested amendments.</div></div></div>
+          <div class="su-ob-step"><div class="su-ob-num">3</div><div><div class="su-ob-title">Ask a UK law question</div><div class="su-ob-desc">Research answers your UK law questions with citations to UK Acts and case law.</div></div></div>
           <div class="su-ob-step"><div class="su-ob-num">4</div><div><div class="su-ob-title">Invite your team</div><div class="su-ob-desc">Your <span id="su-wlc-plan2">Pro</span> plan supports <span id="su-wlc-users">up to 5 users</span>. Add from account settings.</div></div></div>
         </div>
         <button class="su-btn" onclick="enterPlatform()">Enter Dave.AI →</button>
@@ -1896,10 +1876,10 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <div class="su-tabs"><button class="su-tab" onclick="suLoginTab('login')" id="su-tab-login">Sign in</button><button class="su-tab" onclick="suLoginTab('signup')" id="su-tab-signup">Create account</button></div>
         <h2 class="su-title">Welcome back</h2>
         <p class="su-sub">Sign in to your Dave.AI account.</p>
-        <p class="su-terms-note">By continuing you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+        <p class="su-terms-note">By continuing you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
         <button class="su-soc-btn" onclick="suSocial('google')" style="width:100%;margin-bottom:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
         <div class="su-divider"><div class="su-div-line"></div><span class="su-div-text">or sign in with email</span><div class="su-div-line"></div></div>
-        <div class="su-field"><label class="su-label" for="li-email">Email</label><input class="su-input" type="email" id="li-email" placeholder="example@gmail.com" autocomplete="email"/></div>
+        <div class="su-field"><label class="su-label" for="li-email">Email</label><input class="su-input" type="email" id="li-email" placeholder="name@yourfirm.co.uk" autocomplete="email"/></div>
         <div class="su-field"><label class="su-label" for="li-pass">Password</label><input class="su-input" type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')landingLogin()"/></div>
         <div id="li-err" role="alert" style="display:none;font-size:12px;color:#f08888;margin:6px 0;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)"></div>
         <button class="su-btn" id="li-btn" style="margin-top:8px" onclick="landingLogin()">Sign in to Dave.AI →</button>
@@ -1932,7 +1912,9 @@ function openSignup(plan) {
     if(!el) return;
     el.value = '';
   });
-  if (plan) suGoStep(2); else suGoStep(1);
+  // Every trial is identical, so go straight to account details (Pro preselected);
+  // "Change plan" still opens the plan picker.
+  suGoStep(2);
   suDialogOpened();
 }
 
@@ -2102,8 +2084,9 @@ function entSubmit(){
   btn.disabled = true;
   btn.textContent = 'Sending...';
 
+  // No recipient is sent from the browser: template_brei1gl's "To" field must be
+  // hard-coded to the admin address in the EmailJS dashboard.
   var templateParams = {
-    to_email:    'davidasoyag@gmail.com',
     from_name:   first + ' ' + last,
     from_email:  email,
     firm:        firm,
@@ -2254,10 +2237,11 @@ async function suSignUp(){
 
   localStorage.setItem('dave_session', JSON.stringify(Object.assign({email: email}, meta)));
 
-  // Send welcome email to new user
+  // Send welcome email to new user. template_z3p1t44's "To" field must be {{user_email}};
+  // the template body should contain only fixed text (see fix notes).
   try {
     emailjs.send('Dave.AI', 'template_z3p1t44', {
-      to_email:   email,
+      user_email: email,
       first_name: first,
       last_name:  last,
       firm:       firm,
@@ -2266,10 +2250,9 @@ async function suSignUp(){
     });
   } catch(e){ console.warn('Welcome email error:', e); }
 
-  // Notify admin of new signup
+  // Notify admin of new signup (recipient is hard-coded in the template)
   try {
     emailjs.send('Dave.AI', 'template_brei1gl', {
-      to_email:   'davidasoyag@gmail.com',
       from_name:  first + ' ' + last,
       from_email: email,
       firm:       firm,
@@ -2322,6 +2305,10 @@ function showSignupLogin(){
   if(btn){ btn.disabled=false; btn.textContent='Sign in to Dave.AI →'; }
   suDialogOpened();
 }
+// index.html#signup (e.g. "Create account" on login.html) opens the signup form
+function suCheckHash(){ if(location.hash==='#signup') openSignup(); }
+document.addEventListener('DOMContentLoaded', suCheckHash);
+window.addEventListener('hashchange', suCheckHash);
 </script>
 
 
@@ -2330,24 +2317,17 @@ function showSignupLogin(){
 // ── Preloader dismiss ──
 (function(){
   var _pl = document.getElementById('preloader');
-  var _plStart = Date.now();
+  var _plDone = false;
   function dismissPl(){
+    if(_plDone || !_pl) return;
+    _plDone = true;
     _pl.classList.add('fade-out');
     var _hc = document.querySelector('.hero-content'); if(_hc) _hc.classList.add('hero-in');
-    setTimeout(function(){ if(_pl && _pl.parentNode) _pl.parentNode.removeChild(_pl); }, 700);
+    setTimeout(function(){ if(_pl && _pl.parentNode) _pl.parentNode.removeChild(_pl); }, 400);
   }
-  // Show for at least 1.3s, dismiss sooner only if page fully loaded
-  var _minDelay = 1300;
-  var _timer = setTimeout(dismissPl, _minDelay);
-  window.addEventListener('load', function(){
-    var elapsed = Date.now() - _plStart;
-    if(elapsed < _minDelay){
-      // page loaded fast — wait out the remaining branded moment
-    } else {
-      clearTimeout(_timer);
-      dismissPl();
-    }
-  });
+  // This script runs at the end of <body>, so the page is already parsed:
+  // keep only a brief branded moment instead of waiting for the full load event.
+  setTimeout(dismissPl, 300);
 })();
 
 </script>
