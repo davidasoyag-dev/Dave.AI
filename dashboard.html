@@ -585,7 +585,7 @@ var planUsers  = safePlanTxt(S.planUsers, 'up to 5 users');
 var planActive = false;
 var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
 if(isNaN(trialStart.getTime())) trialStart = new Date();
-var profileSettled = false; // true once loadProfile() has succeeded or failed
+var profileSettled = false; // true once loadProfile() has succeeded (a failed load retries)
 var profileLoaded = false;  // true only once loadProfile() has succeeded
 var trialEnd, trialDays = 0, trialEndStr = '';
 // Documents now live in Supabase — per account, server-side, private via Row Level
@@ -595,34 +595,91 @@ var currentView = 'dash';
 // Clean up any documents left in the browser by the pre-backend version.
 try { localStorage.removeItem('daveai_docs'); Object.keys(localStorage).forEach(function(k){ if(k.indexOf('daveai_docs_')===0) localStorage.removeItem(k); }); } catch(e){}
 
+// docsLoaded: the first server load has finished OK. docsLoadError: the last load
+// failed, so the lists show "Couldn't load" + Retry instead of "No documents yet".
+var docsLoaded = false, docsLoadError = false;
 // Load this user's documents from Supabase (RLS ensures they only get their own)
 async function loadDocsFromServer(){
+  if(docsLoadError){ docsLoadError = false; if(currentView === 'dash' || currentView === 'history') go(currentView); } // show "Loading…" while retrying
   try {
     var res = await _sb.from('documents').select('id,type,name,content,created_at').order('created_at', { ascending: false });
     if(res.error) throw res.error;
-    docs = (res.data || []).map(function(r){
+    // Keep docs created in this tab that are not on the server yet (still saving or failed)
+    var pending = docs.filter(function(d){ return !d.id; });
+    docs = pending.concat((res.data || []).map(function(r){
       return { id:r.id, type:r.type, name:r.name, content:r.content, created:r.created_at, date:new Date(r.created_at).toLocaleDateString('en-GB') };
-    });
-    var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
-    updateUsageBadge();
-    if(currentView === 'dash' || currentView === 'history') go(currentView);
-  } catch(e){ /* leave docs empty if offline / no session */ }
+    }));
+    docsLoaded = true; docsLoadError = false;
+  } catch(e){
+    docsLoadError = true; // offline / expired session / RLS error: say so, don't pretend the list is empty
+  }
+  var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
+  updateUsageBadge();
+  if(currentView === 'dash' || currentView === 'history') go(currentView);
 }
-// Add a document: optimistic local insert, then persist to Supabase
+// Empty-state for document lists: loading, load failed (with Retry), or truly empty
+function docsEmptyHtml(emptyHtml){
+  if(docsLoadError) return '<div class="empty" role="alert"><div class="empty-ttl">Couldn\'t load your documents</div><div class="empty-sub">Check your connection and try again.</div><button class="btn btn-p" onclick="loadDocsFromServer()">Retry</button></div>';
+  if(!docsLoaded) return '<div class="empty" aria-live="polite"><div class="empty-sub">Loading documents…</div></div>';
+  return emptyHtml;
+}
+// Persist one document to Supabase. Resolves true when saved; on failure sets
+// doc._saveFailed (shown as "Not saved, retry" in History) and resolves false.
+function persistDoc(doc){
+  doc._saveFailed = false;
+  doc._saving = (async function(){
+    try {
+      var u = await _sb.auth.getUser();
+      var uid = u && u.data && u.data.user ? u.data.user.id : null;
+      if(!uid) throw new Error('Not signed in');
+      var ins = await _sb.from('documents').insert({ user_id:uid, type:doc.type, name:doc.name, content:doc.content }).select('id').single();
+      if(ins.error || !ins.data) throw (ins.error || new Error('Not saved'));
+      doc.id = ins.data.id;
+      // A reload that ran during the insert may already list this row: drop that copy
+      for(var j=docs.length-1;j>=0;j--){ if(docs[j]!==doc && docs[j].id===doc.id) docs.splice(j,1); }
+      return true;
+    } catch(e){
+      doc._saveFailed = true;
+      if(currentView === 'history') go('history');
+      return false;
+    }
+  })();
+  return doc._saving;
+}
+// Add a document: optimistic local insert, then persist to Supabase.
+// Returns the insert promise (true = saved, false = not saved).
 function addDoc(doc){
   if(!doc.created) doc.created = new Date().toISOString();
   docs.unshift(doc);
   var el = document.getElementById('doc-cnt'); if(el) el.textContent = docs.length;
   // Keep the insert promise so delDoc can wait for the id before deleting
-  doc._saving = (async function(){
-    try {
-      var u = await _sb.auth.getUser();
-      var uid = u && u.data && u.data.user ? u.data.user.id : null;
-      if(!uid) return;
-      var ins = await _sb.from('documents').insert({ user_id:uid, type:doc.type, name:doc.name, content:doc.content }).select('id').single();
-      if(!ins.error && ins.data) doc.id = ins.data.id;
-    } catch(e){}
-  })();
+  return persistDoc(doc);
+}
+// Retry saving a document whose save failed (History "Not saved, retry")
+async function retrySaveDoc(k){
+  var d = docs[docIndex(k)];
+  if(!d || d.id || !d._saveFailed) return;
+  d._saveFailed = false; d._retrying = true;
+  if(currentView === 'history') go('history');
+  await persistDoc(d);
+  d._retrying = false;
+  if(currentView === 'history') go('history');
+}
+// Auto-saves (Review, Research) report a failed save instead of failing silently
+function noteAutoSave(p, label){
+  if(!p || !p.then) return;
+  p.then(function(ok){
+    if(ok) return;
+    var n = document.getElementById('save-fail-note');
+    if(!n){
+      n = document.createElement('div'); n.id = 'save-fail-note'; n.setAttribute('role','alert');
+      n.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:1000;max-width:340px;padding:12px 14px;background:var(--card);border:1px solid var(--red);border-radius:9px;font-size:12px;line-height:1.5;color:var(--text)';
+      document.body.appendChild(n);
+    }
+    n.innerHTML = '<span style="color:var(--red);font-weight:600">Not saved.</span> '+escHtml(label)+' could not be saved to History. ' +
+      '<button type="button" class="linklike" style="color:var(--blue2);font-weight:600" onclick="document.getElementById(\'save-fail-note\').remove();go(\'history\')">Open History to retry</button> · ' +
+      '<button type="button" class="linklike" style="color:var(--muted)" onclick="document.getElementById(\'save-fail-note\').remove()">Dismiss</button>';
+  });
 }
 
 // ── Recompute trial state and show/hide the expired overlay ──
@@ -666,7 +723,7 @@ function applyTrialState(forceExpired){
 // trial-expired overlay so an expired user can still take their work away).
 async function downloadMyDocs(){
   if(!docs.length) await loadDocsFromServer();
-  if(!docs.length){ alert('You have no saved documents to download.'); return; }
+  if(!docs.length){ alert(docsLoadError ? 'Couldn\'t load your documents. Check your connection and try again.' : 'You have no saved documents to download.'); return; }
   var sep = '\n\n' + new Array(61).join('=') + '\n\n';
   var txt = 'Dave.AI: my documents (exported ' + new Date().toLocaleString('en-GB') + ')' + sep +
     docs.map(function(d){
@@ -687,6 +744,22 @@ applyTrialState();
 
 // Load plan + trial from the server (authoritative — cannot be reset by clearing
 // the browser). This is the ONLY place planActive can become true.
+var PROFILE_RETRY_MS = [2000, 5000, 15000], _profileRetry = 0;
+var hasStripeCustomer = false;
+// Plan labels come from the SERVER plan (never signup metadata): name, seats, price
+var PLAN_LABELS = {
+  starter:    ['Starter Plan',    '1 user',         '£49/mo'],
+  pro:        ['Pro Plan',        'up to 5 users',  '£149/mo'],
+  firm:       ['Firm Plan',       'up to 10 users', '£299/mo'],
+  enterprise: ['Enterprise Plan', 'a custom number of users', 'Custom']
+};
+function applyPlanLabels(){
+  var L = planActive && Object.prototype.hasOwnProperty.call(PLAN_LABELS, plan) ? PLAN_LABELS[plan] : null;
+  if(L){ planName = L[0]; planUsers = L[1]; planPrice = L[2]; }
+  else if(planActive){ planName = 'Active plan'; planUsers = 'the users on your plan'; planPrice = ''; }
+  else { planName = 'Free trial'; planUsers = '1 user'; planPrice = 'Free'; }
+}
+applyPlanLabels();
 async function loadProfile(){
   try {
     var res = await _sb.from('profiles').select('*').single();
@@ -700,12 +773,16 @@ async function loadProfile(){
     plan = planActive ? (srvPlan || plan) : (p.chosen_plan || (srvPlan !== 'trial' && srvPlan) || plan);
     S.trialStart = trialStart.toISOString();
     try { localStorage.setItem('dave_session', JSON.stringify(S)); } catch(e){}
+    hasStripeCustomer = !!p.stripe_customer_id; // only if the server stores one (see vBilling)
     profileLoaded = true;
+    profileSettled = true;
   } catch(e){
-    // Profile unavailable: never grant paid access; stay on trial rules
+    // Profile unavailable: never grant paid access; stay on trial rules. Not
+    // "settled", so the trial-ended overlay can't appear from a failed load;
+    // try again with backoff (only a real profile read or a server 402 decides).
     planActive = false;
+    if(_profileRetry < PROFILE_RETRY_MS.length) setTimeout(loadProfile, PROFILE_RETRY_MS[_profileRetry++]);
   }
-  profileSettled = true;
   applyTrialState();
   applyPlanBadges();
   updateUsageBadge();
@@ -738,8 +815,9 @@ updateUsageBadge();
 
 // Sidebar role + top badge (re-run by loadProfile once the real plan is known)
 function applyPlanBadges(){
+  applyPlanLabels(); // keep planName / planUsers / planPrice in step with the server plan
   var role = document.getElementById('sb-role');
-  if(role) role.textContent = planName + (planActive ? ' · Active' : ' · Trial');
+  if(role) role.textContent = planActive ? planName + ' · Active' : planName;
   var badge = document.getElementById('tb-badge');
   if(badge){
     badge.textContent = String(plan).toUpperCase() + (planActive ? ' · ACTIVE' : ' · TRIAL');
@@ -1260,7 +1338,7 @@ function vDash(){
   var usageNow = getUsage(); // real counts from the ai_usage table (loadUsage)
 
   var recentHtml = docs.length === 0
-    ? '<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Draft your first document to get started.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft something →</button></div>'
+    ? docsEmptyHtml('<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Draft your first document to get started.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft something →</button></div>')
     : docs.slice(0,5).map(function(d){
         var ic = d.type==='Draft'?'var(--blue2)':d.type==='Review'?'#3cb464':'#a78bfa';
         var bg = d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
@@ -1325,7 +1403,7 @@ function vDash(){
       '<div class="card">' +
         '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Recent activity</div>' +
         '<div class="act-row"><div class="act-dot" style="background:#3cb464"></div><div class="act-text">Account created · Trial started</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+escHtml(planName)+' '+(planActive?'activated':'trial started')+'</div><div class="act-time">Today</div></div>' +
+        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+(planActive ? escHtml(planName)+' activated' : 'Free trial started')+'</div><div class="act-time">Today</div></div>' +
         '<div class="act-row"><div class="act-dot" style="background:#7aaaf8"></div><div class="act-text">Welcome email sent to '+escHtml(email||'your inbox')+'</div><div class="act-time">Today</div></div>' +
         (docs.length > 0 ? '<div class="act-row"><div class="act-dot" style="background:#a78bfa"></div><div class="act-text">First document: '+escHtml(docs[0].name)+'</div><div class="act-time">'+escHtml(docs[0].date)+'</div></div>' : '') +
       '</div>' +
@@ -1394,11 +1472,24 @@ async function doDraft(){
   }catch(e){ out.textContent='Error: '+e.message; }
   btn.disabled=false; btn.innerHTML='Generate document';
 }
-function saveDoc(){
+async function saveDoc(){
   if(!window._draft) return;
-  addDoc(Object.assign({}, window._draft)); // save a copy so later edits can't change the saved record
-  window._draft = null; // prevents saving the same draft twice
-  var b=document.getElementById('dbtn-save'); if(b){ b.textContent='✓ Saved!'; b.disabled=true; }
+  var draft = window._draft;
+  window._draft = null; // prevents saving the same draft twice while this save runs
+  var b=document.getElementById('dbtn-save'); if(b){ b.textContent='Saving…'; b.disabled=true; }
+  var copy = Object.assign({}, draft); // save a copy so later edits can't change the saved record
+  var ok = await addDoc(copy);
+  // The user may have left the Draft view or generated a new draft meanwhile
+  var still = b && document.body.contains(b) && !window._draft;
+  if(ok){
+    if(still){ b.textContent='✓ Saved'; b.disabled=true; }
+  } else if(still){
+    // Drop the failed copy and let this button retry (no duplicate in History)
+    var i = docs.indexOf(copy); if(i >= 0) docs.splice(i,1);
+    var el=document.getElementById('doc-cnt'); if(el) el.textContent=docs.length;
+    window._draft = draft;
+    b.textContent='Not saved, retry'; b.disabled=false;
+  } // otherwise the failed copy stays in History with a "Not saved, retry" marker
 }
 function dlDoc(){
   var txt=mdToPlain(window._lastDraftText||document.getElementById('dout').textContent);
@@ -1690,7 +1781,7 @@ async function doReview(){
     var d = parseReviewJSON(raw);
     // Save to the vault first, so a review that finishes after the user has
     // left the Review screen is still kept in History.
-    addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)});
+    noteAutoSave(addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)}), 'This review');
     incrementUsage(); // count this review toward the plan limit
     var rvOut=document.getElementById('rv-res');
     if(rvOut) rvOut.innerHTML='<div class="card">' +
@@ -1830,7 +1921,7 @@ async function doR(){
       a=stripFollowups(a);
       chatMsgs.push({role:'assistant',content:a,followups:followups});
       // Auto-save to vault (without the followups line); skip cut-off answers
-      if(!rPartial) addDoc({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a});
+      if(!rPartial) noteAutoSave(addDoc({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a}), 'This research answer');
     } else {
       chatMsgs.push({role:'assistant',content:aiErrText(a)});
     }
@@ -1869,14 +1960,16 @@ var _docSeq=0;
 function docKey(d){ if(!d._k) d._k=++_docSeq; return d._k; }
 function docIndex(k){ for(var j=0;j<docs.length;j++){ if(docs[j]._k===k) return j; } return -1; }
 function renderDocs(list){
-  if(list.length===0)return'<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Documents you save, plus every review and research answer, appear here.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft your first document →</button></div>';
-  return'<div class="card">'+list.map(function(d){
+  if(list.length===0)return (docsLoadError||!docsLoaded) ? docsEmptyHtml('') : '<div class="empty"><div class="empty-ttl">No documents yet</div><div class="empty-sub">Documents you save, plus every review and research answer, appear here.</div><button class="btn btn-p" onclick="go(\'draft\')">Draft your first document →</button></div>';
+  var loadNote = docsLoadError ? '<div class="card" role="alert" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;color:var(--red)">Couldn\'t load your saved documents. Check your connection.</div><button class="btn btn-g" style="font-size:11px;white-space:nowrap" onclick="loadDocsFromServer()">Retry</button></div>' : '';
+  return loadNote+'<div class="card">'+list.map(function(d){
     var k=docKey(d);
     var ic=d.type==='Draft'?'var(--blue2)':d.type==='Review'?'#3cb464':'#a78bfa';
     var bg=d.type==='Draft'?'rgba(79,114,196,0.12)':d.type==='Review'?'rgba(60,180,100,0.12)':'rgba(139,79,196,0.12)';
     return '<div class="doc-row" style="cursor:pointer" onclick="viewDoc('+k+')">' +
       '<div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
       '<div style="flex:1"><button type="button" class="doc-open" onclick="event.stopPropagation();viewDoc('+k+',this)">'+escHtml(d.name)+'</button><div style="font-size:11px;color:var(--muted)">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div>' +
+      (d._saveFailed && !d.id ? '<button type="button" class="linklike" style="font-size:11px;font-weight:600;color:var(--red);margin-right:10px;white-space:nowrap" onclick="event.stopPropagation();retrySaveDoc('+k+')">Not saved, retry</button>' : (d._retrying ? '<span style="font-size:11px;color:var(--muted);margin-right:10px;white-space:nowrap">Saving…</span>' : '')) +
       '<span class="tag tag-b">'+escHtml(d.type)+'</span>' +
       '<button class="btn btn-g" style="font-size:10px;padding:4px 10px;margin-left:8px" onclick="event.stopPropagation();delDoc('+k+')">Delete</button>' +
     '</div>';
@@ -2140,7 +2233,10 @@ function vBilling(){
     '<div style="display:flex;align-items:center;gap:12px"><svg width="18" height="18" fill="none" stroke="#5ae090" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg><div><div style="font-size:13px;font-weight:600;color:#5ae090;margin-bottom:2px">'+planName+' · Active</div><div style="font-size:12px;color:var(--muted)">Your membership is active. Thank you for choosing Dave.AI.</div></div></div>' +
   '</div>';
 
-  var portalBtn = planActive
+  // Only offer the Stripe portal when the profile records a Stripe customer.
+  // Plans granted directly (e.g. beta firms set up by Dave.AI) have none, and
+  // the portal would just say "No billing account found".
+  var portalBtn = (planActive && hasStripeCustomer)
     ? '<button class="btn btn-g" id="portal-btn" onclick="openBillingPortal()" style="white-space:nowrap">Manage billing →</button>'
     : '';
 
@@ -2176,9 +2272,12 @@ function vBilling(){
     '</div>' +
     '<div class="card">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Billing history</div>' +
-      (planActive
-        ? '<div class="doc-row" style="cursor:default"><div style="width:8px;height:8px;border-radius:50%;background:#3cb464;flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+planName+' — payment received</div><div style="font-size:11px;color:var(--muted)">Processed via Stripe · UK VAT included</div></div><span class="tag tag-g">Paid</span></div>'
-        : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No billing history yet · Your trial is free</div>'
+      // Real invoices live in the Stripe billing portal; never show a made-up payment here
+      (!planActive
+        ? '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No billing history yet · Your trial is free</div>'
+        : hasStripeCustomer
+          ? '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Your invoices and receipts are in the billing portal (Manage billing above).</div>'
+          : '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No card payments on record for this account. Questions about your plan: support@daveai.law</div>'
       ) +
     '</div>' +
   '</div>';
