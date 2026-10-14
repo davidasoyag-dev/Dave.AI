@@ -1529,19 +1529,19 @@ function vDash(){
 function vDraft(){
   window._draft = null; // a fresh Draft view has nothing to save yet
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">Contract Drafting</div><div class="view-sub">Select a document type, describe your requirements, and receive a first draft under English law (or the law you specify).</div></div></div>' +
+    '<div class="view-head"><div><div class="view-title">Draft</div><div class="view-sub">Select a document type, describe your requirements, and receive a first draft under English law (or the law you specify).</div></div></div>' +
     '<div class="grid2">' +
-      '<div>' +
+      '<div class="no-print">' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div class="field"><label>Document type</label><select class="inp" id="dt"><option>Mutual NDA</option><option>One-way NDA</option><option>Employment Contract</option><option>Freelance / Services Agreement</option><option>Settlement Agreement</option><option>Lease Agreement</option><option>Shareholder Agreement</option><option>Letter Before Action</option><option>Terms and Conditions</option><option>Privacy Policy</option></select></div>' +
           '<div class="field"><label>Requirements</label><textarea class="inp" id="dp" rows="6" placeholder="e.g. Mutual NDA between Acme Ltd and Beta Co. 24 month term. English law. Include non-solicitation clause…"></textarea></div>' +
-          '<div style="display:flex;gap:10px"><button class="btn btn-p" onclick="doDraft()" id="dbtn" style="white-space:nowrap">Generate document</button><button class="btn btn-g" onclick="document.getElementById(\'dp\').value=\'\'">Clear</button></div>' +
+          '<div style="display:flex;gap:10px"><button class="btn btn-p" onclick="doDraft()" id="dbtn" style="white-space:nowrap">Generate document</button><button class="btn btn-g" onclick="document.getElementById(\'dp\').value=\'\'">Clear</button><button class="btn btn-g" onclick="draftExample()">Try an example</button></div>' +
         '</div>' +
         '<div class="card" style="background:rgba(79,114,196,.04);border-color:rgba(79,114,196,.12)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:10px;letter-spacing:.04em">Drafting tips</div><ul style="list-style:none;font-size:11px;color:var(--muted);line-height:1.9;padding:0"><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Include both party names and company numbers</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Specify the governing law (default: English law)</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Mention key terms: duration, payment, termination</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Add any special clauses you need</li></ul></div>' +
       '</div>' +
       '<div>' +
         '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px"><div style="color:var(--dim);font-size:12px;text-align:center;padding-top:80px;font-family:var(--font);line-height:1.8">Your document will appear here.<br><span style="font-size:11px;opacity:.6">Fill in the form and click Generate document.</span></div></div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="copyText(mdToPlain(window._lastDraftText||document.getElementById(\'dout\').textContent),this)">Copy</button></div></div>' +
-        '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save">Save to History</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button></div>' +
+        '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save">Save to History</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="dlDocWord()">Download .doc (Word)</button></div>' +
         '<div id="draft-refine" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px"><input class="chat-inp" id="dref" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" onkeydown="if(event.key===\'Enter\'){event.preventDefault();doRefineDraft();}"/><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
       '</div>' +
     '</div>' +
@@ -1602,10 +1602,39 @@ async function saveDoc(){
     b.textContent='Not saved, retry'; b.disabled=false;
   } // otherwise the failed copy stays in History with a "Not saved, retry" marker
 }
+// Pre-fill the Draft form with a sample request (nothing is sent until Generate)
+function draftExample(){
+  var t=document.getElementById('dt'), p=document.getElementById('dp');
+  if(t) t.value='Mutual NDA';
+  if(p){ p.value='Mutual NDA between Acme Software Ltd (company no. 01234567) and Beta Consulting Ltd (company no. 07654321) for discussions about a possible joint venture. 24 month term. English law. Include a non-solicitation clause.'; p.focus(); }
+}
+// File name for a draft download, e.g. "Mutual_NDA_14-10-2026"
+function draftFileName(){
+  var t=document.getElementById('dt');
+  return ((t?t.value:'Document')+' '+new Date().toLocaleDateString('en-GB')).replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'document';
+}
+function saveBlob(blob, name){
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
 function dlDoc(){
   var txt=mdToPlain(window._lastDraftText||document.getElementById('dout').textContent);
-  var blob=new Blob([txt],{type:'text/plain'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='document.txt'; a.click();
+  saveBlob(new Blob([txt],{type:'text/plain;charset=utf-8'}), draftFileName()+'.txt');
+}
+// Word download without a new library: an HTML document saved as .doc, which Word opens
+function dlDocWord(){
+  if(!window._lastDraftText){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
+  var body=mdToHtml(window._lastDraftText).replace(/ onclick="[^"]*"/g,'');
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+escHtml(draftFileName())+'</title>'+
+    '<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px 8px}</style></head><body>'+body+'</body></html>';
+  saveBlob(new Blob(['\ufeff'+html],{type:'application/msword'}), draftFileName()+'.doc');
+}
+// A failed Refine puts the previous draft back on screen (it is unchanged) with the
+// reason above it, and keeps the typed instruction so the user can try again.
+function refineFailed(out, cur, msg){
+  if(!out) return;
+  out.innerHTML='<div role="alert" style="font-family:var(--font);white-space:normal;font-size:12px;color:var(--red);background:rgba(224,90,80,.06);border:1px solid rgba(224,90,80,.25);border-radius:8px;padding:8px 12px;margin-bottom:12px">Refine didn\'t work: '+escHtml(msg)+' Your draft below is unchanged.</div><div class="msg-a-body">'+mdToHtml(cur)+'</div>';
 }
 // Refine the current draft with a follow-up instruction (edits the same document, doesn't count as new)
 async function doRefineDraft(){
@@ -1627,11 +1656,11 @@ async function doRefineDraft(){
       var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
       window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
       var sb=document.getElementById('dbtn-save'); if(sb){ sb.disabled=false; sb.textContent='Save to History'; }
+      if(inp) inp.value='';
     } else {
-      out.innerHTML='<div class="msg-a-body">'+mdToHtml(aiErrText(r))+'</div>';
+      refineFailed(out, cur, aiErrText(r));
     }
-    if(inp) inp.value='';
-  }catch(e){ out.textContent='Error: '+e.message; }
+  }catch(e){ refineFailed(out, cur, 'Error: '+e.message); }
   if(btn){btn.disabled=false;btn.textContent='Refine';}
 }
 
