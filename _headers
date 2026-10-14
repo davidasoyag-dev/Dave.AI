@@ -13,7 +13,22 @@
   Content-Type: text/plain; charset=utf-8
 
 # ── Caching (perf) ──
-/vendor/*
+# Per-file rules (not /vendor/*) so Netlify doesn't merge two Cache-Control values.
+# supabase.js: every <script> URL carries ?v=<sha1 prefix>; bump it whenever the file changes.
+/vendor/supabase.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Still referenced without ?v= somewhere (contact.html, dashboard lazy-loader), so keep 7 days.
+/vendor/email.min.js
+  Cache-Control: public, max-age=604800
+
+/vendor/pdf.min.js
+  Cache-Control: public, max-age=604800
+
+/vendor/pdf.worker.min.js
+  Cache-Control: public, max-age=604800
+
+/vendor/mammoth.browser.min.js
   Cache-Control: public, max-age=604800
 
 /*.jpg
