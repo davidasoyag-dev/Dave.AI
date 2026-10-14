@@ -349,6 +349,36 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
 .linklike.ms-dismiss{font-size:10px;color:var(--dim);}
 .linklike.ms-dismiss:hover{color:var(--muted);}
 /* end ops 2026-10-13-b */
+/* ops 2026-10-14-b-2: notices, nav scrim, view focus, print */
+.notice-stack{position:fixed;right:20px;bottom:20px;z-index:1001;display:flex;flex-direction:column;gap:8px;max-width:360px;pointer-events:none;}
+.notice-stack > div{display:flex;flex-direction:column;gap:8px;}
+.app-notice{pointer-events:auto;background:var(--card);border:1px solid var(--border2);border-left:3px solid var(--blue2);border-radius:9px;padding:11px 14px;font-size:12px;line-height:1.5;color:var(--text);box-shadow:0 8px 24px rgba(20,30,60,.15);}
+.app-notice.err{border-left-color:var(--red);}
+.an-msg{white-space:pre-line;}
+.an-btns{display:flex;gap:14px;justify-content:flex-end;margin-top:6px;}
+.an-btns .linklike{font-size:11px;font-weight:600;color:var(--blue2);}
+.an-btns .an-x{color:var(--muted);}
+.nav-scrim{display:none;}
+.view-title:focus{outline:none;}
+.rs-mob-hist{display:none;flex-shrink:0;margin-bottom:12px;font-size:12px;}
+.rs-mob-hist summary{cursor:pointer;color:var(--blue2);font-weight:600;padding:4px 0;}
+.rs-mob-hist[open] summary{margin-bottom:6px;}
+@media(max-width:860px){.rs-mob-hist{display:block;}}
+@media(max-width:768px){
+  .sidebar.open ~ .nav-scrim{display:block;position:fixed;top:var(--topbar);left:0;right:0;bottom:0;background:rgba(20,30,60,.35);z-index:59;}
+  .notice-stack{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff;}
+  .app{display:block;height:auto;}
+  .main{overflow:visible;}
+  .topbar,.sidebar,.nav-scrim,.notice-stack,.no-print,#save-fail-note,.welcome-banner{display:none !important;}
+  .view{padding:0;animation:none;}
+  .grid2{display:block;}
+  .ai-out{max-height:none;overflow:visible;}
+  .card{border:none;padding:0;}
+}
+/* end ops 2026-10-14-b-2 */
 </style>
 </head>
 <body>
@@ -463,10 +493,17 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
       </div>
     </div>
   </nav>
+  <div class="nav-scrim" id="nav-scrim" aria-hidden="true" onclick="toggleNav(false, true)"></div>
 
   <!-- ══ MAIN ══ -->
   <main class="main" id="main"></main>
 
+</div>
+
+<!-- In-app notices (showNotice): live regions stay in the page so screen readers announce new messages -->
+<div class="notice-stack">
+  <div id="notice-alert" role="alert"></div>
+  <div id="notice-status" role="status" aria-live="polite"></div>
 </div>
 
 <script>
@@ -503,7 +540,7 @@ function stripeUrl(key){
 // ══ SESSION ══
 var S = JSON.parse(localStorage.getItem('dave_session') || '{}');
 
-// Auth guard — localStorage is fast but a fresh Google/Microsoft OAuth
+// Auth guard — localStorage is fast but a fresh Google OAuth
 // login has no dave_session yet, only a live Supabase session (only the
 // email/password flow writes dave_session directly). Check Supabase before
 // giving up, so a valid OAuth login isn't bounced back to login.html.
@@ -723,7 +760,7 @@ function applyTrialState(forceExpired){
 // trial-expired overlay so an expired user can still take their work away).
 async function downloadMyDocs(){
   if(!docs.length) await loadDocsFromServer();
-  if(!docs.length){ alert(docsLoadError ? 'Couldn\'t load your documents. Check your connection and try again.' : 'You have no saved documents to download.'); return; }
+  if(!docs.length){ showNotice(docsLoadError ? 'Couldn\'t load your documents. Check your connection and try again.' : 'You have no saved documents to download.', docsLoadError ? 'alert' : 'status'); return; }
   var sep = '\n\n' + new Array(61).join('=') + '\n\n';
   var txt = 'Dave.AI: my documents (exported ' + new Date().toLocaleString('en-GB') + ')' + sep +
     docs.map(function(d){
@@ -804,6 +841,7 @@ function saveDocs(){
 //   pro / firm: fair use 300 per month · enterprise: daily limit only
 var DAILY_LIMIT = 100;
 var PLAN_LIMITS = { trial: 25, starter: 20, pro: 300, firm: 300, enterprise: Infinity };
+var AI_ACTION_DEF = 'One AI action = one Draft, Refine, Review, Research question, Ask-a-Doc question, Compare or Quick Tool run.';
 
 // ── Init UI ──
 document.getElementById('tb-av').textContent    = initials;
@@ -894,10 +932,39 @@ function tbSearch(q){
   });
 })();
 
+// In-app notice instead of alert(). kind: 'alert' (error or limit; stays until
+// dismissed or replaced) or 'status' (information; hides after a few seconds).
+// opts: { id: replaces the earlier notice with the same id, sticky: never auto-hide,
+//         actionLabel + action: one extra button, e.g. 'See plans' }
+function showNotice(msg, kind, opts){
+  opts = opts || {};
+  var key = String(opts.id || 'main');
+  document.querySelectorAll('.app-notice').forEach(function(x){ if(x.getAttribute('data-key') === key) x.remove(); });
+  if(!msg) return;
+  var region = document.getElementById(kind === 'alert' ? 'notice-alert' : 'notice-status');
+  if(!region) return;
+  var n = document.createElement('div');
+  n.className = 'app-notice' + (kind === 'alert' ? ' err' : '');
+  n.setAttribute('data-key', key);
+  var t = document.createElement('div'); t.className = 'an-msg'; t.textContent = msg; n.appendChild(t);
+  var b = document.createElement('div'); b.className = 'an-btns';
+  if(opts.actionLabel && typeof opts.action === 'function'){
+    var a = document.createElement('button'); a.type = 'button'; a.className = 'linklike'; a.textContent = opts.actionLabel;
+    a.onclick = function(){ n.remove(); opts.action(); };
+    b.appendChild(a);
+  }
+  var x = document.createElement('button'); x.type = 'button'; x.className = 'linklike an-x'; x.textContent = 'Dismiss';
+  x.onclick = function(){ n.remove(); };
+  b.appendChild(x);
+  n.appendChild(b);
+  region.appendChild(n);
+  if(!opts.sticky && kind !== 'alert') setTimeout(function(){ if(n.parentNode) n.remove(); }, 7000);
+}
+
 // Copy text to the clipboard with visible feedback on the button
 function copyText(text, btn){
   function done(ok){
-    if(!btn){ if(!ok) alert('Could not copy automatically. Please select the text and copy it manually.'); return; }
+    if(!btn){ if(!ok) showNotice('Could not copy automatically. Please select the text and copy it manually.', 'alert'); return; }
     var orig = btn.getAttribute('data-orig') || btn.textContent;
     btn.setAttribute('data-orig', orig);
     btn.textContent = ok ? 'Copied ✓' : 'Copy failed — select the text manually';
@@ -974,24 +1041,27 @@ function checkUsageLimit(feature){
   if(u.today >= DAILY_LIMIT){
     msg = 'You have reached today\'s limit of ' + DAILY_LIMIT + ' AI actions. It resets at midnight UK time.';
   } else if(!planActive){
-    if(u.today >= PLAN_LIMITS.trial){ msg = 'You have used all ' + PLAN_LIMITS.trial + ' of today\'s free-trial AI actions. They reset at midnight UK time, or you can choose a plan to keep going.'; upsell = true; }
+    if(u.today >= PLAN_LIMITS.trial){
+      // While paid plans aren't live there is nothing to choose in Billing, so don't send people there
+      msg = PAYMENTS_LIVE
+        ? 'You have used all ' + PLAN_LIMITS.trial + ' of today\'s free-trial AI actions. They reset at midnight UK time, or you can choose a plan to keep going.'
+        : 'You\'ve used today\'s ' + PLAN_LIMITS.trial + ' free AI actions. They reset at midnight UK time. Questions: support@daveai.law';
+      upsell = PAYMENTS_LIVE;
+    }
   } else if(plan === 'starter'){
-    if(feature !== 'research' && u.metered >= PLAN_LIMITS.starter){ msg = 'You have used all ' + PLAN_LIMITS.starter + ' AI actions included in the Starter plan this month.\n\nUpgrade to Pro for more. (Legal research is not counted.)'; upsell = true; }
+    if(feature !== 'research' && u.metered >= PLAN_LIMITS.starter){ msg = 'You have used all ' + PLAN_LIMITS.starter + ' AI actions included in the Starter plan this month.\n\n' + (PAYMENTS_LIVE ? 'Upgrade to Pro for more.' : 'Questions: support@daveai.law.') + ' (Legal research is not counted.)'; upsell = PAYMENTS_LIVE; }
   } else if(plan === 'pro' || plan === 'firm'){
     if(u.month >= PLAN_LIMITS[plan]) msg = 'You have reached this month\'s fair-use limit of ' + PLAN_LIMITS[plan] + ' AI actions. Please contact support@daveai.law if you need more.';
   }
   if(!msg) return true;
-  if(upsell){
-    if(confirm(msg + '\n\nGo to Billing & Plans now?')) go('billing');
-  } else {
-    alert(msg);
-  }
+  showNotice(msg, 'alert', upsell ? { id:'limit', actionLabel:'See plans', action:function(){ go('billing'); } } : { id:'limit' });
   return false;
 }
 
 function updateUsageBadge(){
   var el = document.getElementById('usage-badge');
   if(!el) return;
+  el.title = AI_ACTION_DEF;
   var u = getUsage(), limit, used, period;
   if(!planActive){ limit = PLAN_LIMITS.trial; used = u.today; period = 'today'; }
   else if(plan === 'starter'){ limit = PLAN_LIMITS.starter; used = u.metered; period = 'this month'; }
@@ -1100,12 +1170,19 @@ async function _aiStopText(r){
   if(code === 'usage_check_failed') return 'Dave.AI could not check your plan just now. Please try again in a moment.';
   return (d && typeof d.error === 'string' && d.error) ? d.error : AI_FAIL_MSG;
 }
+// callAI is only used as the fallback after streaming failed, so tell the user
+// it is still working (worst case is about a minute) while it runs.
 async function callAI(sys, usr, maxTok, webSearch, history, opts){
+  showNotice('Still working on it, retrying… This can take up to a minute.', 'status', { id:'ai-progress', sticky:true });
+  try { return await callAIBuffered(sys, usr, maxTok, webSearch, history, opts); }
+  finally { showNotice('', 'status', { id:'ai-progress' }); }
+}
+async function callAIBuffered(sys, usr, maxTok, webSearch, history, opts){
   _aiErr = '';
   var _h = await _aiHeaders();
   var attempts = 2, refreshedAuth = false;
   for(var i = 0; i < attempts; i++){
-    var busy = false, waitMs = 2000;
+    var busy = false, waitMs = 2000, noRetry = false;
     try {
       var controller = new AbortController();
       var timeout = setTimeout(function(){ controller.abort(); }, 29000);
@@ -1144,6 +1221,8 @@ async function callAI(sys, usr, maxTok, webSearch, history, opts){
         var ra = parseFloat(r.headers.get('retry-after'));
         waitMs = (ra > 0 ? Math.min(ra, 10) * 1000 : 3000) + Math.floor(Math.random() * 1000);
       }
+      // A gateway timeout means the same long request is unlikely to finish on a retry
+      if(r.status === 504) noRetry = true;
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       // Join only the text blocks (newer models may also return thinking/other blocks)
@@ -1154,7 +1233,8 @@ async function callAI(sys, usr, maxTok, webSearch, history, opts){
       return txt || 'No response received. Please try again.';
     } catch(e) {
       clearTimeout(timeout);
-      if(i < attempts - 1){
+      if(e && e.name === 'AbortError') noRetry = true; // our own 29s timeout fired
+      if(i < attempts - 1 && !noRetry){
         // Wait (2s, or longer with jitter when overloaded) then retry
         await new Promise(function(res){ setTimeout(res, waitMs); });
         continue;
@@ -1439,7 +1519,7 @@ function vDraft(){
 async function doDraft(){
   var type = document.getElementById('dt').value;
   var prompt = document.getElementById('dp').value.trim();
-  if(!prompt){ alert('Please describe your requirements.'); return; }
+  if(!prompt){ showNotice('Please describe your requirements.', 'alert', {id:'validate'}); return; }
   if(!checkUsageLimit('draft')) return; // AI actions count toward the plan limit
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
   var out = document.getElementById('dout');
@@ -1498,7 +1578,7 @@ function dlDoc(){
 }
 // Refine the current draft with a follow-up instruction (edits the same document, doesn't count as new)
 async function doRefineDraft(){
-  var cur=window._lastDraftText; if(!cur){ alert('Generate a draft first.'); return; }
+  var cur=window._lastDraftText; if(!cur){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
   var inp=document.getElementById('dref'); var instr=inp?inp.value.trim():''; if(!instr) return;
   if(!checkUsageLimit('refine')) return;
   var btn=document.getElementById('drefbtn'); if(btn){btn.disabled=true;btn.textContent='Refining…';}
@@ -1546,7 +1626,7 @@ function vDocChat(){
 function dcTab(t,btn){ document.querySelectorAll('#dc-upload,#dc-paste').forEach(function(e){e.style.display='none';}); document.getElementById('dc-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
 function dcDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) dcFile(e.dataTransfer.files[0]); }
 function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(){ if(fn)fn.textContent='Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
-function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){alert('Paste some text first.');return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
+function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){showNotice('Paste some text first.', 'alert', {id:'validate'});return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
 function dcReset(){ dcDoc=''; dcName=''; dcMsgs=[]; go('docchat'); }
 function renderDcChat(){ var el=document.getElementById('dcmsgs'); if(!el)return; el.innerHTML=dcMsgs.map(function(m,idx){ if(m.role==='user')return '<div class="msg-u">'+escHtml(m.content)+'</div>'; return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI</div><button class="msg-copy" onclick="copyText(mdToPlain(dcMsgs['+idx+'].content),this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>'; }).join(''); el.scrollTop=el.scrollHeight; }
 async function doDocChat(){
@@ -1590,7 +1670,7 @@ function vCompare(){
 async function doCompare(){
   var A=document.getElementById('cmpA'), B=document.getElementById('cmpB');
   var a=A?A.value.trim():'', b=B?B.value.trim():'';
-  if(!a||!b){ alert('Paste both versions first.'); return; }
+  if(!a||!b){ showNotice('Paste both versions first.', 'alert', {id:'validate'}); return; }
   if(!checkUsageLimit('compare')) return;
   var btn=document.getElementById('cmpbtn'); if(btn){btn.disabled=true;btn.textContent='Comparing…';}
   var res=document.getElementById('cmp-res'); res.innerHTML='<div class="card"><div class="typing" style="justify-content:center;padding:40px 0"><span></span><span></span><span></span></div></div>';
@@ -1758,7 +1838,7 @@ async function doReview(){
   // Use the source of the visible tab only (never a stale upload behind pasted text)
   var rvPaste = document.getElementById('rv-paste');
   var text = (rvPaste && rvPaste.style.display !== 'none') ? (document.getElementById('rv-text')?document.getElementById('rv-text').value:'') : rvFileText;
-  if(!text.trim()){ alert('Please upload or paste a contract first.'); return; }
+  if(!text.trim()){ showNotice('Please upload or paste a contract first.', 'alert', {id:'validate'}); return; }
   if(!checkUsageLimit('review')) return; // AI actions count toward the plan limit
   var btn=document.getElementById('rvbtn'); btn.disabled=true; btn.textContent='Analysing…';
   var rvSteps=['Reading the document…','Identifying key clauses…','Checking liability and indemnities…','Reviewing payment and termination terms…','Assessing governing law and jurisdiction…','Flagging potential risks…','Preparing recommendations…'];
@@ -2039,7 +2119,7 @@ async function delDoc(k){
     docs.splice(Math.min(i,docs.length),0,d);
     var el2=document.getElementById('doc-cnt'); if(el2) el2.textContent=docs.length;
     if(currentView==='history') go('history');
-    alert('Could not delete "'+(d.name||'this document')+'". Please check your connection and try again.');
+    showNotice('Could not delete "'+(d.name||'this document')+'". Please check your connection and try again.', 'alert');
   }
 }
 
@@ -2257,7 +2337,7 @@ function vBilling(){
         '<ul class="plan-feats">'+p.feats.map(function(f){return'<li>'+f+'</li>';}).join('')+'</ul>' +
         '<button class="btn '+(isCur?'btn-p':'btn-g')+'" style="width:100%;margin-top:16px;white-space:nowrap" onclick="'+
           ((isCur && planActive)
-            ? 'alert(\'This is your current active plan.\')'
+            ? 'showNotice(\'This is your current active plan.\', \'status\')'
             : 'goToCheckout(\''+p.key+'\')') +
         '">'+
           (isCur ? (planActive ? '✓ Active plan' : 'Activate plan') : 'Select '+p.name) +
