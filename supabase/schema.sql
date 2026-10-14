@@ -30,6 +30,41 @@ create table if not exists public.documents (
 );
 create index if not exists documents_user_id_idx    on public.documents(user_id);
 create index if not exists documents_created_at_idx on public.documents(created_at);
+-- Size limits (NOT VALID: existing rows are not re-checked; new/updated rows are)
+do $$
+begin
+  if not exists (select 1 from pg_constraint
+                 where conname = 'documents_content_len'
+                   and conrelid = 'public.documents'::regclass) then
+    alter table public.documents
+      add constraint documents_content_len check (length(content) <= 600000) not valid;
+  end if;
+  if not exists (select 1 from pg_constraint
+                 where conname = 'documents_name_len'
+                   and conrelid = 'public.documents'::regclass) then
+    alter table public.documents
+      add constraint documents_name_len check (length(name) <= 300) not valid;
+  end if;
+end $$;
+-- At most 5,000 saved documents per user
+create or replace function public.documents_row_cap()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if (select count(*) from public.documents d where d.user_id = new.user_id) >= 5000 then
+    raise exception 'Document limit reached (5,000 saved documents). Please delete some older documents first.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function public.documents_row_cap() from public, anon, authenticated;
+drop trigger if exists documents_row_cap on public.documents;
+create trigger documents_row_cap
+  before insert on public.documents
+  for each row execute function public.documents_row_cap();
 
 -- 3) ROW LEVEL SECURITY — the key part: users can only touch their own rows
 alter table public.profiles  enable row level security;
@@ -90,6 +125,8 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+-- Trigger-only: must not be callable as an RPC (the trigger still fires)
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
 -- 5) BACKFILL profiles for anyone who already signed up before this ran
 --    (trial from their signup date; plan never taken from metadata)
