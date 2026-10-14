@@ -18,11 +18,16 @@ const DAILY_INVITE_CAP = 10;
 // Pro: up to 5 users (4 invites). Firm: up to 10 users (9 invites).
 const PLAN_SEATS = { pro: 5, firm: 10, enterprise: Infinity };
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
+// CORS: only our own site may call this from a browser (same as ai-proxy.js)
+const ALLOWED_ORIGINS = ['https://daveai.law', 'https://www.daveai.law'];
+function corsHeaders(origin) {
+  return {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.indexOf(origin) !== -1 ? origin : 'https://daveai.law',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin'
+  };
+}
 
 function request(method, hostname, path, headers, body) {
   return new Promise((resolve) => {
@@ -55,6 +60,8 @@ async function verifyUser(event) {
 }
 
 exports.handler = async (event) => {
+  const reqHeaders = event.headers || {};
+  const cors = corsHeaders(reqHeaders.origin || reqHeaders.Origin || '');
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: cors, body: '' };
   }
