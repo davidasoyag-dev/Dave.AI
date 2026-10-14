@@ -150,7 +150,7 @@ textarea.inp{resize:vertical;line-height:1.6;}
 
     <!-- Contact form -->
     <div class="form-section">
-      <div id="success-box" class="success-box">
+      <div id="success-box" class="success-box" role="status">
         <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" stroke="#3cb464" stroke-width="1.8"/>
           <polyline points="9 12 11 14 15 10" stroke="#3cb464" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -160,17 +160,17 @@ textarea.inp{resize:vertical;line-height:1.6;}
       </div>
 
       <div id="form-wrap">
-        <div class="err-box" id="err-box"></div>
+        <div class="err-box" id="err-box" role="alert"></div>
         <div class="field">
-          <label>Your name</label>
-          <input class="inp" id="f-name" type="text" placeholder="Jane Smith"/>
+          <label for="f-name">Your name</label>
+          <input class="inp" id="f-name" type="text" placeholder="Jane Smith" autocomplete="name"/>
         </div>
         <div class="field">
-          <label>Email address</label>
-          <input class="inp" id="f-email" type="email" placeholder="jane@smithlaw.co.uk"/>
+          <label for="f-email">Email address</label>
+          <input class="inp" id="f-email" type="email" placeholder="jane@smithlaw.co.uk" autocomplete="email"/>
         </div>
         <div class="field">
-          <label>Subject</label>
+          <label for="f-subject">Subject</label>
           <select class="inp" id="f-subject">
             <option value="">Select a topic…</option>
             <option>General enquiry</option>
@@ -182,7 +182,7 @@ textarea.inp{resize:vertical;line-height:1.6;}
           </select>
         </div>
         <div class="field">
-          <label>Message</label>
+          <label for="f-message">Message</label>
           <textarea class="inp" id="f-message" rows="5" placeholder="Tell us how we can help…"></textarea>
         </div>
         <div class="err-box" id="err-box2"></div>

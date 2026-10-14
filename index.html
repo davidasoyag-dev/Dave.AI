@@ -1779,7 +1779,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <div class="su-plan-bar"><div class="su-pb-left"><div class="su-pb-dot"></div><div><div class="su-pb-name" id="su-pb-name">Pro Plan</div><div class="su-pb-sub">14-day free trial · No card required</div></div></div><div><div class="su-pb-price" id="su-pb-price">£149/mo</div><div class="su-pb-change" onclick="suGoStep(1)">Change plan</div></div></div>
         <h2 class="su-title">Create your account</h2>
         <p class="su-sub">Sign up with Google or fill in your details below.</p>
-        <p class="su-terms-note">By continuing you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+        <p class="su-terms-note">By continuing you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
         <div class="su-soc-row" style="grid-template-columns:1fr">
           <button class="su-soc-btn" onclick="suSocial('google')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
         </div>
@@ -1815,14 +1815,14 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <p class="su-sub">Tell us about your firm and we'll put together a tailored Enterprise proposal — usually within 2 working days.</p>
 
         <div class="su-field-2">
-          <div class="su-field"><label class="su-label">First name</label><input class="su-input" type="text" id="ent-first" placeholder="John" autocomplete="given-name" oninput="entValidate()"/></div>
-          <div class="su-field"><label class="su-label">Last name</label><input class="su-input" type="text" id="ent-last" placeholder="Smith" autocomplete="family-name"/></div>
+          <div class="su-field"><label class="su-label" for="ent-first">First name</label><input class="su-input" type="text" id="ent-first" placeholder="John" autocomplete="given-name" oninput="entValidate()"/></div>
+          <div class="su-field"><label class="su-label" for="ent-last">Last name</label><input class="su-input" type="text" id="ent-last" placeholder="Smith" autocomplete="family-name"/></div>
         </div>
-        <div class="su-field"><label class="su-label">Work email</label><input class="su-input" type="email" id="ent-email" placeholder="name@yourfirm.co.uk" autocomplete="email" oninput="entValidate()"/></div>
-        <div class="su-field"><label class="su-label">Firm / organisation</label><input class="su-input" type="text" id="ent-firm" placeholder="Smith &amp; Associates LLP" autocomplete="organization" oninput="entValidate()"/></div>
+        <div class="su-field"><label class="su-label" for="ent-email">Work email</label><input class="su-input" type="email" id="ent-email" placeholder="name@yourfirm.co.uk" autocomplete="email" oninput="entValidate()"/></div>
+        <div class="su-field"><label class="su-label" for="ent-firm">Firm / organisation</label><input class="su-input" type="text" id="ent-firm" placeholder="Smith &amp; Associates LLP" autocomplete="organization" oninput="entValidate()"/></div>
 
         <div class="su-field">
-          <label class="su-label">Number of users</label>
+          <label class="su-label" for="ent-users">Number of users</label>
           <select class="su-input" id="ent-users" onchange="entValidate()">
             <option value="" style="background:#162040">Select team size...</option>
             <option value="10-25" style="background:#162040">10 – 25 users</option>
@@ -1833,7 +1833,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         </div>
 
         <div class="su-field">
-          <label class="su-label">Primary use case</label>
+          <label class="su-label" for="ent-use">Primary use case</label>
           <select class="su-input" id="ent-use" onchange="entValidate()">
             <option value="" style="background:#162040">Select use case...</option>
             <option value="contracts" style="background:#162040">Contract drafting at volume</option>
@@ -1845,7 +1845,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         </div>
 
         <div class="su-field">
-          <label class="su-label">Anything else we should know? <span style="color:rgba(200,216,255,0.25);font-size:8px;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <label class="su-label" for="ent-notes">Anything else we should know? <span style="color:rgba(200,216,255,0.25);font-size:8px;text-transform:none;letter-spacing:0">(optional)</span></label>
           <textarea class="su-input" id="ent-notes" placeholder="e.g. API access, white-labelling, SLA needs..." rows="3" style="resize:none;line-height:1.5"></textarea>
         </div>
 
@@ -1896,7 +1896,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <div class="su-tabs"><button class="su-tab" onclick="suLoginTab('login')" id="su-tab-login">Sign in</button><button class="su-tab" onclick="suLoginTab('signup')" id="su-tab-signup">Create account</button></div>
         <h2 class="su-title">Welcome back</h2>
         <p class="su-sub">Sign in to your Dave.AI account.</p>
-        <p class="su-terms-note">By continuing you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+        <p class="su-terms-note">By continuing you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
         <button class="su-soc-btn" onclick="suSocial('google')" style="width:100%;margin-bottom:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
         <div class="su-divider"><div class="su-div-line"></div><span class="su-div-text">or sign in with email</span><div class="su-div-line"></div></div>
         <div class="su-field"><label class="su-label" for="li-email">Email</label><input class="su-input" type="email" id="li-email" placeholder="name@yourfirm.co.uk" autocomplete="email"/></div>
@@ -1932,7 +1932,9 @@ function openSignup(plan) {
     if(!el) return;
     el.value = '';
   });
-  if (plan) suGoStep(2); else suGoStep(1);
+  // Every trial is identical, so go straight to account details (Pro preselected);
+  // "Change plan" still opens the plan picker.
+  suGoStep(2);
   suDialogOpened();
 }
 
@@ -2322,6 +2324,10 @@ function showSignupLogin(){
   if(btn){ btn.disabled=false; btn.textContent='Sign in to Dave.AI →'; }
   suDialogOpened();
 }
+// index.html#signup (e.g. "Create account" on login.html) opens the signup form
+function suCheckHash(){ if(location.hash==='#signup') openSignup(); }
+document.addEventListener('DOMContentLoaded', suCheckHash);
+window.addEventListener('hashchange', suCheckHash);
 </script>
 
 
