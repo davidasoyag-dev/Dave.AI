@@ -199,7 +199,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
 .d4{transition-delay:.32s}.d5{transition-delay:.40s}.d6{transition-delay:.48s}
 
 /* ── Preloader ── */
-#preloader{position:fixed;inset:0;background:#06091a;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 0.65s cubic-bezier(.4,0,.2,1);}
+#preloader{position:fixed;inset:0;background:#06091a;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 0.3s cubic-bezier(.4,0,.2,1);}
 #preloader.fade-out{opacity:0;pointer-events:none;}
 .pl-icon{width:72px;height:72px;background:#4f72c4;border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 48px rgba(79,114,196,0.6);animation:plPulse 1.8s ease-in-out infinite;}
 .pl-name{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#eef2ff;letter-spacing:-.025em;margin-top:16px;}
@@ -367,6 +367,7 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
   .btn-primary,.btn-outline{font-size:14px;padding:13px 24px;}
   .hero-badges{flex-wrap:wrap;gap:8px;}
   .faq-q{font-size:14px;}
+  .impact-num{font-size:30px !important;}
 }
 @media(min-width:481px) and (max-width:768px){
   .hero-title{font-size:clamp(34px,7vw,48px);}
@@ -435,7 +436,9 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
 .cursor{display:inline-block;width:2px;height:14px;background:#4f72c4;margin-left:1px;animation:blink 0.8s step-end infinite;vertical-align:middle;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 /* Demo player tabs */
-#dtabs .tab{flex:1;padding:10px 6px;font-size:11.5px;font-weight:500;color:#6674a0;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;text-align:center;}
+#dtabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#dtabs::-webkit-scrollbar{display:none;}
+#dtabs .tab{flex:1 0 auto;padding:10px 6px;font-size:11.5px;font-weight:500;color:#6674a0;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;text-align:center;}
 #dtabs .tab.on{color:#3558a8;border-bottom-color:#4f72c4;background:rgba(79,114,196,0.08);}
 #dtabs .tab:hover:not(.on){background:rgba(79,114,196,0.05);}
 /* Demo frame content */
@@ -669,19 +672,19 @@ body{background:white;font-family:var(--sans);overflow-x:hidden;color:#1c2233;}
     <!-- Big impact numbers row -->
     <div class="reveal" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:48px;">
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:34px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">Minutes</p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:34px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">Minutes</p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">to a complete, clause-numbered first draft</p>
       </div>
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">10 <span style="font-size:20px;color:#4f72c4;font-weight:700;">types</span></p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">10 <span style="font-size:20px;color:#4f72c4;font-weight:700;">types</span></p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">of UK document you can draft, from NDAs to employment contracts and leases</p>
       </div>
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">3<span style="font-size:20px;color:#4f72c4;font-weight:700;">-in-1</span></p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">3<span style="font-size:20px;color:#4f72c4;font-weight:700;">-in-1</span></p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">drafting, document review and legal research in a single platform</p>
       </div>
       <div style="text-align:center;padding:28px 12px;background:#f0f4ff;border-radius:16px;border:1.5px solid #dce6f8;overflow:hidden;">
-        <p style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">£49<span style="font-size:20px;color:#4f72c4;font-weight:700;">/mo</span></p>
+        <p class="impact-num" style="font-family:var(--serif);font-size:38px;font-weight:800;color:#1a2840;line-height:1;white-space:nowrap;">£49<span style="font-size:20px;color:#4f72c4;font-weight:700;">/mo</span></p>
         <p style="font-size:12px;color:#6674a0;margin-top:8px;line-height:1.5;">to start — a 14-day free trial first, no credit card required</p>
       </div>
     </div>
@@ -2336,24 +2339,17 @@ window.addEventListener('hashchange', suCheckHash);
 // ── Preloader dismiss ──
 (function(){
   var _pl = document.getElementById('preloader');
-  var _plStart = Date.now();
+  var _plDone = false;
   function dismissPl(){
+    if(_plDone || !_pl) return;
+    _plDone = true;
     _pl.classList.add('fade-out');
     var _hc = document.querySelector('.hero-content'); if(_hc) _hc.classList.add('hero-in');
-    setTimeout(function(){ if(_pl && _pl.parentNode) _pl.parentNode.removeChild(_pl); }, 700);
+    setTimeout(function(){ if(_pl && _pl.parentNode) _pl.parentNode.removeChild(_pl); }, 400);
   }
-  // Show for at least 1.3s, dismiss sooner only if page fully loaded
-  var _minDelay = 1300;
-  var _timer = setTimeout(dismissPl, _minDelay);
-  window.addEventListener('load', function(){
-    var elapsed = Date.now() - _plStart;
-    if(elapsed < _minDelay){
-      // page loaded fast — wait out the remaining branded moment
-    } else {
-      clearTimeout(_timer);
-      dismissPl();
-    }
-  });
+  // This script runs at the end of <body>, so the page is already parsed:
+  // keep only a brief branded moment instead of waiting for the full load event.
+  setTimeout(dismissPl, 300);
 })();
 
 </script>
