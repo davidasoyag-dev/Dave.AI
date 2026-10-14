@@ -349,6 +349,36 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
 .linklike.ms-dismiss{font-size:10px;color:var(--dim);}
 .linklike.ms-dismiss:hover{color:var(--muted);}
 /* end ops 2026-10-13-b */
+/* ops 2026-10-14-b-2: notices, nav scrim, view focus, print */
+.notice-stack{position:fixed;right:20px;bottom:20px;z-index:1001;display:flex;flex-direction:column;gap:8px;max-width:360px;pointer-events:none;}
+.notice-stack > div{display:flex;flex-direction:column;gap:8px;}
+.app-notice{pointer-events:auto;background:var(--card);border:1px solid var(--border2);border-left:3px solid var(--blue2);border-radius:9px;padding:11px 14px;font-size:12px;line-height:1.5;color:var(--text);box-shadow:0 8px 24px rgba(20,30,60,.15);}
+.app-notice.err{border-left-color:var(--red);}
+.an-msg{white-space:pre-line;}
+.an-btns{display:flex;gap:14px;justify-content:flex-end;margin-top:6px;}
+.an-btns .linklike{font-size:11px;font-weight:600;color:var(--blue2);}
+.an-btns .an-x{color:var(--muted);}
+.nav-scrim{display:none;}
+.view-title:focus{outline:none;}
+.rs-mob-hist{display:none;flex-shrink:0;margin-bottom:12px;font-size:12px;}
+.rs-mob-hist summary{cursor:pointer;color:var(--blue2);font-weight:600;padding:4px 0;}
+.rs-mob-hist[open] summary{margin-bottom:6px;}
+@media(max-width:860px){.rs-mob-hist{display:block;}}
+@media(max-width:768px){
+  .sidebar.open ~ .nav-scrim{display:block;position:fixed;top:var(--topbar);left:0;right:0;bottom:0;background:rgba(20,30,60,.35);z-index:59;}
+  .notice-stack{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff;}
+  .app{display:block;height:auto;}
+  .main{overflow:visible;}
+  .topbar,.sidebar,.nav-scrim,.notice-stack,.no-print,#save-fail-note,.welcome-banner{display:none !important;}
+  .view{padding:0;animation:none;}
+  .grid2{display:block;}
+  .ai-out{max-height:none;overflow:visible;}
+  .card{border:none;padding:0;}
+}
+/* end ops 2026-10-14-b-2 */
 </style>
 </head>
 <body>
@@ -463,10 +493,17 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
       </div>
     </div>
   </nav>
+  <div class="nav-scrim" id="nav-scrim" aria-hidden="true" onclick="toggleNav(false, true)"></div>
 
   <!-- ══ MAIN ══ -->
   <main class="main" id="main"></main>
 
+</div>
+
+<!-- In-app notices (showNotice): live regions stay in the page so screen readers announce new messages -->
+<div class="notice-stack">
+  <div id="notice-alert" role="alert"></div>
+  <div id="notice-status" role="status" aria-live="polite"></div>
 </div>
 
 <script>
@@ -503,7 +540,7 @@ function stripeUrl(key){
 // ══ SESSION ══
 var S = JSON.parse(localStorage.getItem('dave_session') || '{}');
 
-// Auth guard — localStorage is fast but a fresh Google/Microsoft OAuth
+// Auth guard — localStorage is fast but a fresh Google OAuth
 // login has no dave_session yet, only a live Supabase session (only the
 // email/password flow writes dave_session directly). Check Supabase before
 // giving up, so a valid OAuth login isn't bounced back to login.html.
@@ -587,6 +624,7 @@ var trialStart = S.trialStart ? new Date(S.trialStart) : new Date();
 if(isNaN(trialStart.getTime())) trialStart = new Date();
 var profileSettled = false; // true once loadProfile() has succeeded (a failed load retries)
 var profileLoaded = false;  // true only once loadProfile() has succeeded
+var trialStartKnown = false; // the trial start date came from the server profile
 var trialEnd, trialDays = 0, trialEndStr = '';
 // Documents now live in Supabase — per account, server-side, private via Row Level
 // Security. They load asynchronously after the page renders (see loadDocsFromServer).
@@ -723,7 +761,7 @@ function applyTrialState(forceExpired){
 // trial-expired overlay so an expired user can still take their work away).
 async function downloadMyDocs(){
   if(!docs.length) await loadDocsFromServer();
-  if(!docs.length){ alert(docsLoadError ? 'Couldn\'t load your documents. Check your connection and try again.' : 'You have no saved documents to download.'); return; }
+  if(!docs.length){ showNotice(docsLoadError ? 'Couldn\'t load your documents. Check your connection and try again.' : 'You have no saved documents to download.', docsLoadError ? 'alert' : 'status'); return; }
   var sep = '\n\n' + new Array(61).join('=') + '\n\n';
   var txt = 'Dave.AI: my documents (exported ' + new Date().toLocaleString('en-GB') + ')' + sep +
     docs.map(function(d){
@@ -766,7 +804,7 @@ async function loadProfile(){
     if(res.error) throw res.error;
     var p = res.data; if(!p) throw new Error('No profile');
     planActive = p.plan_active === true;
-    if(p.trial_start){ var ts = new Date(p.trial_start); if(!isNaN(ts.getTime())) trialStart = ts; }
+    if(p.trial_start){ var ts = new Date(p.trial_start); if(!isNaN(ts.getTime())){ trialStart = ts; trialStartKnown = true; } }
     // Paid: the plan the server says they pay for. Trial: the plan they picked
     // at signup (display only; limits use the trial rules).
     var srvPlan = String(p.plan || '').toLowerCase();
@@ -804,6 +842,7 @@ function saveDocs(){
 //   pro / firm: fair use 300 per month · enterprise: daily limit only
 var DAILY_LIMIT = 100;
 var PLAN_LIMITS = { trial: 25, starter: 20, pro: 300, firm: 300, enterprise: Infinity };
+var AI_ACTION_DEF = 'One AI action = one Draft, Refine, Review, Research question, Ask-a-Doc question, Compare or Quick Tool run.';
 
 // ── Init UI ──
 document.getElementById('tb-av').textContent    = initials;
@@ -826,7 +865,23 @@ function applyPlanBadges(){
 }
 
 // ── Navigation ──
-function go(v){
+// Each view has its own #hash (browser Back/Forward work) and tab title.
+var VIEW_TITLES = { dash:'Dashboard', draft:'Draft', review:'Review', research:'Research', docchat:'Ask a Doc',
+  compare:'Compare', tools:'Quick Tools', history:'History', settings:'Settings', billing:'Billing & Plans' };
+function hashView(){
+  var h = (location.hash || '').slice(1);
+  return Object.prototype.hasOwnProperty.call(VIEW_TITLES, h) ? h : '';
+}
+// nav: undefined = normal click (adds a history entry), 'pop' = Back/Forward, 'replace' = first load
+var _viewShown = false;
+function go(v, nav){
+  if(!Object.prototype.hasOwnProperty.call(VIEW_TITLES, v)) v = 'dash';
+  var changed = !_viewShown || v !== currentView;
+  try {
+    if(nav === 'replace') history.replaceState({v:v}, '', '#'+v);
+    else if(nav !== 'pop' && location.hash !== '#'+v) history.pushState({v:v}, '', '#'+v);
+  } catch(e){}
+  document.title = VIEW_TITLES[v] + ' · Dave.AI';
   document.querySelectorAll('.sb-item').forEach(function(e){ e.classList.remove('on'); });
   document.querySelectorAll('.sb-item[aria-current]').forEach(function(e){ e.removeAttribute('aria-current'); });
   currentView = v;
@@ -842,11 +897,22 @@ function go(v){
   else if(v==='compare')  { m.innerHTML = vCompare(); }
   else if(v==='tools')    { m.innerHTML = vTools(); }
   else if(v==='history')  { m.innerHTML = vHistory(); }
-  else if(v==='settings') { m.innerHTML = vSettings(); loadTeamInvites(); }
+  else if(v==='settings') { m.innerHTML = vSettings(); loadTeamInvites(); loadSecurityCard(); }
   else if(v==='billing')  { m.innerHTML = vBilling(); }
   m.scrollTop = 0;
   linkLabels(m);
+  // The view title is the page heading; move focus there when the view changes
+  // (not on the first load, and not when the same view just re-renders)
+  var vt = m.querySelector('.view-title');
+  if(vt){
+    vt.setAttribute('role', 'heading'); vt.setAttribute('aria-level', '1'); vt.setAttribute('tabindex', '-1');
+    if(changed && _viewShown){ try { vt.focus({ preventScroll:true }); } catch(e){ vt.focus(); } }
+  }
+  _viewShown = true;
 }
+window.addEventListener('popstate', function(e){
+  go((e.state && e.state.v) || hashView() || 'dash', 'pop');
+});
 
 // Link each .field label to its input (for screen readers / click-to-focus)
 var _lblSeq = 0;
@@ -859,13 +925,17 @@ function linkLabels(root){
   });
 }
 
-// Mobile menu: show/hide the sidebar as an overlay (<=768px)
-function toggleNav(open){
+// Mobile menu: show/hide the sidebar as an overlay (<=768px). Opening moves focus
+// to the first menu item; returnFocus (scrim tap / Escape) puts it back on the button.
+function toggleNav(open, returnFocus){
   var sb = document.getElementById('sidebar'), btn = document.getElementById('tb-menu');
   if(!sb) return;
-  if(typeof open !== 'boolean') open = !sb.classList.contains('open');
+  var wasOpen = sb.classList.contains('open');
+  if(typeof open !== 'boolean') open = !wasOpen;
   sb.classList.toggle('open', open);
   if(btn){ btn.setAttribute('aria-expanded', open ? 'true' : 'false'); btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); }
+  if(open && !wasOpen){ var first = sb.querySelector('.sb-item'); if(first) first.focus(); }
+  else if(!open && wasOpen && returnFocus && btn) btn.focus();
 }
 
 // Topbar search: jump to History and filter documents
@@ -890,14 +960,43 @@ function tbSearch(q){
     if(t && t.getAttribute && t.getAttribute('role') === 'button' && t.onclick){ e.preventDefault(); t.click(); }
   });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && sb && sb.classList.contains('open')){ toggleNav(false); var b = document.getElementById('tb-menu'); if(b) b.focus(); }
+    if(e.key === 'Escape' && sb && sb.classList.contains('open')) toggleNav(false, true);
   });
 })();
+
+// In-app notice instead of alert(). kind: 'alert' (error or limit; stays until
+// dismissed or replaced) or 'status' (information; hides after a few seconds).
+// opts: { id: replaces the earlier notice with the same id, sticky: never auto-hide,
+//         actionLabel + action: one extra button, e.g. 'See plans' }
+function showNotice(msg, kind, opts){
+  opts = opts || {};
+  var key = String(opts.id || 'main');
+  document.querySelectorAll('.app-notice').forEach(function(x){ if(x.getAttribute('data-key') === key) x.remove(); });
+  if(!msg) return;
+  var region = document.getElementById(kind === 'alert' ? 'notice-alert' : 'notice-status');
+  if(!region) return;
+  var n = document.createElement('div');
+  n.className = 'app-notice' + (kind === 'alert' ? ' err' : '');
+  n.setAttribute('data-key', key);
+  var t = document.createElement('div'); t.className = 'an-msg'; t.textContent = msg; n.appendChild(t);
+  var b = document.createElement('div'); b.className = 'an-btns';
+  if(opts.actionLabel && typeof opts.action === 'function'){
+    var a = document.createElement('button'); a.type = 'button'; a.className = 'linklike'; a.textContent = opts.actionLabel;
+    a.onclick = function(){ n.remove(); opts.action(); };
+    b.appendChild(a);
+  }
+  var x = document.createElement('button'); x.type = 'button'; x.className = 'linklike an-x'; x.textContent = 'Dismiss';
+  x.onclick = function(){ n.remove(); };
+  b.appendChild(x);
+  n.appendChild(b);
+  region.appendChild(n);
+  if(!opts.sticky && kind !== 'alert') setTimeout(function(){ if(n.parentNode) n.remove(); }, 7000);
+}
 
 // Copy text to the clipboard with visible feedback on the button
 function copyText(text, btn){
   function done(ok){
-    if(!btn){ if(!ok) alert('Could not copy automatically. Please select the text and copy it manually.'); return; }
+    if(!btn){ if(!ok) showNotice('Could not copy automatically. Please select the text and copy it manually.', 'alert'); return; }
     var orig = btn.getAttribute('data-orig') || btn.textContent;
     btn.setAttribute('data-orig', orig);
     btn.textContent = ok ? 'Copied ✓' : 'Copy failed — select the text manually';
@@ -974,24 +1073,27 @@ function checkUsageLimit(feature){
   if(u.today >= DAILY_LIMIT){
     msg = 'You have reached today\'s limit of ' + DAILY_LIMIT + ' AI actions. It resets at midnight UK time.';
   } else if(!planActive){
-    if(u.today >= PLAN_LIMITS.trial){ msg = 'You have used all ' + PLAN_LIMITS.trial + ' of today\'s free-trial AI actions. They reset at midnight UK time, or you can choose a plan to keep going.'; upsell = true; }
+    if(u.today >= PLAN_LIMITS.trial){
+      // While paid plans aren't live there is nothing to choose in Billing, so don't send people there
+      msg = PAYMENTS_LIVE
+        ? 'You have used all ' + PLAN_LIMITS.trial + ' of today\'s free-trial AI actions. They reset at midnight UK time, or you can choose a plan to keep going.'
+        : 'You\'ve used today\'s ' + PLAN_LIMITS.trial + ' free AI actions. They reset at midnight UK time. Questions: support@daveai.law';
+      upsell = PAYMENTS_LIVE;
+    }
   } else if(plan === 'starter'){
-    if(feature !== 'research' && u.metered >= PLAN_LIMITS.starter){ msg = 'You have used all ' + PLAN_LIMITS.starter + ' AI actions included in the Starter plan this month.\n\nUpgrade to Pro for more. (Legal research is not counted.)'; upsell = true; }
+    if(feature !== 'research' && u.metered >= PLAN_LIMITS.starter){ msg = 'You have used all ' + PLAN_LIMITS.starter + ' AI actions included in the Starter plan this month.\n\n' + (PAYMENTS_LIVE ? 'Upgrade to Pro for more.' : 'Questions: support@daveai.law.') + ' (Legal research is not counted.)'; upsell = PAYMENTS_LIVE; }
   } else if(plan === 'pro' || plan === 'firm'){
     if(u.month >= PLAN_LIMITS[plan]) msg = 'You have reached this month\'s fair-use limit of ' + PLAN_LIMITS[plan] + ' AI actions. Please contact support@daveai.law if you need more.';
   }
   if(!msg) return true;
-  if(upsell){
-    if(confirm(msg + '\n\nGo to Billing & Plans now?')) go('billing');
-  } else {
-    alert(msg);
-  }
+  showNotice(msg, 'alert', upsell ? { id:'limit', actionLabel:'See plans', action:function(){ go('billing'); } } : { id:'limit' });
   return false;
 }
 
 function updateUsageBadge(){
   var el = document.getElementById('usage-badge');
   if(!el) return;
+  el.title = AI_ACTION_DEF;
   var u = getUsage(), limit, used, period;
   if(!planActive){ limit = PLAN_LIMITS.trial; used = u.today; period = 'today'; }
   else if(plan === 'starter'){ limit = PLAN_LIMITS.starter; used = u.metered; period = 'this month'; }
@@ -1104,12 +1206,19 @@ async function _aiStopText(r){
   if(code === 'auth_check_failed') return 'Dave.AI could not confirm your sign-in just now. Please try again in a moment.';
   return (d && typeof d.error === 'string' && d.error) ? d.error : AI_FAIL_MSG;
 }
+// callAI is only used as the fallback after streaming failed, so tell the user
+// it is still working (worst case is about a minute) while it runs.
 async function callAI(sys, usr, maxTok, webSearch, history, opts){
+  showNotice('Still working on it, retrying… This can take up to a minute.', 'status', { id:'ai-progress', sticky:true });
+  try { return await callAIBuffered(sys, usr, maxTok, webSearch, history, opts); }
+  finally { showNotice('', 'status', { id:'ai-progress' }); }
+}
+async function callAIBuffered(sys, usr, maxTok, webSearch, history, opts){
   _aiErr = '';
   var _h = await _aiHeaders();
   var attempts = 2, refreshedAuth = false;
   for(var i = 0; i < attempts; i++){
-    var busy = false, waitMs = 2000;
+    var busy = false, waitMs = 2000, noRetry = false;
     try {
       var controller = new AbortController();
       var timeout = setTimeout(function(){ controller.abort(); }, 29000);
@@ -1148,6 +1257,8 @@ async function callAI(sys, usr, maxTok, webSearch, history, opts){
         var ra = parseFloat(r.headers.get('retry-after'));
         waitMs = (ra > 0 ? Math.min(ra, 10) * 1000 : 3000) + Math.floor(Math.random() * 1000);
       }
+      // A gateway timeout means the same long request is unlikely to finish on a retry
+      if(r.status === 504) noRetry = true;
       if(!r.ok) throw new Error('HTTP ' + r.status);
       var d = await r.json();
       // Join only the text blocks (newer models may also return thinking/other blocks)
@@ -1158,7 +1269,8 @@ async function callAI(sys, usr, maxTok, webSearch, history, opts){
       return txt || 'No response received. Please try again.';
     } catch(e) {
       clearTimeout(timeout);
-      if(i < attempts - 1){
+      if(e && e.name === 'AbortError') noRetry = true; // our own 29s timeout fired
+      if(i < attempts - 1 && !noRetry){
         // Wait (2s, or longer with jitter when overloaded) then retry
         await new Promise(function(res){ setTimeout(res, waitMs); });
         continue;
@@ -1349,6 +1461,16 @@ function vDash(){
         return '<div class="doc-row"><div class="doc-icon" style="background:'+bg+'"><svg width="15" height="15" fill="none" stroke="'+ic+'" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(d.name)+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+escHtml(d.type)+' · '+escHtml(d.date)+'</div></div><span class="tag tag-b" style="flex-shrink:0">'+escHtml(String(d.type||'').split(' ')[0])+'</span></div>';
       }).join('');
 
+  // Recent activity: only real events (the last 5 saved documents, and the trial start date from the server)
+  var actLabel = { Draft:'Draft saved', Review:'Contract reviewed', Research:'Research question' };
+  var activityHtml = docs.slice(0,5).map(function(d){
+    var col = d.type==='Draft'?'#4f72c4':d.type==='Review'?'#3cb464':'#a78bfa';
+    var nm = String(d.name||'Untitled').replace(/^(Research|Review) —\s*/, '');
+    return '<div class="act-row"><div class="act-dot" style="background:'+col+'"></div><div class="act-text">'+escHtml((actLabel[d.type]||d.type||'Document')+' · '+nm)+'</div><div class="act-time">'+escHtml(d.date||'')+'</div></div>';
+  }).join('');
+  if(!activityHtml) activityHtml = '<div style="font-size:12px;color:var(--muted);padding:10px 0">'+((!docsLoaded && !docsLoadError) ? 'Loading…' : 'Your recent drafts, reviews and research will appear here.')+'</div>';
+  if(trialStartKnown && !planActive) activityHtml += '<div class="act-row"><div class="act-dot" style="background:#c8963c"></div><div class="act-text">Free trial started</div><div class="act-time">'+escHtml(trialStart.toLocaleDateString('en-GB'))+'</div></div>';
+
   var trialBanner = !planActive
     ? '<div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.25);border-radius:9px;padding:8px 14px;font-size:11px;color:#8a5a00;display:flex;align-items:center;gap:8px;white-space:nowrap">Trial ends '+trialEndStr+'<button type="button" class="linklike" style="color:var(--blue2);cursor:pointer;font-weight:600" onclick="go(\'billing\')"> · Upgrade →</button></div>'
     : '<div style="background:rgba(60,180,100,0.08);border:1px solid rgba(60,180,100,0.22);border-radius:9px;padding:8px 14px;font-size:11px;color:#1e6b34;display:flex;align-items:center;gap:7px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>Membership active</div>';
@@ -1358,6 +1480,7 @@ function vDash(){
       '<div class="ms-title"><svg width="13" height="13" fill="none" stroke="#c8963c" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg> Upgrade your plan — trial ends '+trialEndStr+'<span class="ms-title-badge">'+trialDays+' days left</span></div>' +
       '<button type="button" class="linklike ms-dismiss" onclick="document.getElementById(\'ms-strip\').style.display=\'none\'">Dismiss ×</button>' +
     '</div>' +
+    (PAYMENTS_LIVE ? '' : '<div style="font-size:11px;color:var(--muted);margin:-4px 0 14px">Paid plans are launching soon. Payments aren\'t live yet, so nothing can be charged.</div>') +
     '<div class="ms-plans">' +
       '<div class="ms-plan">' +
         '<div class="ms-plan-name">Starter</div>' +
@@ -1397,6 +1520,9 @@ function vDash(){
       '<button type="button" class="qa" onclick="go(\'draft\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div style="flex:1"><div class="qa-label">Draft</div><div class="qa-desc">NDA, employment, lease</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
       '<button type="button" class="qa" onclick="go(\'review\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div style="flex:1"><div class="qa-label">Review</div><div class="qa-desc">Risk flags & clause analysis</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
       '<button type="button" class="qa" onclick="go(\'research\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="flex:1"><div class="qa-label">Research</div><div class="qa-desc">UK case law & legislation</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'docchat\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div style="flex:1"><div class="qa-label">Ask a Doc</div><div class="qa-desc">Questions about a contract</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'compare\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="8 7 4 11 8 15"/><polyline points="16 7 20 11 16 15"/></svg></div><div style="flex:1"><div class="qa-label">Compare</div><div class="qa-desc">What changed between two versions</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
+      '<button type="button" class="qa" onclick="go(\'tools\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 4V2M15 10V8M11 6h2M17 6h2M20 15v-2M20 21v-2M17 18h2M23 18h-2M8 3l1.5 3.5L13 8l-3.5 1.5L8 13l-1.5-3.5L3 8l3.5-1.5z"/></svg></div><div style="flex:1"><div class="qa-label">Quick Tools</div><div class="qa-desc">Plain English · make it formal</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
       '<button type="button" class="qa" onclick="go(\'history\')"><div class="qa-icon" style="background:rgba(79,114,196,.15)"><svg width="16" height="16" fill="none" stroke="#7aaaf8" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div><div style="flex:1"><div class="qa-label">History</div><div class="qa-desc">'+docs.length+' document'+(docs.length===1?'':'s')+' saved</div></div><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:var(--dim);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg></button>' +
     '</div>' +
     '<div class="grid2">' +
@@ -1406,10 +1532,7 @@ function vDash(){
       '</div>' +
       '<div class="card">' +
         '<div style="font-size:13px;font-weight:600;margin-bottom:14px">Recent activity</div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#3cb464"></div><div class="act-text">Account created · Trial started</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#4f72c4"></div><div class="act-text">'+(planActive ? escHtml(planName)+' activated' : 'Free trial started')+'</div><div class="act-time">Today</div></div>' +
-        '<div class="act-row"><div class="act-dot" style="background:#7aaaf8"></div><div class="act-text">Welcome email sent to '+escHtml(email||'your inbox')+'</div><div class="act-time">Today</div></div>' +
-        (docs.length > 0 ? '<div class="act-row"><div class="act-dot" style="background:#a78bfa"></div><div class="act-text">First document: '+escHtml(docs[0].name)+'</div><div class="act-time">'+escHtml(docs[0].date)+'</div></div>' : '') +
+        activityHtml +
       '</div>' +
     '</div>' +
     membershipStrip +
@@ -1422,19 +1545,19 @@ function vDash(){
 function vDraft(){
   window._draft = null; // a fresh Draft view has nothing to save yet
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">Contract Drafting</div><div class="view-sub">Select a document type, describe your requirements, and receive a first draft under English law (or the law you specify).</div></div></div>' +
+    '<div class="view-head"><div><div class="view-title">Draft</div><div class="view-sub">Select a document type, describe your requirements, and receive a first draft under English law (or the law you specify).</div></div></div>' +
     '<div class="grid2">' +
-      '<div>' +
+      '<div class="no-print">' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div class="field"><label>Document type</label><select class="inp" id="dt"><option>Mutual NDA</option><option>One-way NDA</option><option>Employment Contract</option><option>Freelance / Services Agreement</option><option>Settlement Agreement</option><option>Lease Agreement</option><option>Shareholder Agreement</option><option>Letter Before Action</option><option>Terms and Conditions</option><option>Privacy Policy</option></select></div>' +
           '<div class="field"><label>Requirements</label><textarea class="inp" id="dp" rows="6" placeholder="e.g. Mutual NDA between Acme Ltd and Beta Co. 24 month term. English law. Include non-solicitation clause…"></textarea></div>' +
-          '<div style="display:flex;gap:10px"><button class="btn btn-p" onclick="doDraft()" id="dbtn" style="white-space:nowrap">Generate document</button><button class="btn btn-g" onclick="document.getElementById(\'dp\').value=\'\'">Clear</button></div>' +
+          '<div style="display:flex;gap:10px"><button class="btn btn-p" onclick="doDraft()" id="dbtn" style="white-space:nowrap">Generate document</button><button class="btn btn-g" onclick="document.getElementById(\'dp\').value=\'\'">Clear</button><button class="btn btn-g" onclick="draftExample()">Try an example</button></div>' +
         '</div>' +
         '<div class="card" style="background:rgba(79,114,196,.04);border-color:rgba(79,114,196,.12)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:10px;letter-spacing:.04em">Drafting tips</div><ul style="list-style:none;font-size:11px;color:var(--muted);line-height:1.9;padding:0"><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Include both party names and company numbers</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Specify the governing law (default: English law)</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Mention key terms: duration, payment, termination</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Add any special clauses you need</li></ul></div>' +
       '</div>' +
       '<div>' +
         '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px"><div style="color:var(--dim);font-size:12px;text-align:center;padding-top:80px;font-family:var(--font);line-height:1.8">Your document will appear here.<br><span style="font-size:11px;opacity:.6">Fill in the form and click Generate document.</span></div></div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="copyText(mdToPlain(window._lastDraftText||document.getElementById(\'dout\').textContent),this)">Copy</button></div></div>' +
-        '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save">Save to History</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button></div>' +
+        '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save">Save to History</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="dlDocWord()">Download .doc (Word)</button></div>' +
         '<div id="draft-refine" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px"><input class="chat-inp" id="dref" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" onkeydown="if(event.key===\'Enter\'){event.preventDefault();doRefineDraft();}"/><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
       '</div>' +
     '</div>' +
@@ -1443,7 +1566,7 @@ function vDraft(){
 async function doDraft(){
   var type = document.getElementById('dt').value;
   var prompt = document.getElementById('dp').value.trim();
-  if(!prompt){ alert('Please describe your requirements.'); return; }
+  if(!prompt){ showNotice('Please describe your requirements.', 'alert', {id:'validate'}); return; }
   if(!checkUsageLimit('draft')) return; // AI actions count toward the plan limit
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
   var out = document.getElementById('dout');
@@ -1495,14 +1618,43 @@ async function saveDoc(){
     b.textContent='Not saved, retry'; b.disabled=false;
   } // otherwise the failed copy stays in History with a "Not saved, retry" marker
 }
+// Pre-fill the Draft form with a sample request (nothing is sent until Generate)
+function draftExample(){
+  var t=document.getElementById('dt'), p=document.getElementById('dp');
+  if(t) t.value='Mutual NDA';
+  if(p){ p.value='Mutual NDA between Acme Software Ltd (company no. 01234567) and Beta Consulting Ltd (company no. 07654321) for discussions about a possible joint venture. 24 month term. English law. Include a non-solicitation clause.'; p.focus(); }
+}
+// File name for a draft download, e.g. "Mutual_NDA_14-10-2026"
+function draftFileName(){
+  var t=document.getElementById('dt');
+  return ((t?t.value:'Document')+' '+new Date().toLocaleDateString('en-GB')).replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'document';
+}
+function saveBlob(blob, name){
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
 function dlDoc(){
   var txt=mdToPlain(window._lastDraftText||document.getElementById('dout').textContent);
-  var blob=new Blob([txt],{type:'text/plain'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='document.txt'; a.click();
+  saveBlob(new Blob([txt],{type:'text/plain;charset=utf-8'}), draftFileName()+'.txt');
+}
+// Word download without a new library: an HTML document saved as .doc, which Word opens
+function dlDocWord(){
+  if(!window._lastDraftText){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
+  var body=mdToHtml(window._lastDraftText).replace(/ onclick="[^"]*"/g,'');
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+escHtml(draftFileName())+'</title>'+
+    '<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px 8px}</style></head><body>'+body+'</body></html>';
+  saveBlob(new Blob(['\ufeff'+html],{type:'application/msword'}), draftFileName()+'.doc');
+}
+// A failed Refine puts the previous draft back on screen (it is unchanged) with the
+// reason above it, and keeps the typed instruction so the user can try again.
+function refineFailed(out, cur, msg){
+  if(!out) return;
+  out.innerHTML='<div role="alert" style="font-family:var(--font);white-space:normal;font-size:12px;color:var(--red);background:rgba(224,90,80,.06);border:1px solid rgba(224,90,80,.25);border-radius:8px;padding:8px 12px;margin-bottom:12px">Refine didn\'t work: '+escHtml(msg)+' Your draft below is unchanged.</div><div class="msg-a-body">'+mdToHtml(cur)+'</div>';
 }
 // Refine the current draft with a follow-up instruction (edits the same document, doesn't count as new)
 async function doRefineDraft(){
-  var cur=window._lastDraftText; if(!cur){ alert('Generate a draft first.'); return; }
+  var cur=window._lastDraftText; if(!cur){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
   var inp=document.getElementById('dref'); var instr=inp?inp.value.trim():''; if(!instr) return;
   if(!checkUsageLimit('refine')) return;
   var btn=document.getElementById('drefbtn'); if(btn){btn.disabled=true;btn.textContent='Refining…';}
@@ -1520,11 +1672,11 @@ async function doRefineDraft(){
       var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
       window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
       var sb=document.getElementById('dbtn-save'); if(sb){ sb.disabled=false; sb.textContent='Save to History'; }
+      if(inp) inp.value='';
     } else {
-      out.innerHTML='<div class="msg-a-body">'+mdToHtml(aiErrText(r))+'</div>';
+      refineFailed(out, cur, aiErrText(r));
     }
-    if(inp) inp.value='';
-  }catch(e){ out.textContent='Error: '+e.message; }
+  }catch(e){ refineFailed(out, cur, 'Error: '+e.message); }
   if(btn){btn.disabled=false;btn.textContent='Refine';}
 }
 
@@ -1535,11 +1687,11 @@ var dcDoc='', dcName='', dcMsgs=[];
 function vDocChat(){
   var loaded=!!dcDoc;
   return '<div class="view" style="display:flex;flex-direction:column;height:calc(100vh - var(--topbar))">' +
-    '<div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div class="view-title">Ask a Document</div><div class="view-sub">Upload or paste a contract, then ask questions about it in plain English.</div></div>'+(loaded?'<button class="btn btn-g" style="white-space:nowrap" onclick="dcReset()">New document</button>':'')+'</div>' +
+    '<div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div class="view-title">Ask a Doc</div><div class="view-sub">Upload or paste a contract, then ask questions about it in plain English.</div></div>'+(loaded?'<button class="btn btn-g" style="white-space:nowrap" onclick="dcReset()">New document</button>':'')+'</div>' +
     (loaded
       ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
         '<div class="chat-msgs" id="dcmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
-        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" aria-label="Ask about this document" placeholder="Ask about this document… e.g. what is the notice period?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
+        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" aria-label="Ask about this document" placeholder="'+(_dcBusy?'Working on your question…':'Ask about this document… e.g. what is the notice period?')+'"'+(_dcBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"'+(_dcBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
       : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="dc-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a document (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'dc-file\')" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
@@ -1550,12 +1702,17 @@ function vDocChat(){
 function dcTab(t,btn){ document.querySelectorAll('#dc-upload,#dc-paste').forEach(function(e){e.style.display='none';}); document.getElementById('dc-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
 function dcDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) dcFile(e.dataTransfer.files[0]); }
 function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(){ if(fn)fn.textContent='Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
-function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){alert('Paste some text first.');return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
-function dcReset(){ dcDoc=''; dcName=''; dcMsgs=[]; go('docchat'); }
+function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){showNotice('Paste some text first.', 'alert', {id:'validate'});return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
+function dcReset(){ if(_dcBusy) return; dcDoc=''; dcName=''; dcMsgs=[]; go('docchat'); }
 function renderDcChat(){ var el=document.getElementById('dcmsgs'); if(!el)return; el.innerHTML=dcMsgs.map(function(m,idx){ if(m.role==='user')return '<div class="msg-u">'+escHtml(m.content)+'</div>'; return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI</div><button class="msg-copy" onclick="copyText(mdToPlain(dcMsgs['+idx+'].content),this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>'; }).join(''); el.scrollTop=el.scrollHeight; }
+// One Ask a Doc question at a time (a second Enter would send a parallel paid request)
+var _dcBusy=false;
 async function doDocChat(){
+  if(_dcBusy) return;
   var inp=document.getElementById('dci'); if(!inp)return; var q=inp.value.trim(); if(!q)return;
   if(!checkUsageLimit('docchat')) return;
+  _dcBusy=true;
+  try{
   inp.value=''; dcMsgs.push({role:'user',content:q}); go('docchat');
   var el=document.getElementById('dcmsgs'); if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI</div><div class="msg-a-body" id="dc-streaming"><div class="typing"><span></span><span></span><span></span></div></div></div>';el.scrollTop=el.scrollHeight;}
   var sys=null; // system prompt is set by the server (feature 'docchat')
@@ -1567,7 +1724,7 @@ async function doDocChat(){
   for(var k=0;k+1<dcPrior.length;k++){
     var du=dcPrior[k], da=dcPrior[k+1];
     if(du.role==='user' && da.role==='assistant'){
-      if(da.ok!==false && String(da.content||'').indexOf('Error: ')!==0) dcHist.push({role:'user',content:'QUESTION: '+du.content},{role:'assistant',content:String(da.content||'').slice(0,8000)});
+      if(da.ok!==false && !da.error && String(da.content||'').indexOf('Error: ')!==0) dcHist.push({role:'user',content:'QUESTION: '+du.content},{role:'assistant',content:String(da.content||'').slice(0,8000)});
       k++;
     }
   }
@@ -1586,9 +1743,10 @@ async function doDocChat(){
     var dcOk=aiOk(a);
     if(!dcOk) a=aiErrText(a); // friendly error shown in the chat only (never saved)
     if(target)target.innerHTML=mdToHtml(a);
-    dcMsgs.push({role:'assistant',content:a,ok:dcOk});
+    dcMsgs.push({role:'assistant',content:a,ok:dcOk,error:!dcOk});
     if(dcTrunc && dcOk) dcMsgs[dcMsgs.length-1].content+='\n\nNote: this document is longer than '+dcLim.toLocaleString()+' characters, so only the first '+dcLim.toLocaleString()+' characters were read.';
-  }catch(e){ dcMsgs.push({role:'assistant',content:'Error: '+e.message}); }
+  }catch(e){ dcMsgs.push({role:'assistant',content:'Error: '+e.message,error:true}); }
+  } finally { _dcBusy=false; }
   // Only re-render if the user is still on Ask a Doc; the answer stays in dcMsgs for when they return
   if(currentView==='docchat') go('docchat');
 }
@@ -1599,19 +1757,19 @@ async function doDocChat(){
 var cmpOut='';
 function vCompare(){
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">Compare Contracts</div><div class="view-sub">Paste two versions of a contract. Dave.AI highlights what changed and who each change favours.</div></div></div>' +
+    '<div class="view-head"><div><div class="view-title">Compare</div><div class="view-sub">Paste two versions of a contract. Dave.AI highlights what changed and who each change favours.</div></div></div>' +
     '<div class="grid2">' +
       '<div class="card"><div class="field" style="margin-bottom:0"><label>Version A — e.g. original / their draft</label><textarea class="inp" id="cmpA" rows="12" placeholder="Paste the first version…"></textarea></div></div>' +
       '<div class="card"><div class="field" style="margin-bottom:0"><label>Version B — e.g. revised / your draft</label><textarea class="inp" id="cmpB" rows="12" placeholder="Paste the second version…"></textarea></div></div>' +
     '</div>' +
     '<div style="margin-top:14px;display:flex;gap:10px"><button class="btn btn-p" onclick="doCompare()" id="cmpbtn">Compare versions</button><button class="btn btn-g" onclick="cmpOut=\'\';document.getElementById(\'cmpA\').value=\'\';document.getElementById(\'cmpB\').value=\'\';document.getElementById(\'cmp-res\').innerHTML=\'\'">Clear</button></div>' +
-    '<div id="cmp-res" style="margin-top:18px">'+(cmpOut||'')+'</div>' +
+    '<div id="cmp-res" aria-live="polite" style="margin-top:18px">'+(cmpOut||'')+'</div>' +
   '</div>';
 }
 async function doCompare(){
   var A=document.getElementById('cmpA'), B=document.getElementById('cmpB');
   var a=A?A.value.trim():'', b=B?B.value.trim():'';
-  if(!a||!b){ alert('Paste both versions first.'); return; }
+  if(!a||!b){ showNotice('Paste both versions first.', 'alert', {id:'validate'}); return; }
   if(!checkUsageLimit('compare')) return;
   var btn=document.getElementById('cmpbtn'); if(btn){btn.disabled=true;btn.textContent='Comparing…';}
   var res=document.getElementById('cmp-res'); res.innerHTML='<div class="card"><div class="typing" style="justify-content:center;padding:40px 0"><span></span><span></span><span></span></div></div>';
@@ -1638,8 +1796,8 @@ function vTools(){
   return '<div class="view">' +
     '<div class="view-head"><div><div class="view-title">Quick Tools</div><div class="view-sub">Fast helpers for everyday legal writing.</div></div></div>' +
     '<div class="grid2">' +
-      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" style="margin-top:14px"></div></div>' +
-      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" aria-live="polite" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" aria-live="polite" style="margin-top:14px"></div></div>' +
     '</div>' +
   '</div>';
 }
@@ -1666,22 +1824,30 @@ function doFormalise(){ doQuick('fmlIn','fmlOut','fmlbtn','formalise'); }
 //  REVIEW VIEW
 // ══════════════════════════════════════════════
 function vReview(){
-  rvFileText = ''; // a fresh Review view never reuses a previously uploaded file
+  rvFileText = ''; rvFileName = ''; // a fresh Review view never reuses a previously uploaded file
   return '<div class="view">' +
     '<div class="view-head"><div><div class="view-title">Review</div><div class="view-sub">Paste or upload a contract to identify risks, flag clauses and receive suggested amendments.</div></div></div>' +
     '<div class="grid2">' +
-      '<div><div class="card">' +
+      '<div class="no-print"><div class="card">' +
         '<div class="tabs"><button class="tab on" onclick="rvTab(\'upload\',this)">Upload file</button><button class="tab" onclick="rvTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="rv-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a contract (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'rv-file\')" onclick="document.getElementById(\'rv-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="rvDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop your contract here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="rv-file" style="display:none" accept=".txt,.pdf,.docx" onchange="rvFileSelect(this)"/></div><div id="rv-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="rv-paste" style="display:none"><textarea class="inp" id="rv-text" rows="8" placeholder="Paste the contract text here…"></textarea></div>' +
         '<button class="btn btn-p" style="margin-top:14px;width:100%" onclick="doReview()" id="rvbtn">Analyse document</button>' +
+        '<button class="btn btn-g" style="margin-top:8px;width:100%;justify-content:center" onclick="rvExample()">Try a sample contract</button>' +
       '</div></div>' +
       '<div id="rv-res" aria-live="polite"><div class="card" style="height:100%"><div style="color:var(--dim);font-size:12px;text-align:center;padding:60px 20px">Upload or paste a contract to see the risk analysis here.</div></div></div>' +
     '</div>' +
   '</div>';
 }
-var rvFileText='';
-function rvTab(t,btn){ if(t==='paste'){ rvFileText=''; var rvf=document.getElementById('rv-file'); if(rvf) rvf.value=''; var rvn=document.getElementById('rv-fname'); if(rvn){ rvn.textContent=''; rvn.style.display='none'; } } document.querySelectorAll('#rv-upload,#rv-paste').forEach(function(e){e.style.display='none';}); document.getElementById('rv-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
+var rvFileText='', rvFileName='';
+function rvTab(t,btn){ if(t==='paste'){ rvFileText=''; rvFileName=''; var rvf=document.getElementById('rv-file'); if(rvf) rvf.value=''; var rvn=document.getElementById('rv-fname'); if(rvn){ rvn.textContent=''; rvn.style.display='none'; } } document.querySelectorAll('#rv-upload,#rv-paste').forEach(function(e){e.style.display='none';}); document.getElementById('rv-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
+// Load a short made-up contract into the Paste tab (nothing is sent until Analyse)
+var RV_SAMPLE = 'SERVICES AGREEMENT\n\nThis Agreement is made between Northbridge Analytics Ltd ("Supplier") and Harbour Retail Ltd ("Customer").\n\n1. Services. The Supplier will provide data analytics services as described in Schedule 1.\n\n2. Fees. The Customer will pay £4,000 per month within 7 days of invoice. The Supplier may increase the fees at any time on notice.\n\n3. Term. This Agreement lasts 12 months and renews automatically for further 12-month periods unless the Customer gives 6 months\' written notice.\n\n4. Liability. The Customer is liable for all losses of the Supplier arising from this Agreement. The Supplier\'s total liability is limited to £100.\n\n5. Intellectual property. All reports and data created under this Agreement, including the Customer\'s own data, belong to the Supplier.\n\n6. Termination. The Supplier may terminate this Agreement at any time without notice.\n\n7. Governing law. This Agreement is governed by the laws of England and Wales.';
+function rvExample(){
+  var tabs=document.querySelectorAll('#main .tabs .tab');
+  if(tabs[1]) rvTab('paste', tabs[1]);
+  var t=document.getElementById('rv-text'); if(t){ t.value=RV_SAMPLE; t.focus(); }
+}
 function rvDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) rvLoad(e.dataTransfer.files[0]); }
 function rvFileSelect(inp){ if(inp.files[0]) rvLoad(inp.files[0]); }
 
@@ -1755,9 +1921,10 @@ function readFileText(file){
 function rvLoad(f){
   var fn = document.getElementById('rv-fname');
   if(fn){ fn.textContent = 'Reading ' + f.name + '…'; fn.style.display = 'block'; }
-  rvFileText = '';
+  rvFileText = ''; rvFileName = '';
   extractFileText(f).then(function(text){
     rvFileText = (text||'').trim();
+    rvFileName = rvFileText ? String(f.name||'') : '';
     if(fn){
       if(rvFileText){ fn.textContent = f.name + ' · ' + rvFileText.length.toLocaleString() + ' characters read'; }
       else { fn.textContent = f.name + ' · no text found (is it a scanned image?)'; }
@@ -1766,6 +1933,22 @@ function rvLoad(f){
     rvFileText = '';
     if(fn){ fn.textContent = 'Could not read ' + f.name + '. Try a TXT, PDF or .docx file, or paste the text instead.'; }
   });
+}
+// Plain-text version of a review (result screen Copy/Download and the History viewer)
+function reviewToText(rv){
+  rv = rv || {};
+  return 'SUMMARY\n' + String(rv.summary == null ? '' : rv.summary) + '\n\nRISKS\n' +
+    (Array.isArray(rv.risks) ? rv.risks : []).map(function(r){ r = r || {}; return String(r.level || 'medium').toUpperCase()+' — '+String(r.title == null ? '' : r.title)+'\n'+(r.clause&&String(r.clause).trim()?'Clause: '+r.clause+'\n':'')+String(r.detail == null ? '' : r.detail); }).join('\n\n') +
+    '\n\nRECOMMENDATION\n' + String(rv.recommendation == null ? '' : rv.recommendation) +
+    '\n\nAI-generated review of the top risks only - not exhaustive and not legal advice. Verify against the full contract.';
+}
+function lastReviewText(){
+  var L = window._lastReview; if(!L) return '';
+  return L.name + '\nDate: ' + L.date + '\n\n' + reviewToText(L.d);
+}
+function dlLastReview(){
+  var L = window._lastReview; if(!L) return;
+  saveBlob(new Blob([lastReviewText()],{type:'text/plain;charset=utf-8'}), (L.name.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'review')+'.txt');
 }
 // Robustly pull a JSON object out of the model's reply, tolerating code
 // fences or any stray prose before/after the object.
@@ -1779,8 +1962,9 @@ function parseReviewJSON(raw){
 async function doReview(){
   // Use the source of the visible tab only (never a stale upload behind pasted text)
   var rvPaste = document.getElementById('rv-paste');
-  var text = (rvPaste && rvPaste.style.display !== 'none') ? (document.getElementById('rv-text')?document.getElementById('rv-text').value:'') : rvFileText;
-  if(!text.trim()){ alert('Please upload or paste a contract first.'); return; }
+  var rvPasted = !!(rvPaste && rvPaste.style.display !== 'none');
+  var text = rvPasted ? (document.getElementById('rv-text')?document.getElementById('rv-text').value:'') : rvFileText;
+  if(!text.trim()){ showNotice('Please upload or paste a contract first.', 'alert', {id:'validate'}); return; }
   if(!checkUsageLimit('review')) return; // AI actions count toward the plan limit
   var btn=document.getElementById('rvbtn'); btn.disabled=true; btn.textContent='Analysing…';
   var rvSteps=['Reading the document…','Identifying key clauses…','Checking liability and indemnities…','Reviewing payment and termination terms…','Assessing governing law and jurisdiction…','Flagging potential risks…','Preparing recommendations…'];
@@ -1803,7 +1987,12 @@ async function doReview(){
     var d = parseReviewJSON(raw);
     // Save to the vault first, so a review that finishes after the user has
     // left the Review screen is still kept in History.
-    noteAutoSave(addDoc({name:'Review — '+(new Date().toLocaleDateString('en-GB')),type:'Review',date:new Date().toLocaleDateString('en-GB'),content:JSON.stringify(d)}), 'This review');
+    // Name it after the file (or the start of the pasted text) so reviews can be told apart in History
+    var rvDate=new Date().toLocaleDateString('en-GB');
+    var rvLabel=rvPasted ? text.replace(/\s+/g,' ').trim().slice(0,40) : rvFileName;
+    var rvName='Review — '+(rvLabel ? rvLabel+' — ' : '')+rvDate;
+    noteAutoSave(addDoc({name:rvName,type:'Review',date:rvDate,content:JSON.stringify(d)}), 'This review');
+    window._lastReview={name:rvName,date:rvDate,d:d};
     incrementUsage(); // count this review toward the plan limit
     var rvOut=document.getElementById('rv-res');
     if(rvOut) rvOut.innerHTML='<div class="card">' +
@@ -1813,6 +2002,7 @@ async function doReview(){
       (Array.isArray(d.risks)?d.risks:[]).map(function(r){r=r||{};var lv=String(r.level||'').toLowerCase();if(lv!=='high'&&lv!=='medium'&&lv!=='low')lv='medium';var col=lv==='high'?'#b42318':lv==='medium'?'#8a5a00':'#1e6b34';return '<div class="risk risk-'+(lv==='high'?'h':lv==='medium'?'m':'l')+'"><div class="risk-ttl"><span style="color:'+col+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:6px">'+lv+'</span>'+escHtml(r.title)+'</div>'+(r.clause&&String(r.clause).trim()?'<div class="risk-det" style="font-style:italic;margin-bottom:3px">Clause: '+escHtml(r.clause)+'</div>':'')+'<div class="risk-det">'+escHtml(r.detail)+'</div></div>';}).join('') +
       '<div style="margin-top:16px;padding:12px;background:rgba(79,114,196,.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">'+escHtml(d.recommendation)+'</div>' +
       '<div class="md-note" style="margin:12px 0 0;font-size:10px;color:var(--dim);line-height:1.6">AI-generated review of the top risks only - not exhaustive and not legal advice. Verify against the full contract.</div>' +
+      '<div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-g" style="font-size:11px" onclick="copyText(lastReviewText(),this)">Copy</button><button class="btn btn-g" style="font-size:11px" onclick="dlLastReview()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="window.print()">Print / save as PDF</button></div>' +
     '</div>';
   }catch(e){
     clearInterval(rvTimer);
@@ -1834,17 +2024,19 @@ function vResearch(){
   var sugg=['What are the statutory redundancy notice periods?','When does a director have a duty to creditors?','What are the GDPR obligations for a UK business?','How does TUPE apply to a business sale?','What constitutes wrongful dismissal in England?'];
   return '<div class="view" style="display:flex;gap:18px;height:calc(100vh - var(--topbar))">' +
     '<div class="rs-side">' +
-      '<button class="btn btn-p" style="width:100%;font-size:12px;padding:9px" onclick="chatMsgs=[];go(\'research\')">+ New session</button>' +
+      '<button class="btn btn-p" style="width:100%;font-size:12px;padding:9px" onclick="if(!_rBusy){chatMsgs=[];go(\'research\');}">+ New session</button>' +
       '<div class="rs-blk-lbl">History</div>' +
       '<div id="rs-hist">'+renderResearchHistory()+'</div>' +
     '</div>' +
     '<div style="flex:1;display:flex;flex-direction:column;min-width:0">' +
     '<div style="flex-shrink:0;margin-bottom:18px"><div class="view-title">Research</div><div class="view-sub">Search UK statutes and case law. Citations are AI-generated, so check each one before relying on it.</div></div>' +
+    // Small screens hide the history sidebar, so offer the past questions here
+    '<details class="rs-mob-hist"><summary>Past questions</summary><button class="btn btn-g" style="font-size:11px;margin-bottom:8px" onclick="if(!_rBusy){chatMsgs=[];go(\'research\');}">+ New session</button>'+renderResearchHistory()+'</details>' +
     (chatMsgs.length===0
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="Ask a UK law question…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
@@ -1862,7 +2054,7 @@ function copyResearch(i, btn){
 }
 function escAttr(x){ return (x||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 // Ask a new research question programmatically
-function askResearch(q){ var i=document.getElementById('ri'); if(i){ i.value=q; } doR(); }
+function askResearch(q){ if(_rBusy) return; var i=document.getElementById('ri'); if(i){ i.value=q; } doR(); }
 // Clicking a highlighted citation asks the AI about it
 function askCite(text){ if(text) askResearch('Explain ' + text.trim() + ' and how it applies in practice under UK law.'); }
 // Follow-up question chips under the latest answer
@@ -1893,31 +2085,39 @@ function renderResearchHistory(){
   return rs.slice(0,40).map(function(d){
     var idx=docs.indexOf(d);
     var qn=(d.name||'').replace(/^Research —\s*/,'');
-    return '<div class="rs-hist-item" title="'+escAttr(qn)+'" onclick="loadResearch('+idx+')">'+escHtml(qn)+'</div>';
+    return '<div class="rs-hist-item" role="button" tabindex="0" title="'+escAttr(qn)+'" onclick="loadResearch('+idx+')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();loadResearch('+idx+');}">'+escHtml(qn)+'</div>';
   }).join('');
 }
 // Load a saved Q&A back into the chat
 function loadResearch(idx){
+  if(_rBusy) return; // wait for the answer in progress
   var d=docs[idx]; if(!d) return;
   var c=d.content||''; var mm=c.match(/^Q:\s*([\s\S]*?)\n\nA:\s*([\s\S]*)$/);
   if(mm){ chatMsgs=[{role:'user',content:mm[1].trim()},{role:'assistant',content:mm[2].trim(),followups:[]}]; }
   go('research');
 }
 function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
+// One Research question at a time: a second Enter / follow-up click while an answer
+// is on its way would send a parallel paid request and mix up the answers.
+var _rBusy=false;
 async function doR(){
+  if(_rBusy) return;
   var inp=document.getElementById('ri'); if(!inp)return;
   var q=inp.value.trim(); if(!q)return;
   if(!checkUsageLimit('research')) return;
+  _rBusy=true;
+  try{
   inp.value=''; chatMsgs.push({role:'user',content:q});
   go('research');
-  var btn=document.getElementById('rbtn'); if(btn)btn.disabled=true;
   var el=document.getElementById('cmsgs');
   if(el){el.innerHTML+='<div class="msg-a"><div class="msg-a-lbl">Dave.AI Legal Research</div><div class="msg-a-body" id="r-streaming"><div class="typing"><span></span><span></span><span></span></div></div></div>';el.scrollTop=el.scrollHeight;}
   var rSys=null; // system prompt is set by the server (feature 'research')
   function stripFollowups(s){ return (s||'').replace(/\n*FOLLOWUPS:[\s\S]*$/i,'').trim(); }
   // Recent conversation (last 6 entries before this question), alternating user/assistant, ~20k chars max
-  var rHist=[];
-  chatMsgs.slice(0,-1).slice(-6).forEach(function(m){
+  var rHist=[], rPrev=chatMsgs.slice(0,-1);
+  // Error replies (and the question that got them) are not real answers: never send them as history
+  rPrev=rPrev.filter(function(m,i){ return !m.error && !(m.role==='user' && rPrev[i+1] && rPrev[i+1].error); });
+  rPrev.slice(-6).forEach(function(m){
     var role=m.role==='user'?'user':'assistant', c=stripFollowups(m.content);
     if(!c) return;
     if(rHist.length ? rHist[rHist.length-1].role===role : role!=='user') return;
@@ -1945,12 +2145,12 @@ async function doR(){
       // Auto-save to vault (without the followups line); skip cut-off answers
       if(!rPartial) noteAutoSave(addDoc({name:'Research — '+q.slice(0,50)+(q.length>50?'…':''),type:'Research',date:new Date().toLocaleDateString('en-GB'),content:'Q: '+q+'\n\nA: '+a}), 'This research answer');
     } else {
-      chatMsgs.push({role:'assistant',content:aiErrText(a)});
+      chatMsgs.push({role:'assistant',content:aiErrText(a),error:true});
     }
-  }catch(e){chatMsgs.push({role:'assistant',content:'Error: '+e.message});}
+  }catch(e){chatMsgs.push({role:'assistant',content:'Error: '+e.message,error:true});}
+  } finally { _rBusy=false; }
   // Only re-render if the user is still on Research; the answer stays in chatMsgs for when they return
   if(currentView==='research') go('research');
-  if(btn)btn.disabled=false;
 }
 
 // ══════════════════════════════════════════════
@@ -1958,8 +2158,8 @@ async function doR(){
 // ══════════════════════════════════════════════
 function vHistory(){
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">Document history</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
-    '<div class="card" style="margin-bottom:14px"><input class="inp" id="hs" placeholder="Search documents…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
+    '<div class="view-head"><div><div class="view-title">History</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    '<div class="card" style="margin-bottom:14px"><input class="inp" type="search" id="hs" aria-label="Search your saved documents by name or content" placeholder="Search by name or content…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
     '<div id="hl">'+renderDocs(docs)+'</div>' +
     // Document viewer modal
     '<div id="doc-modal" role="dialog" aria-modal="true" aria-labelledby="doc-modal-title" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:20px">' +
@@ -2006,12 +2206,7 @@ function viewDoc(k, opener){
   var body = d.content || '';
   // If it's a Review, parse the JSON and show it nicely
   if(d.type === 'Review'){
-    try {
-      var rv = JSON.parse(body);
-      body = 'SUMMARY\n' + rv.summary + '\n\nRISKS\n' +
-        (rv.risks||[]).map(function(r){ return r.level.toUpperCase()+' — '+r.title+'\n'+(r.clause&&String(r.clause).trim()?'Clause: '+r.clause+'\n':'')+r.detail; }).join('\n\n') +
-        '\n\nRECOMMENDATION\n' + rv.recommendation;
-    } catch(e){}
+    try { body = reviewToText(JSON.parse(body)); } catch(e){}
   }
   document.getElementById('doc-modal-body').textContent = body;
   document.getElementById('doc-modal').style.display = 'flex';
@@ -2042,7 +2237,7 @@ function dlDocModal(){
   a.download = title.replace(/[^a-z0-9]/gi,'_') + '.txt';
   a.click();
 }
-function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return (d.name||'').toLowerCase().includes(q)||(d.type||'').toLowerCase().includes(q);}));}
+function filterDocs(){var q=(document.getElementById('hs').value||'').toLowerCase();document.getElementById('hl').innerHTML=renderDocs(docs.filter(function(d){return (d.name||'').toLowerCase().includes(q)||(d.type||'').toLowerCase().includes(q)||String(d.content==null?'':d.content).toLowerCase().includes(q);}));}
 async function delDoc(k){
   var i=docIndex(k); if(i<0) return;
   var d=docs[i];
@@ -2061,7 +2256,7 @@ async function delDoc(k){
     docs.splice(Math.min(i,docs.length),0,d);
     var el2=document.getElementById('doc-cnt'); if(el2) el2.textContent=docs.length;
     if(currentView==='history') go('history');
-    alert('Could not delete "'+(d.name||'this document')+'". Please check your connection and try again.');
+    showNotice('Could not delete "'+(d.name||'this document')+'". Please check your connection and try again.', 'alert');
   }
 }
 
@@ -2083,10 +2278,12 @@ function vSettings(){
         '</div>' +
         '<div class="card">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Security</div>' +
+          '<div id="s-sec-body">' +
           '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Update your password</div>' +
-          '<div class="field"><label>Current password</label><input class="inp" type="password" id="s-curpass" placeholder="••••••••"/></div>' +
-          '<div class="field"><label>New password</label><input class="inp" type="password" id="s-newpass" placeholder="••••••••"/></div>' +
-          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" id="s-pass-btn" onclick="updatePassword()">Update password</button><span style="font-size:12px;color:var(--muted)" id="s-pass-status"></span></div>' +
+          '<div class="field"><label>Current password</label><input class="inp" type="password" id="s-curpass" autocomplete="current-password" placeholder="••••••••"/></div>' +
+          '<div class="field"><label>New password</label><input class="inp" type="password" id="s-newpass" autocomplete="new-password" placeholder="••••••••"/></div>' +
+          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" id="s-pass-btn" onclick="updatePassword()">Update password</button><span style="font-size:12px;color:var(--muted)" id="s-pass-status" role="status"></span></div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div>' +
@@ -2152,8 +2349,10 @@ async function updatePassword(){
   if(btn){ btn.disabled = true; btn.textContent = 'Updating…'; }
   if(statusEl){ statusEl.textContent = ''; }
   try {
-    // Re-verify identity with the current password before changing it
-    var check = await _sb.auth.signInWithPassword({ email: email, password: cur });
+    // Re-verify identity with the current password before changing it (email from
+    // the live Supabase user, not the browser's saved session)
+    var liveUser = (await _sb.auth.getUser()).data.user;
+    var check = await _sb.auth.signInWithPassword({ email: (liveUser && liveUser.email) || email, password: cur });
     if(check.error) throw new Error('wrong-current');
     var upd = await _sb.auth.updateUser({ password: next });
     if(upd.error) throw upd.error;
@@ -2164,6 +2363,22 @@ async function updatePassword(){
     if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = msg; }
   }
   if(btn){ btn.disabled = false; btn.textContent = 'Update password'; }
+}
+// Accounts created with Google sign-in have no Dave.AI password, so "current
+// password" can never match: replace the form with an explanation for them.
+// Only when the providers are known and none is 'email'; otherwise keep the form.
+async function loadSecurityCard(){
+  try {
+    var u = (await _sb.auth.getUser()).data.user;
+    var box = document.getElementById('s-sec-body');
+    if(!u || !box) return;
+    var prov = (u.app_metadata && Array.isArray(u.app_metadata.providers)) ? u.app_metadata.providers
+      : (Array.isArray(u.identities) ? u.identities.map(function(i){ return i && i.provider; }) : []);
+    prov = prov.filter(function(x){ return typeof x === 'string' && x; });
+    if(!prov.length || prov.indexOf('email') !== -1) return;
+    var label = prov.indexOf('google') !== -1 ? 'Google' : 'your sign-in provider';
+    box.innerHTML = '<div style="font-size:12px;color:var(--muted);line-height:1.6">You sign in with ' + escHtml(label) + ', so there is no Dave.AI password to change. Manage your password and two-step verification in your ' + escHtml(label === 'Google' ? 'Google account' : 'provider account') + '.</div>';
+  } catch(e){ /* keep the password form */ }
 }
 async function loadTeamInvites(){
   var list = document.getElementById('team-invites-list');
@@ -2242,14 +2457,14 @@ async function openBillingPortal(){
 function vBilling(){
   var plans = [
     {key:'starter',name:'Starter',price:'£49',users:'1 user',feats:['20 AI actions per month (legal research not counted)','Contract & document drafting','Document review & analysis','Legal research assistant','Email support','Document history (30 days)']},
-    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['300 AI actions per user / month','All Starter features','Unlimited document history','Team document sharing (coming soon)','Advanced risk analysis','Priority support']},
+    {key:'pro',name:'Pro',price:'£149',users:'Up to 5 users',feats:['300 AI actions per user / month','All Starter features','Unlimited document history','Team document sharing (coming soon)','Higher fair-use limit','Priority support']},
     {key:'firm',name:'Firm',price:'£299',users:'Up to 10 users',feats:['Everything in Pro','Up to 10 users','Team collaboration tools (coming soon)','Direct founder support','Custom integrations (coming soon)','API access (coming soon)']},
     {key:'enterprise',name:'Enterprise',price:'Custom',users:'10+ users',feats:['Everything in Firm','Unlimited users','Custom SLA (coming soon)','White-labelling (coming soon)','Bespoke integrations (coming soon)']}
   ];
 
   var trialBanner = !planActive ? '<div class="card" style="margin-bottom:20px;background:rgba(200,150,60,0.06);border-color:rgba(200,150,60,0.28)">' +
     '<div style="display:flex;align-items:center;justify-content:space-between">' +
-      '<div><div style="font-size:13px;font-weight:600;color:#8a5a00;margin-bottom:3px">Trial ends in '+trialDays+' days</div><div style="font-size:12px;color:var(--muted)">Choose a plan below to continue without interruption.</div></div>' +
+      '<div><div style="font-size:13px;font-weight:600;color:#8a5a00;margin-bottom:3px">Trial ends in '+trialDays+' days</div><div style="font-size:12px;color:var(--muted)">'+(PAYMENTS_LIVE ? 'Choose a plan below to continue without interruption.' : 'Paid plans are launching soon. Payments aren\'t live yet, so nothing can be charged. We\'ll email you before anything is charged. Questions: support@daveai.law')+'</div></div>' +
     '</div>' +
   '</div>' : '<div class="card" style="margin-bottom:20px;background:rgba(60,180,100,0.06);border-color:rgba(60,180,100,0.25)">' +
     '<div style="display:flex;align-items:center;gap:12px"><svg width="18" height="18" fill="none" stroke="#1e6b34" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg><div><div style="font-size:13px;font-weight:600;color:#1e6b34;margin-bottom:2px">'+planName+' · Active</div><div style="font-size:12px;color:var(--muted)">Your membership is active. Thank you for choosing Dave.AI.</div></div></div>' +
@@ -2279,15 +2494,15 @@ function vBilling(){
         '<ul class="plan-feats">'+p.feats.map(function(f){return'<li>'+f+'</li>';}).join('')+'</ul>' +
         '<button class="btn '+(isCur?'btn-p':'btn-g')+'" style="width:100%;margin-top:16px;white-space:nowrap" onclick="'+
           ((isCur && planActive)
-            ? 'alert(\'This is your current active plan.\')'
+            ? 'showNotice(\'This is your current active plan.\', \'status\')'
             : 'goToCheckout(\''+p.key+'\')') +
         '">'+
-          (isCur ? (planActive ? '✓ Active plan' : 'Activate plan') : 'Select '+p.name) +
+          ((isCur && planActive) ? '✓ Active plan' : !PAYMENTS_LIVE ? 'Launching soon' : isCur ? 'Activate plan' : 'Select '+p.name) +
         '</button>' +
       '</div>';
     }).join('') +
     '</div>' +
-    '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">Fair use: up to 300 AI actions per user per month on Pro and Firm. All plans: up to 100 AI actions per day.</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">Fair use: up to 300 AI actions per user per month on Pro and Firm. All plans: up to 100 AI actions per day. '+AI_ACTION_DEF+'</div>' +
     '<div class="card" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;background:rgba(79,114,196,.04)">' +
       '<div><div style="font-size:13px;font-weight:600;margin-bottom:2px">Enterprise</div><div style="font-size:12px;color:var(--muted)">10+ users · Custom SLA (coming soon) · White-labelling (coming soon) · API access (coming soon)</div></div>' +
       '<button class="btn btn-g" style="white-space:nowrap;flex-shrink:0" onclick="window.location.href=\'mailto:support@daveai.law?subject=' + encodeURIComponent('Enterprise enquiry') + '\'">Contact us →</button>' +
@@ -2330,7 +2545,7 @@ function showWelcomeBanner(type){
 // ══════════════════════════════════════════════
 //  BOOT
 // ══════════════════════════════════════════════
-go('dash');
+go(hashView() || 'dash', 'replace');
 loadProfile();
 loadUsage();
 loadDocsFromServer();
