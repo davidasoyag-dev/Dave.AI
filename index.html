@@ -2080,8 +2080,9 @@ function entSubmit(){
   btn.disabled = true;
   btn.textContent = 'Sending...';
 
+  // No recipient is sent from the browser: template_brei1gl's "To" field must be
+  // hard-coded to the admin address in the EmailJS dashboard.
   var templateParams = {
-    to_email:    'davidasoyag@gmail.com',
     from_name:   first + ' ' + last,
     from_email:  email,
     firm:        firm,
@@ -2232,10 +2233,11 @@ async function suSignUp(){
 
   localStorage.setItem('dave_session', JSON.stringify(Object.assign({email: email}, meta)));
 
-  // Send welcome email to new user
+  // Send welcome email to new user. template_z3p1t44's "To" field must be {{user_email}};
+  // the template body should contain only fixed text (see fix notes).
   try {
     emailjs.send('Dave.AI', 'template_z3p1t44', {
-      to_email:   email,
+      user_email: email,
       first_name: first,
       last_name:  last,
       firm:       firm,
@@ -2244,10 +2246,9 @@ async function suSignUp(){
     });
   } catch(e){ console.warn('Welcome email error:', e); }
 
-  // Notify admin of new signup
+  // Notify admin of new signup (recipient is hard-coded in the template)
   try {
     emailjs.send('Dave.AI', 'template_brei1gl', {
-      to_email:   'davidasoyag@gmail.com',
       from_name:  first + ' ' + last,
       from_email: email,
       firm:       firm,
