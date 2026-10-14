@@ -864,7 +864,23 @@ function applyPlanBadges(){
 }
 
 // ── Navigation ──
-function go(v){
+// Each view has its own #hash (browser Back/Forward work) and tab title.
+var VIEW_TITLES = { dash:'Dashboard', draft:'Draft', review:'Review', research:'Research', docchat:'Ask a Doc',
+  compare:'Compare', tools:'Quick Tools', history:'History', settings:'Settings', billing:'Billing & Plans' };
+function hashView(){
+  var h = (location.hash || '').slice(1);
+  return Object.prototype.hasOwnProperty.call(VIEW_TITLES, h) ? h : '';
+}
+// nav: undefined = normal click (adds a history entry), 'pop' = Back/Forward, 'replace' = first load
+var _viewShown = false;
+function go(v, nav){
+  if(!Object.prototype.hasOwnProperty.call(VIEW_TITLES, v)) v = 'dash';
+  var changed = !_viewShown || v !== currentView;
+  try {
+    if(nav === 'replace') history.replaceState({v:v}, '', '#'+v);
+    else if(nav !== 'pop' && location.hash !== '#'+v) history.pushState({v:v}, '', '#'+v);
+  } catch(e){}
+  document.title = VIEW_TITLES[v] + ' · Dave.AI';
   document.querySelectorAll('.sb-item').forEach(function(e){ e.classList.remove('on'); });
   document.querySelectorAll('.sb-item[aria-current]').forEach(function(e){ e.removeAttribute('aria-current'); });
   currentView = v;
@@ -884,7 +900,18 @@ function go(v){
   else if(v==='billing')  { m.innerHTML = vBilling(); }
   m.scrollTop = 0;
   linkLabels(m);
+  // The view title is the page heading; move focus there when the view changes
+  // (not on the first load, and not when the same view just re-renders)
+  var vt = m.querySelector('.view-title');
+  if(vt){
+    vt.setAttribute('role', 'heading'); vt.setAttribute('aria-level', '1'); vt.setAttribute('tabindex', '-1');
+    if(changed && _viewShown){ try { vt.focus({ preventScroll:true }); } catch(e){ vt.focus(); } }
+  }
+  _viewShown = true;
 }
+window.addEventListener('popstate', function(e){
+  go((e.state && e.state.v) || hashView() || 'dash', 'pop');
+});
 
 // Link each .field label to its input (for screen readers / click-to-focus)
 var _lblSeq = 0;
@@ -897,13 +924,17 @@ function linkLabels(root){
   });
 }
 
-// Mobile menu: show/hide the sidebar as an overlay (<=768px)
-function toggleNav(open){
+// Mobile menu: show/hide the sidebar as an overlay (<=768px). Opening moves focus
+// to the first menu item; returnFocus (scrim tap / Escape) puts it back on the button.
+function toggleNav(open, returnFocus){
   var sb = document.getElementById('sidebar'), btn = document.getElementById('tb-menu');
   if(!sb) return;
-  if(typeof open !== 'boolean') open = !sb.classList.contains('open');
+  var wasOpen = sb.classList.contains('open');
+  if(typeof open !== 'boolean') open = !wasOpen;
   sb.classList.toggle('open', open);
   if(btn){ btn.setAttribute('aria-expanded', open ? 'true' : 'false'); btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); }
+  if(open && !wasOpen){ var first = sb.querySelector('.sb-item'); if(first) first.focus(); }
+  else if(!open && wasOpen && returnFocus && btn) btn.focus();
 }
 
 // Topbar search: jump to History and filter documents
@@ -928,7 +959,7 @@ function tbSearch(q){
     if(t && t.getAttribute && t.getAttribute('role') === 'button' && t.onclick){ e.preventDefault(); t.click(); }
   });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && sb && sb.classList.contains('open')){ toggleNav(false); var b = document.getElementById('tb-menu'); if(b) b.focus(); }
+    if(e.key === 'Escape' && sb && sb.classList.contains('open')) toggleNav(false, true);
   });
 })();
 
@@ -2388,7 +2419,7 @@ function showWelcomeBanner(type){
 // ══════════════════════════════════════════════
 //  BOOT
 // ══════════════════════════════════════════════
-go('dash');
+go(hashView() || 'dash', 'replace');
 loadProfile();
 loadUsage();
 loadDocsFromServer();
