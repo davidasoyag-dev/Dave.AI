@@ -43,6 +43,10 @@ const RESEARCH_MAX_HISTORY_CHARS = 24000;
 // at most RESEARCH_MAX_QUESTION_CHARS; a real answer is at most ~2000 tokens),
 // so history can't be used to smuggle a whole document past Starter's cap.
 const RESEARCH_MAX_HISTORY_ASSISTANT_CHARS = 9000;
+// Ask a Doc may also send recent Q&A (the dashboard sends at most the last 6
+// entries): messages[0] carries the document plus the oldest question kept, and
+// later turns are trimmed like Research history. The total input cap still applies.
+const DOCCHAT_MAX_MESSAGES = 7;
 
 // Remove every variant of an opening/closing <tag> (e.g. "</ contract >",
 // "<contract\n>") from untrusted text before we wrap it in that tag.
@@ -212,7 +216,7 @@ function buildAnthropicBody(payload) {
     requestId = payload.request_id;
   }
   const msgs = payload.messages;
-  const maxMsgs = feature === 'research' ? RESEARCH_MAX_MESSAGES : 1;
+  const maxMsgs = feature === 'research' ? RESEARCH_MAX_MESSAGES : (feature === 'docchat' ? DOCCHAT_MAX_MESSAGES : 1);
   if (!Array.isArray(msgs) || msgs.length < 1 || msgs.length > maxMsgs) return { error: 'Invalid request.' };
   const system = systemPrompt(promptId);
   let total = system.length;
@@ -223,7 +227,8 @@ function buildAnthropicBody(payload) {
     if (!m || m.role !== (i % 2 === 0 ? 'user' : 'assistant') || typeof m.content !== 'string') return { error: 'Invalid request.' };
     let content = m.content;
     // Research: trim earlier turns (not the new question) to real-answer sizes
-    if (feature === 'research' && i < msgs.length - 1) {
+    // Ask a Doc: same for turns after the first (the first holds the document)
+    if ((feature === 'research' || (feature === 'docchat' && i > 0)) && i < msgs.length - 1) {
       content = content.slice(0, m.role === 'user' ? RESEARCH_MAX_QUESTION_CHARS : RESEARCH_MAX_HISTORY_ASSISTANT_CHARS);
     }
     total += content.length;
