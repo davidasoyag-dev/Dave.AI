@@ -897,7 +897,7 @@ function go(v, nav){
   else if(v==='compare')  { m.innerHTML = vCompare(); }
   else if(v==='tools')    { m.innerHTML = vTools(); }
   else if(v==='history')  { m.innerHTML = vHistory(); }
-  else if(v==='settings') { m.innerHTML = vSettings(); loadTeamInvites(); }
+  else if(v==='settings') { m.innerHTML = vSettings(); loadTeamInvites(); loadSecurityCard(); }
   else if(v==='billing')  { m.innerHTML = vBilling(); }
   m.scrollTop = 0;
   linkLabels(m);
@@ -2256,10 +2256,12 @@ function vSettings(){
         '</div>' +
         '<div class="card">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Security</div>' +
+          '<div id="s-sec-body">' +
           '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Update your password</div>' +
-          '<div class="field"><label>Current password</label><input class="inp" type="password" id="s-curpass" placeholder="••••••••"/></div>' +
-          '<div class="field"><label>New password</label><input class="inp" type="password" id="s-newpass" placeholder="••••••••"/></div>' +
-          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" id="s-pass-btn" onclick="updatePassword()">Update password</button><span style="font-size:12px;color:var(--muted)" id="s-pass-status"></span></div>' +
+          '<div class="field"><label>Current password</label><input class="inp" type="password" id="s-curpass" autocomplete="current-password" placeholder="••••••••"/></div>' +
+          '<div class="field"><label>New password</label><input class="inp" type="password" id="s-newpass" autocomplete="new-password" placeholder="••••••••"/></div>' +
+          '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" id="s-pass-btn" onclick="updatePassword()">Update password</button><span style="font-size:12px;color:var(--muted)" id="s-pass-status" role="status"></span></div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div>' +
@@ -2325,8 +2327,10 @@ async function updatePassword(){
   if(btn){ btn.disabled = true; btn.textContent = 'Updating…'; }
   if(statusEl){ statusEl.textContent = ''; }
   try {
-    // Re-verify identity with the current password before changing it
-    var check = await _sb.auth.signInWithPassword({ email: email, password: cur });
+    // Re-verify identity with the current password before changing it (email from
+    // the live Supabase user, not the browser's saved session)
+    var liveUser = (await _sb.auth.getUser()).data.user;
+    var check = await _sb.auth.signInWithPassword({ email: (liveUser && liveUser.email) || email, password: cur });
     if(check.error) throw new Error('wrong-current');
     var upd = await _sb.auth.updateUser({ password: next });
     if(upd.error) throw upd.error;
@@ -2337,6 +2341,22 @@ async function updatePassword(){
     if(statusEl){ statusEl.style.color = 'var(--red)'; statusEl.textContent = msg; }
   }
   if(btn){ btn.disabled = false; btn.textContent = 'Update password'; }
+}
+// Accounts created with Google sign-in have no Dave.AI password, so "current
+// password" can never match: replace the form with an explanation for them.
+// Only when the providers are known and none is 'email'; otherwise keep the form.
+async function loadSecurityCard(){
+  try {
+    var u = (await _sb.auth.getUser()).data.user;
+    var box = document.getElementById('s-sec-body');
+    if(!u || !box) return;
+    var prov = (u.app_metadata && Array.isArray(u.app_metadata.providers)) ? u.app_metadata.providers
+      : (Array.isArray(u.identities) ? u.identities.map(function(i){ return i && i.provider; }) : []);
+    prov = prov.filter(function(x){ return typeof x === 'string' && x; });
+    if(!prov.length || prov.indexOf('email') !== -1) return;
+    var label = prov.indexOf('google') !== -1 ? 'Google' : 'your sign-in provider';
+    box.innerHTML = '<div style="font-size:12px;color:var(--muted);line-height:1.6">You sign in with ' + escHtml(label) + ', so there is no Dave.AI password to change. Manage your password and two-step verification in your ' + escHtml(label === 'Google' ? 'Google account' : 'provider account') + '.</div>';
+  } catch(e){ /* keep the password form */ }
 }
 async function loadTeamInvites(){
   var list = document.getElementById('team-invites-list');
