@@ -1989,6 +1989,7 @@ function reviewToText(rv){
   return 'SUMMARY\n' + String(rv.summary == null ? '' : rv.summary) + '\n\nRISKS\n' +
     (Array.isArray(rv.risks) ? rv.risks : []).map(function(r){ r = r || {}; return String(r.level || 'medium').toUpperCase()+' — '+String(r.title == null ? '' : r.title)+'\n'+(r.clause&&String(r.clause).trim()?'Clause: '+r.clause+'\n':'')+String(r.detail == null ? '' : r.detail); }).join('\n\n') +
     '\n\nRECOMMENDATION\n' + String(rv.recommendation == null ? '' : rv.recommendation) +
+    (rvKeyDates(rv).length ? '\n\nKEY DATES & OBLIGATIONS (AI-extracted - verify against the contract)\n' + rvKeyDates(rv).map(function(k){ return '- ' + k.what + (k.date ? ' | ' + k.date : '') + (k.rule ? ' | ' + k.rule : '') + (k.clause ? ' | Clause: ' + k.clause : ''); }).join('\n') : '') +
     '\n\nAI-generated review of the top risks only - not exhaustive and not legal advice. Verify against the full contract.';
 }
 var RV_TRUNC_NOTE='<div style="font-size:11px;color:#8a5a00;margin-bottom:8px">Warning: this document is longer than '+(150000).toLocaleString()+' characters, so only the first '+(150000).toLocaleString()+' characters were reviewed.</div>';
@@ -1999,6 +2000,62 @@ function lastReviewText(){
 function dlLastReview(){
   var L = window._lastReview; if(!L) return;
   saveBlob(new Blob([lastReviewText()],{type:'text/plain;charset=utf-8'}), (L.name.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'review')+'.txt');
+}
+// Key dates & obligations from a review (F-20261015-15). Older saved reviews have none.
+// A date is kept only if it is a real YYYY-MM-DD date; the model is told never to guess one.
+function rvValidDate(x){
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(x || '').trim()); if(!m) return '';
+  var dt = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return (dt.getUTCFullYear() === +m[1] && dt.getUTCMonth() === +m[2] - 1 && dt.getUTCDate() === +m[3]) ? m[0] : '';
+}
+function rvKeyDates(rv){
+  var a = (rv && Array.isArray(rv.key_dates)) ? rv.key_dates : [];
+  return a.slice(0, 10).map(function(k){
+    k = k || {};
+    return { what: String(k.what == null ? '' : k.what).trim(), date: rvValidDate(k.date), rule: String(k.rule == null ? '' : k.rule).trim(), clause: String(k.clause == null ? '' : k.clause).trim() };
+  }).filter(function(k){ return k.what || k.rule; });
+}
+function fmtUkDate(iso){ var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function rvKeyDatesHtml(d){
+  var kd = rvKeyDates(d); if(!kd.length) return '';
+  var cell = 'padding:7px 9px;border:1px solid var(--border2);vertical-align:top;text-align:left';
+  return '<div style="font-size:11px;font-weight:600;color:var(--muted);margin:16px 0 8px">Key dates &amp; obligations</div>' +
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;color:var(--muted);line-height:1.5">' +
+    '<thead><tr><th style="'+cell+'">What</th><th style="'+cell+'">Date</th><th style="'+cell+'">How it is worked out</th><th style="'+cell+'">Clause</th></tr></thead><tbody>' +
+    kd.map(function(k){ return '<tr><td style="'+cell+'">'+escHtml(k.what)+'</td><td style="'+cell+';white-space:nowrap">'+(k.date ? escHtml(fmtUkDate(k.date)) : 'Not stated')+'</td><td style="'+cell+'">'+escHtml(k.rule)+'</td><td style="'+cell+'">'+escHtml(k.clause)+'</td></tr>'; }).join('') +
+    '</tbody></table></div>' +
+    '<div style="font-size:10px;color:var(--dim);margin-top:6px">AI-extracted. Check every date against the contract before relying on it. Dates the contract does not state exactly are left blank, not guessed.</div>' +
+    '<div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+      (kd.some(function(k){ return k.date; }) ? '<button class="btn btn-g" style="font-size:11px" onclick="dlKeyDatesIcs()">Add dated items to calendar (.ics)</button>' : '') +
+      '<button class="btn btn-g" style="font-size:11px" onclick="dlKeyDatesCsv()">Export key dates (CSV)</button>' +
+    '</div>';
+}
+function rvFileBase(L){ return (L.name.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'review'); }
+function icsText(x){ return String(x).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
+function icsFold(line){ var out = ''; while(line.length > 73){ out += line.slice(0, 73) + '\r\n '; line = line.slice(73); } return out + line; }
+function dlKeyDatesIcs(){
+  var L = window._lastReview; if(!L) return;
+  var kd = rvKeyDates(L.d).filter(function(k){ return k.date; }); if(!kd.length) return;
+  var now = new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z');
+  var lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Dave.AI//Key dates//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  kd.forEach(function(k, i){
+    var p = k.date.split('-'), start = p.join('');
+    var next = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + 1)).toISOString().slice(0, 10).replace(/-/g,'');
+    lines.push('BEGIN:VEVENT', 'UID:' + now + '-' + i + '-' + Math.random().toString(36).slice(2, 10) + '@daveai.law', 'DTSTAMP:' + now,
+      'DTSTART;VALUE=DATE:' + start, 'DTEND;VALUE=DATE:' + next,
+      icsFold('SUMMARY:' + icsText(k.what)),
+      icsFold('DESCRIPTION:' + icsText((k.rule ? k.rule + '\n' : '') + (k.clause ? 'Clause: ' + k.clause + '\n' : '') + 'From: ' + L.name + '\nAI-extracted by Dave.AI - verify against the contract.')),
+      'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  saveBlob(new Blob([lines.join('\r\n') + '\r\n'], {type:'text/calendar;charset=utf-8'}), rvFileBase(L) + '_key_dates.ics');
+}
+function csvCell(x){ x = String(x == null ? '' : x); if(/^[=+\-@\t\r]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g,'""') + '"'; }
+function dlKeyDatesCsv(){
+  var L = window._lastReview; if(!L) return;
+  var kd = rvKeyDates(L.d); if(!kd.length) return;
+  var rows = [['What','Date (DD/MM/YYYY)','How it is worked out','Clause','Source']].concat(kd.map(function(k){ return [k.what, k.date ? fmtUkDate(k.date) : 'Not stated', k.rule, k.clause, L.name + ' (AI-extracted - verify against the contract)']; }));
+  saveBlob(new Blob(['\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n') + '\r\n'], {type:'text/csv;charset=utf-8'}), rvFileBase(L) + '_key_dates.csv');
 }
 // Robustly pull a JSON object out of the model's reply, tolerating code
 // fences or any stray prose before/after the object.
@@ -2018,6 +2075,7 @@ function rvCardHtml(L){
     '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px">Risk flags</div>' +
     (Array.isArray(d.risks)?d.risks:[]).map(function(r){r=r||{};var lv=String(r.level||'').toLowerCase();if(lv!=='high'&&lv!=='medium'&&lv!=='low')lv='medium';var col=lv==='high'?'#b42318':lv==='medium'?'#8a5a00':'#1e6b34';return '<div class="risk risk-'+(lv==='high'?'h':lv==='medium'?'m':'l')+'"><div class="risk-ttl"><span style="color:'+col+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:6px">'+lv+'</span>'+escHtml(r.title)+'</div>'+(r.clause&&String(r.clause).trim()?'<div class="risk-det" style="font-style:italic;margin-bottom:3px">Clause: '+escHtml(r.clause)+'</div>':'')+'<div class="risk-det">'+escHtml(r.detail)+'</div></div>';}).join('') +
     '<div style="margin-top:16px;padding:12px;background:rgba(79,114,196,.08);border:1px solid var(--border2);border-radius:9px;font-size:12px;color:var(--blue2)">'+escHtml(d.recommendation)+'</div>' +
+    rvKeyDatesHtml(d) +
     '<div class="md-note" style="margin:12px 0 0;font-size:10px;color:var(--dim);line-height:1.6">AI-generated review of the top risks only - not exhaustive and not legal advice. Verify against the full contract.</div>' +
     '<div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-g" style="font-size:11px" onclick="copyText(lastReviewText(),this)">Copy</button><button class="btn btn-g" style="font-size:11px" onclick="dlLastReview()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="window.print()">Print / save as PDF</button></div>' +
   '</div>';
@@ -2032,7 +2090,7 @@ async function doReview(){
   if(!checkUsageLimit('review')) return; // AI actions count toward the plan limit
   _rvBusy=true;
   var btn=document.getElementById('rvbtn'); btn.disabled=true; btn.textContent='Analysing…';
-  var rvSteps=['Reading the document…','Identifying key clauses…','Checking liability and indemnities…','Reviewing payment and termination terms…','Assessing governing law and jurisdiction…','Flagging potential risks…','Preparing recommendations…'];
+  var rvSteps=['Reading the document…','Identifying key clauses…','Checking liability and indemnities…','Reviewing payment and termination terms…','Assessing governing law and jurisdiction…','Flagging potential risks…','Listing key dates and deadlines…','Preparing recommendations…'];
   var rvi=0;
   document.getElementById('rv-res').innerHTML=rvBusyHtml(rvSteps[0]);
   var rvTimer=setInterval(function(){ rvi=(rvi+1)%rvSteps.length; var el=document.getElementById('rv-status'); if(el){ el.style.opacity='0'; setTimeout(function(){ if(el){ el.textContent=rvSteps[rvi]; el.style.opacity='1'; } },220); } },1900);
@@ -2044,8 +2102,8 @@ async function doReview(){
     // Stream to keep the connection alive (avoids the gateway/client timeout
     // seen on longer analyses); fall back to the standard call if streaming fails.
     var aiAct=aiAction('review');
-    raw = await callAIStream(rvSys, rvUsr, 3000, null, false, null, aiAct);
-    if(raw===null){ raw = await callAI(rvSys, rvUsr, 3000, false, null, aiAct); }
+    raw = await callAIStream(rvSys, rvUsr, 3600, null, false, null, aiAct);
+    if(raw===null){ raw = await callAI(rvSys, rvUsr, 3600, false, null, aiAct); }
     clearInterval(rvTimer);
     if(!aiOk(raw)){ var rvErr=aiErrText(raw); rvStop=rvErr; raw=''; throw new Error(rvErr); }
     if(raw.indexOf(AI_PARTIAL_NOTE)!==-1) throw new Error('Review cut off'); // incomplete JSON: never show/save as complete
