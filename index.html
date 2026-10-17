@@ -394,54 +394,17 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}.reveal{opacity:1!important;transform:none!important;}html{scroll-behavior:auto;}.hero-title .w,.hero-badge,.hero-sub,.hero-btns,.trust-row{opacity:1!important;transform:none!important;filter:none!important;}}
 
-/* ── Demo player (carried over; content styles are light already) ── */
+/* ── Teaser video ── */
 .vid-section{background:var(--paper);padding:6rem 1.5rem;}
 .vid-wrap{max-width:72rem;margin:0 auto;}
-#dplayer{border-radius:1.5rem!important;border-color:var(--line)!important;box-shadow:0 30px 60px -28px rgba(15,31,61,.3)!important;}
-#dec{opacity:0;pointer-events:none;transition:opacity .5s;}
-#dec.on{opacity:1;pointer-events:auto;}
-.cursor{display:inline-block;width:2px;height:14px;background:#4f72c4;margin-left:1px;animation:blink .8s step-end infinite;vertical-align:middle;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
-#dtabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-#dtabs::-webkit-scrollbar{display:none;}
-#dtabs .tab{flex:1 0 auto;padding:12px 8px;font-size:12px;font-weight:500;color:#5d6b8a;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;text-align:center;font-family:var(--sans);}
-#dtabs .tab.on{color:#3558a8;border-bottom-color:#3558a8;background:rgba(53,88,168,.07);}
-#dtabs .tab:hover:not(.on){background:rgba(53,88,168,.05);}
-.frame{position:absolute;inset:0;padding:38px 14px 12px;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .3s;pointer-events:none;}
-.frame.on{opacity:1;}
-/* Demo player short-class aliases */
-.inp{background:#ffffff;border:1px solid rgba(79,114,196,0.18);border-radius:7px;padding:8px 11px;font-size:9px;color:#1a2840;font-family:var(--font);line-height:1.5;}
-.doc{background:#ffffff;border:1px solid rgba(79,114,196,0.13);border-radius:7px;padding:11px 13px;font-size:8.5px;color:#344268;font-family:var(--font);line-height:1.7;}
-.rsk{border-radius:0 6px 6px 0;padding:7px 10px;font-size:8.5px;font-family:var(--font);line-height:1.45;}
-.rh{background:#fdeeec;border-left:2px solid #c0392b;color:#8a2a22;}
-.rm{background:#fbf3e2;border-left:2px solid #b07d18;color:#7a560f;}
-.rk{background:#eaf6ee;border-left:2px solid #237a3c;color:#1c5e2e;}
-.qa{background:#ffffff;border:1px solid rgba(79,114,196,0.13);border-radius:7px;padding:9px 11px;font-size:8.5px;color:#344268;font-family:var(--font);line-height:1.7;}
-.qb{background:#eef3fb;border:1px solid rgba(79,114,196,0.13);border-radius:7px;padding:8px 10px;font-size:8.5px;color:#1a2840;font-family:var(--font);line-height:1.5;}
-.row{background:#ffffff;border:1px solid rgba(79,114,196,0.1);border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;font-size:8.5px;font-family:var(--font);margin-bottom:4px;}
-.row.hl{background:#eef3fb;border:1px solid rgba(79,114,196,0.32);}
-.rn{color:#1a2840;}.rd{color:#6674a0;}
-.opn{background:#ffffff;border:1px solid rgba(79,114,196,0.22);border-radius:7px;padding:10px 12px;font-size:8.5px;color:#344268;font-family:var(--font);line-height:1.7;}
-.st{font-size:8.5px;color:#6674a0;font-family:var(--font);}
-.bb{background:#e7edfb;color:#3558a8;}
-.bg{background:#e6f4ec;color:#237a3c;}
-.ba{background:#fbf0dd;color:#96620a;}
-/* Demo elements */
-.demo-input{background:#ffffff;border:1px solid rgba(79,114,196,0.18);border-radius:7px;padding:8px 10px;font-size:10px;color:#1a2840;font-family:var(--font);margin-bottom:8px;min-height:36px;line-height:1.5;}
-.demo-doc{background:#ffffff;border:1px solid rgba(79,114,196,0.13);border-radius:7px;padding:10px 12px;font-size:9px;color:#344268;font-family:var(--font);line-height:1.7;opacity:0;transform:translateY(6px);transition:opacity 0.5s,transform 0.5s;}
-.demo-doc.show{opacity:1;transform:translateY(0);}
-.demo-risk{border-radius:0 5px 5px 0;padding:6px 9px;margin-bottom:5px;font-size:9px;font-family:var(--font);opacity:0;transform:translateX(-8px);transition:opacity 0.4s,transform 0.4s;}
-.demo-risk.show{opacity:1;transform:translateX(0);}
-.demo-risk.high{background:#fdeeec;border-left:2px solid #c0392b;color:#8a2a22;}
-.demo-risk.med{background:#fbf3e2;border-left:2px solid #b07d18;color:#7a560f;}
-.demo-risk.ok{background:#eaf6ee;border-left:2px solid #237a3c;color:#1c5e2e;}
-.demo-qa{margin-bottom:6px;}
-.demo-q{background:#eef3fb;border-radius:6px;padding:6px 9px;font-size:9px;color:#1a2840;font-family:var(--font);margin-bottom:4px;opacity:0;transition:opacity 0.4s;}
-.demo-a{background:#ffffff;border:1px solid rgba(79,114,196,0.13);border-radius:6px;padding:8px 10px;font-size:9px;color:#344268;font-family:var(--font);line-height:1.6;opacity:0;transform:translateY(4px);transition:opacity 0.5s,transform 0.5s;}
-.demo-q.show,.demo-a.show{opacity:1;transform:none;}
-.demo-badge{display:inline-block;font-size:8px;padding:2px 7px;border-radius:10px;margin-bottom:6px;font-weight:600;letter-spacing:0.06em;}
-.badge-blue{background:rgba(79,114,196,0.2);color:#6b8fd8;}
-.badge-green{background:rgba(60,180,100,0.2);color:#3cb464;}
+.video-frame{position:relative;max-width:62rem;margin:36px auto 0;border-radius:1.5rem;overflow:hidden;border:1px solid var(--line);background:#0b1730;aspect-ratio:16/9;box-shadow:0 30px 60px -28px rgba(15,31,61,.35);}
+.video-frame video{display:block;width:100%;height:100%;object-fit:contain;background:#0b1730;}
+.vid-play{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:10px;padding:14px 26px 14px 20px;border-radius:999px;border:none;background:#fff;color:#0f1f3d;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 18px 40px -12px rgba(0,0,0,.55);transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s,background .2s;}
+.vid-play svg{color:#3558a8;flex-shrink:0;}
+.vid-play:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 24px 48px -12px rgba(0,0,0,.6);background:#eef3fc;}
+.vid-play[hidden]{display:none;}
+.vid-note{text-align:center;font-size:13px;color:var(--muted);margin:18px auto 0;max-width:40rem;line-height:1.6;}
+@media(max-width:480px){.vid-section{padding:4rem 1.1rem;}.vid-play{font-size:13px;padding:11px 18px 11px 14px;bottom:7%;}}
 </style>
 </head>
 <body>
@@ -543,7 +506,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
       <div class="reveal d5"><div class="feat-card"><div class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.04346 16.4525C3.22094 16.8088 3.28001 17.2161 3.17712 17.6006L2.58151 19.8267C2.32295 20.793 3.20701 21.677 4.17335 21.4185L6.39939 20.8229C6.78393 20.72 7.19121 20.7791 7.54753 20.9565C8.88837 21.6244 10.4003 22 12 22Z"/><path d="M8 10.5H16"/><path d="M8 14H13.5"/></g></svg></div><p class="feat-title font-playfair">Ask a Doc</p><p class="feat-desc">Upload or paste a contract, then ask questions about it in plain English.</p></div></div>
       <div class="reveal d6"><div class="feat-card"><div class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M20 10L4 10L9.5 4"/><path d="M4 14L20 14L14.5 20"/></g></svg></div><p class="feat-title font-playfair">Compare</p><p class="feat-desc">Paste two versions of a contract to see what changed and who each change favours.</p></div></div>
       <div class="reveal d6"><div class="feat-card"><div class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round"><path stroke-width="1.5" d="M3.84453 7.92226C2.71849 6.79623 2.71849 4.97056 3.84453 3.84453C4.97056 2.71849 6.79623 2.71849 7.92226 3.84453L20.1555 16.0777C21.2815 17.2038 21.2815 19.0294 20.1555 20.1555C19.0294 21.2815 17.2038 21.2815 16.0777 20.1555L3.84453 7.92226Z"/><path stroke-width="1.5" d="M6 10L10 6"/><path d="M16.1 2.30719C16.261 1.8976 16.8385 1.8976 16.9994 2.30719L17.4298 3.40247C17.479 3.52752 17.5776 3.62651 17.7022 3.67583L18.7934 4.1078C19.2015 4.26934 19.2015 4.849 18.7934 5.01054L17.7022 5.44252C17.5776 5.49184 17.479 5.59082 17.4298 5.71587L16.9995 6.81115C16.8385 7.22074 16.261 7.22074 16.1 6.81116L15.6697 5.71587C15.6205 5.59082 15.5219 5.49184 15.3973 5.44252L14.3061 5.01054C13.898 4.849 13.898 4.26934 14.3061 4.1078L15.3973 3.67583C15.5219 3.62651 15.6205 3.52752 15.6697 3.40247L16.1 2.30719Z"/><path d="M19.9672 9.12945C20.1281 8.71987 20.7057 8.71987 20.8666 9.12945L21.0235 9.5288C21.0727 9.65385 21.1713 9.75284 21.2959 9.80215L21.6937 9.95965C22.1018 10.1212 22.1018 10.7009 21.6937 10.8624L21.2959 11.0199C21.1713 11.0692 21.0727 11.1682 21.0235 11.2932L20.8666 11.6926C20.7057 12.1022 20.1281 12.1022 19.9672 11.6926L19.8103 11.2932C19.7611 11.1682 19.6625 11.0692 19.5379 11.0199L19.14 10.8624C18.732 10.7009 18.732 10.1212 19.14 9.95965L19.5379 9.80215C19.6625 9.75284 19.7611 9.65385 19.8103 9.5288L19.9672 9.12945Z"/><path d="M5.1332 15.3072C5.29414 14.8976 5.87167 14.8976 6.03261 15.3072L6.18953 15.7065C6.23867 15.8316 6.33729 15.9306 6.46188 15.9799L6.85975 16.1374C7.26783 16.2989 7.26783 16.8786 6.85975 17.0401L6.46188 17.1976C6.33729 17.2469 6.23867 17.3459 6.18953 17.471L6.03261 17.8703C5.87167 18.2799 5.29414 18.2799 5.1332 17.8703L4.97628 17.471C4.92714 17.3459 4.82852 17.2469 4.70393 17.1976L4.30606 17.0401C3.89798 16.8786 3.89798 16.2989 4.30606 16.1374L4.70393 15.9799C4.82852 15.9306 4.92714 15.8316 4.97628 15.7065L5.1332 15.3072Z"/></g></svg></div><p class="feat-title font-playfair">Quick Tools</p><p class="feat-desc">Explain a clause in plain English, or turn rough notes into formal legal wording.</p></div></div>
-      <div class="reveal d6"><a class="feat-card tile" href="#demos"><div><div class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M15.4137 10.941C16.1954 11.4026 16.1954 12.5974 15.4137 13.059L10.6935 15.8458C9.93371 16.2944 9 15.7105 9 14.7868L9 9.21316C9 8.28947 9.93371 7.70561 10.6935 8.15419L15.4137 10.941Z"/></g></svg></div><p class="feat-title font-playfair">See it working</p><p class="feat-desc">Watch short example walkthroughs of Draft, Review, Research and History.</p></div><span class="tile-link">Watch the demos <svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 12H20M14 18L20 12L14 6"/></svg></span></a></div>
+      <div class="reveal d6"><a class="feat-card tile" href="#demos"><div><div class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M15.4137 10.941C16.1954 11.4026 16.1954 12.5974 15.4137 13.059L10.6935 15.8458C9.93371 16.2944 9 15.7105 9 14.7868L9 9.21316C9 8.28947 9.93371 7.70561 10.6935 8.15419L15.4137 10.941Z"/></g></svg></div><p class="feat-title font-playfair">See it working</p><p class="feat-desc">Watch the 60-second teaser: a research question becomes a structured memo.</p></div><span class="tile-link">Watch the teaser <svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 12H20M14 18L20 12L14 6"/></svg></span></a></div>
     </div>
   </div>
 </section>
@@ -621,58 +584,27 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 </section>
 
 <!-- ── DEMOS ── -->
-<span id="demos"></span>
-<!-- ── VIDEO ADS ── -->
-<div class="vid-section">
+<!-- ── TEASER VIDEO ── -->
+<section class="vid-section" id="demos">
   <div class="vid-wrap">
     <div class="reveal sec-header-center">
-      <p class="sec-label">See it in action</p>
-      <p class="sec-title">Watch Dave.AI work</p>
-      <p class="sec-sub">Four features, four example walkthroughs (simulated, for illustration). Click play or drag the seek bar to any moment.</p>
+      <span class="sec-label">See it in action</span>
+      <h2 class="sec-title font-playfair">Watch Dave.AI work</h2>
+      <p class="sec-sub">A 60-second look at a research question becoming a structured memo.</p>
     </div>
-    <div class="reveal" style="max-width:680px;margin:36px auto 0;">
-      <div id="dplayer" style="background:#ffffff;border:1px solid rgba(79,114,196,0.15);border-radius:16px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,0.35);">
-        <div id="dtabs" style="display:flex;background:#eef1f8;border-bottom:1px solid rgba(79,114,196,0.13);"></div>
-        <div id="dscreen" style="height:260px;background:#f2f4f9;position:relative;overflow:hidden;">
-          <div id="dtopbar" style="background:#eef1f8;padding:7px 12px;display:flex;align-items:center;gap:5px;border-bottom:1px solid rgba(79,114,196,0.13);">
-            <div style="width:7px;height:7px;border-radius:50%;background:#ff5f57;"></div>
-            <div style="width:7px;height:7px;border-radius:50%;background:#ffbd2e;"></div>
-            <div style="width:7px;height:7px;border-radius:50%;background:#28c840;"></div>
-            <span id="dstitle" style="font-size:9px;color:#6674a0;margin-left:5px;font-weight:500;letter-spacing:0.06em;"></span>
-          </div>
-          <div id="dframes"></div>
-          <div id="dec" style="position:absolute;inset:0;background:#f2f4f9;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:30;">
-            <div style="width:46px;height:46px;background:#3d60b8;border-radius:11px;display:flex;align-items:center;justify-content:center;margin:0 auto 11px;box-shadow:0 6px 20px rgba(79,114,196,0.5);">
-              <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/><rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/><rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/><path d="M12 3.5 Q20.5 4 20.5 12 Q20.5 20 12 20.5" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/><line x1="4" y1="8" x2="1.5" y2="8" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="1.5" cy="8" r=".9" fill="white"/><line x1="4" y1="12" x2="1.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="1.5" cy="12" r=".9" fill="white"/><circle cx="20.5" cy="12" r="1.1" fill="white"/><line x1="20.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="22.5" cy="12" r=".8" fill="white"/></svg>
-            </div>
-            <p id="decname" style="font-family:var(--serif);font-size:26px;font-weight:700;color:#1a2840;margin-bottom:7px;">Dave<span style="color:#4f72c4">.AI</span></p>
-            <div style="width:26px;height:2px;background:#4f72c4;margin:0 auto 8px;border-radius:2px;"></div>
-            <p id="decline" style="font-size:11px;color:#6674a0;line-height:1.6;max-width:170px;"></p>
-          </div>
-        </div>
-        <div style="background:#eef1f8;padding:9px 14px 11px;border-top:1px solid rgba(79,114,196,0.13);">
-          <div id="dseek" style="position:relative;height:5px;background:rgba(79,114,196,0.15);border-radius:5px;cursor:pointer;margin-bottom:10px;touch-action:none;">
-            <div id="dfill" style="height:100%;background:#4f72c4;border-radius:5px;width:0%;pointer-events:none;"></div>
-            <div id="dknob" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;background:#fff;border:2px solid #4f72c4;border-radius:50%;cursor:grab;box-shadow:0 1px 5px rgba(13,21,40,0.25);z-index:5;left:0%;transition:transform 0.1s;"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:9px;">
-              <button id="dpbtn" onclick="dTogglePlay()" style="width:26px;height:26px;background:#4f72c4;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;">
-                <svg id="dpicon" width="10" height="10" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </button>
-              <span style="font-size:10px;color:#6674a0;"><b id="dtnow" style="color:#1a2840;font-weight:600;">0:00</b> / <span id="dttot">0:30</span></span>
-            </div>
-            <span id="ddlbl" style="font-size:8px;color:#a8b4cc;font-weight:600;letter-spacing:0.08em;">DEMO 1 OF 4</span>
-          </div>
-        </div>
-      </div>
+    <div class="reveal video-frame">
+      <video id="teaser" controls preload="none" playsinline width="1920" height="1080" poster="/img/teaser-poster-v6.jpg" aria-label="Dave.AI 60-second teaser: asking a legal research question and receiving a structured research memo">
+        <source src="/video/dave-ai-teaser-v6.mp4" type="video/mp4"/>
+        Your browser can't play this video. <a href="/video/dave-ai-teaser-v6.mp4">Download it instead</a>.
+      </video>
+      <button type="button" class="vid-play" id="teaser-play" aria-label="Play the 60-second teaser video">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11.1-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/></svg>
+        <span>Watch the 60-second teaser</span>
+      </button>
     </div>
-    <div class="reveal" style="text-align:center;margin-top:20px;">
-      <p style="font-size:13px;color:#8d9bbf;">Click any tab to switch demos · Drag the seek bar to any moment · Click play to run</p>
-      <p style="font-size:12px;color:#6674a0;margin-top:6px;">Illustrative demo with fictional parties. Real output varies and must be reviewed by a qualified solicitor.</p>
-    </div>
+    <p class="vid-note">Illustrative demo with fictional data and no sound. Real output varies and must be reviewed by a qualified solicitor.</p>
   </div>
-</div>
+</section>
 
 <!-- ── PRICING ── -->
 <div class="sec-bg-grey" id="pricing">
@@ -1120,288 +1052,6 @@ const obs=new IntersectionObserver(entries=>{
 },{threshold:0.1});
 document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
-
-var dDEMOS = [
-  {
-    name: "Draft",
-    title: "dave.ai — Draft",
-    dur: 65,
-    tag: "First drafts in minutes,\nnot hours.",
-    slides: [
-      {t:0,  h:'<div class="inp">Type your requirements here...</div>'},
-      {t:3,  h:'<div class="inp">One-way NDA · <span style="color:#4f72c4">|</span></div>'},
-      {t:5,  h:'<div class="inp">One-way NDA · Orion Tech Ltd (discloser) & DevCo Solutions<span style="color:#4f72c4">|</span></div>'},
-      {t:8,  h:'<div class="inp">One-way NDA · Orion Tech Ltd (discloser) & DevCo Solutions · 24 months · English law ✓</div>'},
-      {t:11, h:'<div class="inp" style="font-size:8.5px">One-way NDA · Orion Tech Ltd (discloser) & DevCo · 24 months · English law ✓</div><div class="st"><span style="color:#4f72c4"></span> Analysing your requirements...</div>'},
-      {t:14, h:'<div class="inp" style="font-size:8.5px">One-way NDA · Orion Tech Ltd (discloser) & DevCo · 24 months · English law ✓</div><div class="st"><span style="color:#4f72c4"></span> Planning the clause structure...</div>'},
-      {t:17, h:'<div class="inp" style="font-size:8.5px">One-way NDA · 24 months · English law ✓</div><div class="st"><span style="color:#4f72c4"></span> Structuring the document — 6 clauses...</div>'},
-      {t:20, h:'<div class="doc"><span style="color:#4f72c4;font-weight:700">NON-DISCLOSURE AGREEMENT</span><br><span style="color:#a8b4cc">England & Wales · 3 May 2026</span><br><br><span style="color:#1a2840">Drafting clause 1 of 6...</span></div>'},
-      {t:23, h:'<div class="doc"><span style="color:#4f72c4;font-weight:700">NON-DISCLOSURE AGREEMENT</span><br><span style="color:#a8b4cc">England & Wales · 3 May 2026</span><br><br><span style="color:#1a2840">1. PARTIES</span><br><span style="color:#344268">Orion Tech Ltd (company no. 12345678), a company incorporated in England and Wales (the "Disclosing Party") and DevCo Solutions Ltd (the "Receiving Party").</span></div>'},
-      {t:27, h:'<div class="doc"><span style="color:#1a2840">2. CONFIDENTIAL INFORMATION</span><br><span style="color:#344268">"Confidential Information" means any information disclosed by the Disclosing Party that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information...</span></div>'},
-      {t:31, h:'<div class="doc"><span style="color:#1a2840">3. OBLIGATIONS OF RECEIVING PARTY</span><br><span style="color:#344268">The Receiving Party shall: (a) hold all Confidential Information in strict confidence; (b) not disclose it to any third party without prior written consent; (c) use it solely for the Purpose defined herein.</span></div>'},
-      {t:35, h:'<div class="doc"><span style="color:#1a2840">4. TERM & TERMINATION</span><br><span style="color:#344268">This Agreement shall remain in force for 24 months from the date of execution. Confidentiality obligations shall survive termination for a further period of 2 years.</span></div>'},
-      {t:39, h:'<div class="doc"><span style="color:#1a2840">5. EXCEPTIONS</span><br><span style="color:#344268">(a) Information already in the public domain; (b) Known to Receiving Party prior to disclosure; (c) Required to be disclosed by law or court order, provided prompt notice is given.</span></div>'},
-      {t:43, h:'<div class="doc"><span style="color:#1a2840">6. GOVERNING LAW & JURISDICTION</span><br><span style="color:#344268">This Agreement shall be governed by the laws of England and Wales. Each party submits to the exclusive jurisdiction of the courts of England and Wales.</span></div>'},
-      {t:47, h:'<div class="doc" style="font-size:8px"><span style="color:#237a3c;font-weight:700"> Draft complete — 6 clauses · 847 words · governed by English law</span><br><br><span style="color:#344268">Next: read every clause and check it fits your client\'s facts.</span><br><span style="color:#6674a0">→ Use Refine to change it, e.g. "add a non-solicitation clause"</span></div>'},
-      {t:52, h:'<div class="doc" style="font-size:8px"><span style="color:#237a3c;font-weight:700"> First draft ready for your review</span><br><br><div style="display:flex;gap:5px;margin-top:6px"><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Copy</span><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Save to History</span><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Download .txt</span></div></div>'},
-      {t:57, h:'<div class="doc" style="font-size:8px"><span style="color:#3558a8;font-weight:700">A strong first draft in minutes — ready for your review.</span><br><br><span style="color:#3558a8">At Dave.AI Pro: £149/month.</span></div>'}
-    ]
-  },
-  {
-    name: "Review",
-    title: "dave.ai — Review",
-    dur: 65,
-    tag: "Catch risks before they\ncost you clients.",
-    slides: [
-      {t:0,  h:'<div class="inp" style="text-align:center;color:#a8b4cc">Drop a contract to analyse</div>'},
-      {t:3,  h:'<div class="inp"><span style="color:#237a3c">✓</span> service_agreement_v3.pdf uploading...</div>'},
-      {t:6,  h:'<div class="inp"><span style="color:#237a3c">✓</span> service_agreement_v3.pdf uploaded (47 pages)</div><div class="st"> Reading the document...</div>'},
-      {t:9,  h:'<div class="inp"><span style="color:#237a3c">✓</span> service_agreement_v3.pdf — 47 pages</div><div class="st"> Identifying clause types... 23%</div>'},
-      {t:12, h:'<div class="inp"><span style="color:#237a3c">✓</span> service_agreement_v3.pdf — 47 pages</div><div class="st"> Checking liability and termination terms... 51%</div>'},
-      {t:15, h:'<div class="inp"><span style="color:#237a3c">✓</span> service_agreement_v3.pdf — 47 pages</div><div class="st"> Scanning for risk clauses... 78%</div>'},
-      {t:18, h:'<div class="inp"><span style="color:#237a3c">✓</span> Analysis complete — <span style="color:#e05a50">2 high risks</span>, <span style="color:#c8963c">3 medium risks</span> found</div>'},
-      {t:21, h:'<div class="rsk rh">High §4.1: Unlimited liability. No cap on damages — exposes client to uncapped financial risk.</div>'},
-      {t:25, h:'<div class="rsk rh">High §4.1: Unlimited liability. No cap on damages.</div><div class="rsk rh">High §9.3: Automatic renewal clause. 90-day opt-out window not flagged to client.</div>'},
-      {t:29, h:'<div class="rsk rh">High §4.1: Unlimited liability</div><div class="rsk rh">High §9.3: Automatic renewal clause</div><div class="rsk rm">Medium §7.2: Break clause ambiguity. "Reasonable notice" undefined — litigation risk.</div>'},
-      {t:33, h:'<div class="rsk rh">High §4.1: Unlimited liability</div><div class="rsk rm">Medium §7.2: Break clause ambiguity</div><div class="rsk rm">Medium §11.1: Termination for convenience on 5 days\' notice — very short for a 47-page services contract.</div>'},
-      {t:37, h:'<div class="rsk rm">Medium §11.1: Very short termination notice</div><div class="rsk rm">Medium §14.4: IP assignment clause overly broad — may include pre-existing IP.</div>'},
-      {t:41, h:'<div class="doc" style="font-size:8px"><span style="color:#344268">Top risks only, with a summary and recommendation. Not exhaustive and not legal advice: verify against the full contract.</span></div>'},
-      {t:45, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">SUGGESTED AMENDMENTS</span><br><br><span style="color:#1a2840">§4.1 — Replace with:</span><br><span style="color:#344268">"Each party\'s total liability shall not exceed the fees paid in the 12 months preceding the claim."</span><br><br><span style="color:#1a2840">§9.3 — Insert:</span><br><span style="color:#344268">"Client shall receive written notice no less than 60 days prior to automatic renewal."</span></div>'},
-      {t:50, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">SUGGESTED AMENDMENTS (cont.)</span><br><br><span style="color:#1a2840">§7.2 — Replace "reasonable notice" with:</span><br><span style="color:#344268">"Not less than 30 days written notice to the registered address of the other party."</span><br><br><span style="color:#1a2840">§11.1 — Amend to:</span><br><span style="color:#344268">"Either party may terminate for convenience on not less than 90 days\' written notice."</span></div>'},
-      {t:55, h:'<div class="doc" style="font-size:8px"><span style="color:#237a3c;font-weight:700"> Review complete — 47 pages read</span><br><br><span style="color:#6674a0">Risks flagged: 2 high · 3 medium</span><br><br><div style="display:flex;gap:5px;margin-top:5px"><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Saved to History</span></div></div>'},
-      {t:60, h:'<div class="doc" style="font-size:8px"><span style="color:#237a3c;font-weight:700"> 47 pages read · 2 high · 3 medium</span><br><br><span style="color:#344268">Law ref: England &amp; Wales</span><br><br><div style="display:flex;gap:5px;margin-top:5px"><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Saved to History</span></div></div>'}
-    ]
-  },
-  {
-    name: "Research",
-    title: "dave.ai — Research",
-    dur: 60,
-    tag: "UK law answered,\nwith citations to check.",
-    slides: [
-      // NOTE: demo copy only. A solicitor should check every authority, statutory figure and case summary in these demos before anyone relies on them.
-      {t:0,  h:'<div class="inp">Ask any UK legal question...</div>'},
-      {t:3,  h:'<div class="inp">What are the statutory redundancy<span style="color:#4f72c4">|</span></div>'},
-      {t:6,  h:'<div class="inp">What are the statutory redundancy notice periods under UK employment law?<span style="color:#4f72c4">|</span></div>'},
-      {t:9,  h:'<div class="qb">What are the statutory redundancy notice periods under UK employment law? ✓</div><div class="st"> Searching the web for UK sources...</div>'},
-      {t:12, h:'<div class="qb">What are the statutory redundancy notice periods?</div><div class="st"> Reading the search results...</div>'},
-      {t:15, h:'<div class="qb">What are the statutory redundancy notice periods?</div><div class="st"> Writing the answer with citations...</div>'},
-      {t:18, h:'<div class="qb">What are the statutory redundancy notice periods?</div><div class="qa"><span style="color:#4f72c4;font-weight:700">Employment Rights Act 1996, s.86</span><br>· Under 2 years service: 1 week minimum<br>· 2–12 years: 1 week per year of service<br>· 12+ years: capped at 12 weeks maximum</div>'},
-      {t:22, h:'<div class="qa"><span style="color:#4f72c4;font-weight:700">Employment Rights Act 1996, s.86</span><br>· Under 2 years: 1 week<br>· 2–12 years: 1 week per year<br>· 12+: capped at 12 weeks<br><br><span style="color:#344268">Note: Contractual notice may exceed statutory minimum. Employer cannot give less than the statutory minimum regardless of contract terms.</span></div>'},
-      {t:27, h:'<div class="qa"><span style="color:#1a2840">Relevant case law:</span><br><span style="color:#344268">Polkey v AE Dayton Services [1988] AC 344 (HL) — procedural fairness in redundancy.</span><br><br><span style="color:#344268">Williams v Compair Maxam Ltd [1982] ICR 156 (EAT) — fair redundancy selection and consultation.</span><br><br><span style="color:#344268">Capita Hartshead Ltd v Byard [2012] ICR 1256 (EAT) — choosing the redundancy selection pool.</span></div>'},
-      {t:32, h:'<div class="qa"><span style="color:#1a2840">Collective redundancy (20+ employees):</span><br><span style="color:#344268">TULRCA 1992 s.188 applies. Employer must consult with appropriate representatives for minimum 45 days before first dismissal (30 days if 20–99 redundancies).</span><br><br><span style="color:#6674a0">Failure to consult: protective award up to 90 days\' pay per employee.</span></div>'},
-      {t:37, h:'<div class="qa"><span style="color:#1a2840">Statutory redundancy pay (separate to notice):</span><br><span style="color:#344268">· Under 22: 0.5 week\'s pay per year<br>· Age 22–40: 1 week\'s pay per year<br>· 41 or over: 1.5 weeks\' pay per year</span><br><br><span style="color:#6674a0">Weekly pay capped at the statutory weekly limit (check gov.uk for the current figure). Max 20 years service counts.</span></div>'},
-      {t:42, h:'<div class="qa"><span style="color:#1a2840">Follow-up questions suggested:</span><br><span style="color:#4f72c4;font-size:8.5px">→ What counts as a week\'s pay for redundancy calculations?</span><br><span style="color:#4f72c4;font-size:8.5px">→ Can an employer offset notice against redundancy pay?</span><br><span style="color:#4f72c4;font-size:8.5px">→ What is the time limit for unfair dismissal claims?</span><br><span style="color:#4f72c4;font-size:8.5px">→ How do PILON clauses affect notice entitlement?</span></div>'},
-      {t:47, h:'<div class="qb">How do PILON clauses affect notice entitlement?<span style="color:#4f72c4">|</span></div><div class="st">Searching the web for UK sources...</div>'},
-      {t:51, h:'<div class="qa"><span style="color:#4f72c4;font-weight:700">PILON (Payment In Lieu Of Notice)</span><br><span style="color:#344268">Since April 2018 (Finance Act 2017), all PILON payments are subject to income tax and NICs regardless of whether the contract contains a PILON clause.</span><br><br><span style="color:#344268">The "post-employment notice pay" (PENP) formula applies under ITEPA 2003 s.402D.</span></div>'},
-      {t:56, h:'<div class="doc" style="font-size:8px"><span style="color:#237a3c;font-weight:700"> Research complete</span><br><span style="color:#6674a0">Sources listed with links · check every authority before relying on it</span><br><br><div style="display:flex;gap:5px;margin-top:5px"><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Copy</span><span style="background:#eef3fb;border:1px solid rgba(79,114,196,.4);border-radius:4px;padding:3px 8px;font-size:8px;color:#3558a8">Saved to History</span></div></div>'}
-    ]
-  },
-  {
-    name: "History",
-    title: "dave.ai — Document History",
-    dur: 60,
-    tag: "Your legal work,\nsaved and searchable in your history.",
-    slides: [
-      {t:0,  h:'<div class="inp" style="color:#a8b4cc">Search documents...</div>'},
-      {t:3,  h:'<div class="inp">employment<span style="color:#4f72c4">|</span></div><div class="st">Searching 47 documents...</div>'},
-      {t:6,  h:'<div class="inp">employment ✓</div><div class="row"><span class="rn">Employment Contract — J. Morris</span><span class="rd">01 May 2026</span></div><div class="row"><span class="rn">Employment Contract — S. Patel</span><span class="rd">28 Apr 2026</span></div><div class="row"><span class="rn">Employment Law Research — Redundancy</span><span class="rd">22 Apr 2026</span></div>'},
-      {t:10, h:'<div class="row"><span class="rn">NDA — Orion Tech Ltd</span><span class="rd">02 May 2026</span></div><div class="row hl"><span class="rn" style="color:#3558a8">Employment Contract — J. Morris</span><span class="rd" style="color:#3558a8">01 May 2026</span></div><div class="row"><span class="rn">Service Agreement — DevCo</span><span class="rd">29 Apr 2026</span></div><div class="row"><span class="rn">Risk Review — service_agreement_v3</span><span class="rd">28 Apr 2026</span></div>'},
-      {t:14, h:'<div class="opn"><span style="color:#3558a8;font-weight:700">Employment Contract — J. Morris</span><br><span style="color:#a8b4cc">Created 01 May 2026</span><br><br><span style="color:#1a2840">1. PARTIES</span><br><span style="color:#344268">Employer: Orion Tech Ltd · Employee: James Morris, residing in Manchester</span></div>'},
-      {t:18, h:'<div class="opn"><span style="color:#3558a8;font-weight:700">Employment Contract — J. Morris</span><br><br><span style="color:#1a2840">2. POSITION & START DATE</span><br><span style="color:#344268">Senior Software Engineer · Start: 1 June 2026 · Probation: 6 months</span><br><br><span style="color:#1a2840">3. REMUNERATION</span><br><span style="color:#344268">£72,000 per annum · Annual review · Performance bonus up to 15%</span></div>'},
-      {t:22, h:'<div class="opn"><span style="color:#3558a8;font-weight:700">Employment Contract — J. Morris</span><br><br><span style="color:#1a2840">4. WORKING HOURS</span><br><span style="color:#344268">37.5 hours per week · Remote working up to 3 days · Core hours 10am–3pm</span><br><br><span style="color:#1a2840">5. HOLIDAY ENTITLEMENT</span><br><span style="color:#344268">25 days + UK public holidays · Carry-over capped at 5 days per year</span></div>'},
-      {t:26, h:'<div class="opn"><span style="color:#3558a8;font-weight:700">Employment Contract — J. Morris</span><br><br><span style="color:#1a2840">6. NOTICE PERIOD</span><br><span style="color:#344268">3 months written notice after probation. Employer reserves right to apply garden leave during notice period.</span><br><br><span style="color:#1a2840">7. CONFIDENTIALITY</span><br><span style="color:#344268">Employee shall not disclose proprietary information during or after employment. Survives termination for 2 years.</span></div>'},
-      {t:30, h:'<div class="opn"><span style="color:#3558a8;font-weight:700">Employment Contract — J. Morris</span><br><br><span style="color:#1a2840">8. RESTRICTIVE COVENANTS</span><br><span style="color:#344268">Non-solicitation of clients and employees for 12 months post-termination. Non-compete within UK tech sector for 6 months (must go no further than reasonably necessary to protect legitimate interests; see Tillman v Egon Zehnder [2019] UKSC 32 on severance).</span></div>'},
-      {t:34, h:'<div class="opn"><span style="color:#1a2840">9. GOVERNING LAW</span><br><span style="color:#344268">This contract is governed by the laws of England and Wales. Any disputes to be referred to ACAS Early Conciliation before proceedings.</span><br><br><span style="color:#237a3c;font-size:8px"> Saved draft · 9 clauses</span></div>'},
-      {t:38, h:'<div class="row"><span class="rn">Employment Contract — J. Morris</span><span class="rd">01 May 2026</span></div><div class="row"><span class="rn">Employment Contract — S. Patel</span><span class="rd">28 Apr 2026</span></div><div class="row"><span class="rn">NDA — Orion Tech Ltd</span><span class="rd">02 May 2026</span></div><div class="row"><span class="rn"> Risk Review — service_agreement_v3</span><span class="rd">28 Apr 2026</span></div>'},
-      {t:42, h:'<div class="row"><span class="rn">Employment Law Research</span><span class="rd">22 Apr 2026</span></div><div class="row"><span class="rn">Lease Agreement — Unit 4, Leeds</span><span class="rd">19 Apr 2026</span></div><div class="row"><span class="rn">Service Agreement — DevCo Solutions</span><span class="rd">29 Apr 2026</span></div><div class="row"><span class="rn">Settlement Agreement — R. Hughes</span><span class="rd">14 Apr 2026</span></div>'},
-      {t:46, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">DOCUMENT HISTORY — 47 documents</span><br><br><span style="color:#344268">Contracts drafted: 18</span><br><span style="color:#344268">Risk reviews completed: 12</span><br><span style="color:#344268">Research memos saved: 9</span><br><span style="color:#344268">Miscellaneous: 8</span></div>'},
-      {t:51, h:'<div class="doc" style="font-size:8px"><span style="color:#4f72c4;font-weight:700">SEARCH YOUR HISTORY</span><br><br><span style="color:#344268">Search your saved documents by name or content</span><br><br><span style="color:#6674a0">Open any document to copy or download it</span></div>'},
-      {t:55, h:'<div class="doc" style="font-size:8px"><span style="color:#3558a8;font-weight:700">Every draft, review and research memo saved in one place, searchable by name.</span><br><br><span style="color:#3558a8">Dave.AI Pro: £149/month.</span></div>'}
-    ]
-  }
-];
-
-
-var dCur = 0;
-var dPlaying = false;
-var dElapsed = 0;
-var dStartTime = null;
-var dRaf = null;
-var dDragging = false;
-var dWasPlaying = false;
-var dLastSlideT = -1;
-
-function dGetSlide(demoIdx, time) {
-  var slides = dDEMOS[demoIdx].slides;
-  var result = slides[0];
-  for (var i = 0; i < slides.length; i++) {
-    if (time >= slides[i].t) result = slides[i];
-    else break;
-  }
-  return result;
-}
-
-function dFmt(sec) {
-  var s = Math.floor(sec);
-  return Math.floor(s/60) + ':' + ('0' + (s%60)).slice(-2);
-}
-
-function dRender(time) {
-  var demo = dDEMOS[dCur];
-  var pct = Math.min(time / demo.dur, 1) * 100;
-  document.getElementById('dfill').style.width = pct + '%';
-  document.getElementById('dknob').style.left = pct + '%';
-  document.getElementById('dtnow').textContent = dFmt(time); document.getElementById('dttot').textContent = dFmt(demo.dur);
-
-  var ec = document.getElementById('dec');
-  if (time >= demo.dur - 3) {
-    ec.classList.add('on');
-    return;
-  }
-  ec.classList.remove('on');
-
-  var slide = dGetSlide(dCur, time);
-  if (slide.t === dLastSlideT) return;
-  dLastSlideT = slide.t;
-
-  var sbody = document.getElementById('dframes');
-  // fade out old frames
-  var old = sbody.querySelectorAll('.frame');
-  for (var i = 0; i < old.length; i++) {
-    old[i].className = 'frame';
-    (function(el){ setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 350); })(old[i]);
-  }
-  // create new frame
-  var div = document.createElement('div');
-  div.className = 'frame';
-  div.innerHTML = slide.h;
-  sbody.appendChild(div);
-  // trigger fade in
-  requestAnimationFrame(function() { div.className = 'frame on'; });
-}
-
-function dTick() {
-  if (!dPlaying) return;
-  var now = performance.now();
-  dElapsed = (now - dStartTime) / 1000;
-  if (dElapsed >= dDEMOS[dCur].dur) {
-    dElapsed = dDEMOS[dCur].dur;
-    dPlaying = false;
-    dSetIcon(false);
-  }
-  dRender(dElapsed);
-  if (dPlaying) dRaf = requestAnimationFrame(dTick);
-}
-
-function dTogglePlay() {
-  if (dPlaying) {
-    dPlaying = false;
-    if (dRaf) cancelAnimationFrame(dRaf);
-    dSetIcon(false);
-  } else {
-    if (dElapsed >= dDEMOS[dCur].dur) {
-      dElapsed = 0;
-      dLastSlideT = -1;
-    }
-    dPlaying = true;
-    dStartTime = performance.now() - dElapsed * 1000;
-    dSetIcon(true);
-    dRaf = requestAnimationFrame(dTick);
-  }
-}
-
-function dSetIcon(p) {
-  document.getElementById('dpicon').innerHTML = p
-    ? '<rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/>'
-    : '<polygon points="5 3 19 12 5 21 5 3"/>';
-}
-
-function dSeekTo(pct) {
-  dElapsed = pct * dDEMOS[dCur].dur;
-  dLastSlideT = -1;
-  if (dPlaying) dStartTime = performance.now() - dElapsed * 1000;
-  dRender(dElapsed);
-}
-
-function dGetPct(clientX) {
-  var r = document.getElementById('dseek').getBoundingClientRect();
-  var p = (clientX - r.left) / r.width;
-  return Math.max(0, Math.min(1, p));
-}
-
-function dLoadDemo(i) {
-  if (dPlaying) { dPlaying = false; if (dRaf) cancelAnimationFrame(dRaf); dSetIcon(false); }
-  dCur = i;
-  dElapsed = 0;
-  dLastSlideT = -1;
-  document.getElementById('dstitle').textContent = dDEMOS[i].title;
-  document.getElementById('decline').textContent = dDEMOS[i].tag;
-  document.getElementById('ddlbl').textContent = 'DEMO ' + (i+1) + ' OF 4';
-  document.getElementById('dec').classList.remove('on');
-  var sbody = document.getElementById('dframes');
-  var old = sbody.querySelectorAll('.frame');
-  for (var j = 0; j < old.length; j++) sbody.removeChild(old[j]);
-  var tabs = document.querySelectorAll('.tab');
-  for (var k = 0; k < tabs.length; k++) tabs[k].className = 'tab' + (k === i ? ' on' : '');
-  dRender(0);
-}
-
-// Build tabs
-var tabsEl = document.getElementById('dtabs');
-dDEMOS.forEach(function(d, i) {
-  var b = document.createElement('button');
-  b.className = 'tab' + (i === 0 ? ' on' : '');
-  b.textContent = d.name;
-  b.setAttribute('data-i', i);
-  b.onclick = function() { dLoadDemo(parseInt(this.getAttribute('data-i'))); };
-  tabsEl.appendChild(b);
-});
-
-// Track mouse/touch
-var track = document.getElementById('dseek');
-track.addEventListener('mousedown', function(e) {
-  dDragging = true;
-  dWasPlaying = dPlaying;
-  if (dPlaying) { dPlaying = false; if (dRaf) cancelAnimationFrame(dRaf); }
-  dSeekTo(dGetPct(e.clientX));
-  e.preventDefault();
-});
-document.addEventListener('mousemove', function(e) {
-  if (dDragging) dSeekTo(dGetPct(e.clientX));
-});
-document.addEventListener('mouseup', function() {
-  if (dDragging) {
-    dDragging = false;
-    if (dWasPlaying && dElapsed < dDEMOS[dCur].dur) {
-      dPlaying = true;
-      dStartTime = performance.now() - dElapsed * 1000;
-      dSetIcon(true);
-      dRaf = requestAnimationFrame(dTick);
-    }
-  }
-});
-track.addEventListener('touchstart', function(e) {
-  dDragging = true;
-  dWasPlaying = dPlaying;
-  if (dPlaying) { dPlaying = false; if (dRaf) cancelAnimationFrame(dRaf); }
-  dSeekTo(dGetPct(e.touches[0].clientX));
-}, {passive: true});
-document.addEventListener('touchmove', function(e) {
-  if (dDragging) dSeekTo(dGetPct(e.touches[0].clientX));
-}, {passive: true});
-document.addEventListener('touchend', function() {
-  if (dDragging) {
-    dDragging = false;
-    if (dWasPlaying && dElapsed < dDEMOS[dCur].dur) {
-      dPlaying = true;
-      dStartTime = performance.now() - dElapsed * 1000;
-      dSetIcon(true);
-      dRaf = requestAnimationFrame(dTick);
-    }
-  }
-});
-
-dLoadDemo(0);
 
 function toggleFAQ(el) {
   var item = el.parentElement;
@@ -2189,5 +1839,14 @@ window.addEventListener('hashchange', suCheckHash);
 
 </script>
 
+<script>
+(function(){
+  var v=document.getElementById('teaser'), b=document.getElementById('teaser-play');
+  if(!v||!b) return;
+  b.addEventListener('click',function(){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); });
+  v.addEventListener('play',function(){ b.hidden=true; });
+  v.addEventListener('ended',function(){ b.hidden=false; });
+})();
+</script>
 </body>
 </html>
