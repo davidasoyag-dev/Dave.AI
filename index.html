@@ -141,6 +141,10 @@ _sb = supabase.createClient(
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script>
+document.documentElement.className+=' js';
+setTimeout(function(){var c=document.querySelector('.hero-content');if(c&&!c.classList.contains('hero-in'))c.classList.add('hero-in');},2500);
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -218,7 +222,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 .hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--blue-50);border:1px solid var(--blue-100);border-radius:999px;padding:7px 16px;font-size:12px;color:var(--blue);letter-spacing:.08em;text-transform:uppercase;margin-bottom:26px;font-weight:600;}
 .hero-badge .ico{width:14px;height:14px;}
 .hero-title{font-family:var(--serif);font-size:clamp(2.4rem,4.4vw,3.9rem);font-weight:800;line-height:1.06;color:var(--ink);letter-spacing:-.03em;margin-bottom:26px;}
-.hero-title span{color:var(--blue);}
+.hero-title .acc{color:var(--blue);}
 .hero-sub{font-size:1.125rem;color:var(--text);line-height:1.75;margin-bottom:34px;max-width:34rem;border-left:2px solid var(--blue);padding-left:1.1rem;}
 .hero-btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:34px;}
 .trust-row{display:flex;gap:10px 26px;flex-wrap:wrap;}
@@ -228,12 +232,16 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 @media(min-width:1024px){.hero-visual{height:600px;}}
 .hero-visual .photo{object-position:center 45%;}
 .hero-visual::after{content:'';position:absolute;inset:0;background:linear-gradient(to top right,rgba(53,88,168,.4),transparent);mix-blend-mode:overlay;pointer-events:none;}
-@keyframes heroRise{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
-.hero-content.hero-in .hero-badge{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;}
-.hero-content.hero-in .hero-title{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.09s;}
-.hero-content.hero-in .hero-sub{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.18s;}
-.hero-content.hero-in .hero-btns{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.27s;}
-.hero-content.hero-in .trust-row{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.36s;}
+/* Hero entrance: hidden only when JS is on, then each word and block eases in */
+@keyframes heroRise{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
+@keyframes wordIn{from{opacity:0;transform:translateY(.5em);filter:blur(8px);}to{opacity:1;transform:none;filter:blur(0);}}
+.hero-title .w{display:inline-block;}
+.js .hero-title .w,.js .hero-badge,.js .hero-sub,.js .hero-btns,.js .trust-row{opacity:0;}
+.hero-content.hero-in .hero-badge{animation:heroRise .7s cubic-bezier(.22,1,.36,1) both;}
+.hero-content.hero-in .hero-title .w{animation:wordIn .8s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i)*.085s + .12s);}
+.hero-content.hero-in .hero-sub{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.72s;}
+.hero-content.hero-in .hero-btns{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.86s;}
+.hero-content.hero-in .trust-row{animation:heroRise .8s cubic-bezier(.22,1,.36,1) both;animation-delay:1s;}
 
 /* Sections */
 .sec{padding:6rem 0;}
@@ -384,7 +392,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
   .feat-card,.benefit{padding:1.5rem;}
   .btn-ghost-nav{display:none;}
 }
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}.reveal{opacity:1!important;transform:none!important;}html{scroll-behavior:auto;}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}.reveal{opacity:1!important;transform:none!important;}html{scroll-behavior:auto;}.hero-title .w,.hero-badge,.hero-sub,.hero-btns,.trust-row{opacity:1!important;transform:none!important;filter:none!important;}}
 
 /* ── Demo player (carried over; content styles are light already) ── */
 .vid-section{background:var(--paper);padding:6rem 1.5rem;}
@@ -478,7 +486,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
   <div class="wrap hero-grid">
     <div class="hero-content">
       <div class="hero-badge"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M3 10.4167C3 7.21907 3 5.62028 3.37752 5.08241C3.75503 4.54454 5.25832 4.02996 8.26491 3.00079L8.83772 2.80472C10.405 2.26824 11.1886 2 12 2C12.8114 2 13.595 2.26824 15.1623 2.80472L15.7351 3.00079C18.7417 4.02996 20.245 4.54454 20.6225 5.08241C21 5.62028 21 7.21907 21 10.4167C21 10.8996 21 11.4234 21 11.9914C21 17.6294 16.761 20.3655 14.1014 21.5273C13.38 21.8424 13.0193 22 12 22C10.9807 22 10.62 21.8424 9.89856 21.5273C7.23896 20.3655 3 17.6294 3 11.9914C3 11.4234 3 10.8996 3 10.4167Z"/><path stroke-linejoin="round" d="M9.5 12.4L10.9286 14L14.5 10"/></g></svg> Built for UK solicitors</div>
-      <h1 class="hero-title font-playfair">Legal work, first draft in <span>minutes</span></h1>
+      <h1 class="hero-title font-playfair"><span class="w" style="--i:0">Legal</span> <span class="w" style="--i:1">work,</span> <span class="w" style="--i:2">first</span> <span class="w" style="--i:3">draft</span> <span class="w" style="--i:4">in</span> <span class="w acc" style="--i:5">minutes</span></h1>
       <p class="hero-sub">Dave.AI helps UK solicitors, paralegals and small firms draft contracts, review documents and research the law, with a first draft in minutes — AI built specifically for English law, at a price that works for small firms.</p>
       <div class="hero-btns">
         <button class="btn-primary" onclick="openSignup()">Start free trial <svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 12H20M14 18L20 12L14 6"/></svg></button>
