@@ -2351,9 +2351,19 @@ async function doR(){
 // ══════════════════════════════════════════════
 //  HISTORY VIEW
 // ══════════════════════════════════════════════
+// How long saved documents are kept, by plan (must match the nightly purge in
+// supabase/migrations/2026-10-18-retention-starter-30d.sql and the privacy policy).
+function isStarterActive(){ return planActive && String(plan||'').toLowerCase()==='starter'; }
+function historyKeepNote(){ return isStarterActive() ? 'Kept for 30 days' : 'Kept until you delete them'; }
+function historyNotice(){
+  return isStarterActive()
+    ? '<div class="card" style="margin-bottom:14px;background:#fbf3e2;border-color:#ecd9a8;color:#7a560f;font-size:13px;line-height:1.6">Your Starter plan keeps documents for 30 days, then deletes them automatically. Download or copy anything you want to keep. Upgrade to Pro to keep your history without a time limit.</div>'
+    : '';
+}
 function vHistory(){
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">History</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    '<div class="view-head"><div><div class="view-title">History</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · '+historyKeepNote()+'</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    historyNotice() +
     '<div class="card" style="margin-bottom:14px"><input class="inp" type="search" id="hs" aria-label="Search your saved documents by name or content" placeholder="Search by name or content…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
     '<div id="hl">'+renderDocs(docs)+'</div>' +
     // Document viewer modal
