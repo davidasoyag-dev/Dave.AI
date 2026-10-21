@@ -394,6 +394,91 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}.reveal{opacity:1!important;transform:none!important;}html{scroll-behavior:auto;}.hero-title .w,.hero-badge,.hero-sub,.hero-btns,.trust-row{opacity:1!important;transform:none!important;filter:none!important;}}
 
+
+/* ══════════ Effects layer: particles · liquid morph · Y2K chrome · kinetic type ══════════
+   Everything here is decorative and progressive. ?fx=off (or reduced motion) switches it off. */
+.sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+.fx-off .fx-canvas,.fx-off .blobs,.fx-off .chrome-blob,.fx-off .marquee-band,.fx-off .wave{display:none!important;}
+
+/* — Particles — */
+.fx-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;}
+.hero-grid{z-index:2;}
+.cta-section>.reveal{position:relative;z-index:2;}
+
+/* — Liquid morph: soft shapes that slowly change form — */
+.blobs{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.blob{position:absolute;display:block;width:var(--s,420px);height:var(--s,420px);left:var(--x);top:var(--y);
+  background:radial-gradient(circle at 32% 30%,var(--c1),var(--c2) 58%,transparent 72%);
+  filter:blur(34px);opacity:var(--o,.55);will-change:transform,border-radius;
+  border-radius:42% 58% 63% 37%/45% 38% 62% 55%;
+  animation:morph var(--d,16s) ease-in-out infinite alternate,drift var(--d2,22s) ease-in-out infinite alternate;}
+@keyframes morph{
+  0%{border-radius:42% 58% 63% 37%/45% 38% 62% 55%;}
+  33%{border-radius:63% 37% 45% 55%/55% 60% 40% 45%;}
+  66%{border-radius:38% 62% 36% 64%/62% 41% 59% 38%;}
+  100%{border-radius:55% 45% 60% 40%/40% 62% 38% 60%;}}
+@keyframes drift{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1);}100%{transform:translate3d(var(--dx,60px),var(--dy,40px),0) rotate(38deg) scale(1.12);}}
+.wave{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:96px;z-index:3;display:block;pointer-events:none;}
+.hero{padding-bottom:128px;}
+
+/* — Y2K chrome — */
+.hero-badge{border:1.5px solid transparent;
+  background:linear-gradient(#f4f8ff,#f4f8ff) padding-box,linear-gradient(135deg,#fff 0%,#9fbcf0 28%,#2e4f9c 52%,#cfe0ff 76%,#fff 100%) border-box;
+  box-shadow:0 8px 18px -10px rgba(53,88,168,.6),inset 0 1px 0 rgba(255,255,255,.9);}
+.btn-primary{position:relative;overflow:hidden;border:1px solid #1f3e8c;
+  background:linear-gradient(180deg,#6f93e6 0%,#3a60bd 40%,#27479a 52%,#4a74d0 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -2px 3px rgba(10,24,60,.35),0 12px 24px -12px rgba(53,88,168,.8);
+  text-shadow:0 1px 0 rgba(10,24,60,.4);}
+.btn-primary:hover{background:linear-gradient(180deg,#7ea0ec 0%,#3f66c4 40%,#2c4d9f 52%,#5380dc 100%);border-color:#1f3e8c;}
+.btn-primary::after{content:'';position:absolute;top:0;left:-70%;width:45%;height:100%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-22deg);transition:left .7s cubic-bezier(.22,1,.36,1);}
+.btn-primary:hover::after{left:140%;}
+.nav-icon,.footer-logo-icon{background:linear-gradient(180deg,#6f93e6 0%,#3558a8 52%,#27479a 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 6px 14px -6px rgba(53,88,168,.7);}
+/* chrome lettering: vertical metal bands + a light sweep, applied per letter so it works with transforms */
+.hero-title .acc .ch{
+  background-image:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.95) 50%,transparent 62%),
+    linear-gradient(180deg,#6d93e6 0%,#3f66c4 34%,#1d3a80 49%,#16336f 52%,#7fa2ea 62%,#3a5fb8 100%);
+  background-size:260% 100%,100% 100%;background-repeat:no-repeat;background-position:160% 0,0 0;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  filter:drop-shadow(0 1.5px 0 rgba(15,31,61,.22));
+  animation:sheen 6.5s ease-in-out infinite;animation-delay:calc(2.2s + var(--j)*.09s);}
+@keyframes sheen{0%,55%{background-position:160% 0,0 0;}100%{background-position:-60% 0,0 0;}}
+.hero-visual-wrap{position:relative;}
+.chrome-blob{position:absolute;z-index:4;left:-42px;bottom:-30px;width:150px;height:150px;pointer-events:none;
+  border-radius:58% 42% 55% 45%/48% 56% 44% 52%;
+  background:radial-gradient(circle at 32% 26%,#fff 0,#eaf1ff 9%,#a5c0f2 28%,#3d63bf 50%,#16336f 64%,#6f93e3 80%,#d4e3ff 100%);
+  box-shadow:inset -10px -14px 26px rgba(10,24,60,.5),inset 8px 10px 20px rgba(255,255,255,.75),0 28px 40px -14px rgba(15,31,61,.6);
+  animation:morph2 9s ease-in-out infinite alternate,floaty 7s ease-in-out infinite;}
+.chrome-blob.small{left:auto;bottom:auto;right:-24px;top:42px;width:86px;height:86px;animation-duration:11s,8.5s;animation-delay:-3s,-2s;}
+@keyframes morph2{0%{border-radius:58% 42% 55% 45%/48% 56% 44% 52%;}50%{border-radius:44% 56% 40% 60%/58% 42% 58% 42%;}100%{border-radius:52% 48% 62% 38%/42% 60% 40% 58%;}}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-14px) rotate(8deg);}}
+
+/* — Kinetic type — */
+.hero-title .ch{display:inline-block;will-change:transform;transition:transform .35s cubic-bezier(.22,1,.36,1);}
+.kw{display:inline-block;opacity:0;transform:translateY(.55em) rotate(2.5deg);
+  transition:opacity .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1);transition-delay:calc(var(--i)*70ms);}
+.visible .kw,.kw-in .kw{opacity:1;transform:none;}
+.marquee-band{position:relative;background:var(--navy);overflow:hidden;padding:30px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);}
+.marquee-band::before,.marquee-band::after{content:'';position:absolute;top:0;bottom:0;width:90px;z-index:2;pointer-events:none;}
+.marquee-band::before{left:0;background:linear-gradient(90deg,var(--navy),transparent);}
+.marquee-band::after{right:0;background:linear-gradient(270deg,var(--navy),transparent);}
+.mq-skew{display:flex;flex-direction:column;gap:6px;will-change:transform;transform-origin:center;}
+.mq-row{display:flex;width:max-content;animation:mqLeft 46s linear infinite;}
+.mq-row.rev{animation-name:mqRight;animation-duration:58s;}
+.mq-row span{font-family:var(--serif);font-weight:800;font-size:clamp(2.6rem,7vw,5.2rem);line-height:1.08;letter-spacing:-.02em;white-space:nowrap;padding-right:.5em;display:inline-flex;align-items:center;gap:.5em;text-transform:uppercase;}
+.mq-fill{background:linear-gradient(180deg,#fff 0%,#dbe6fc 28%,#8fb0ee 47%,#3f66c4 50%,#a9c3f5 72%,#fff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
+.mq-line{-webkit-text-stroke:1.5px rgba(255,255,255,.5);color:transparent;-webkit-text-fill-color:transparent;}
+.mq-dot{display:inline-block;width:.34em;height:.34em;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 32% 28%,#fff,#a5c0f2 40%,#2e4f9c 75%);box-shadow:0 0 18px rgba(143,176,238,.55);}
+@keyframes mqLeft{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+@keyframes mqRight{from{transform:translateX(-50%);}to{transform:translateX(0);}}
+
+@media(max-width:480px){.chrome-blob{width:96px;height:96px;left:-14px;bottom:-22px;}.chrome-blob.small{width:58px;height:58px;right:-10px;top:24px;}.wave{height:60px;}.hero{padding-bottom:96px;}.marquee-band{padding:20px 0;}}
+@media(prefers-reduced-motion:reduce){
+  .blob,.chrome-blob,.mq-row,.hero-title .acc .ch{animation:none!important;}
+  .kw{opacity:1!important;transform:none!important;transition:none!important;}
+  .hero-title .ch{transition:none!important;}
+}
+
 /* ── Teaser video ── */
 .vid-section{background:var(--paper);padding:6rem 1.5rem;}
 .vid-wrap{max-width:72rem;margin:0 auto;}
@@ -445,6 +530,12 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 
 <!-- ── HERO ── -->
 <section class="hero" id="top">
+  <div class="blobs" aria-hidden="true">
+    <i class="blob" style="--s:620px;--x:58%;--y:-18%;--c1:#6d93e6;--c2:#cfe0ff;--o:.5;--d:17s;--d2:24s;--dx:-70px;--dy:60px"></i>
+    <i class="blob" style="--s:460px;--x:-8%;--y:46%;--c1:#9bb6ee;--c2:#e5edff;--o:.55;--d:19s;--d2:27s;--dx:80px;--dy:-40px"></i>
+    <i class="blob" style="--s:300px;--x:36%;--y:62%;--c1:#b9cdf5;--c2:#eef3fc;--o:.5;--d:14s;--d2:20s;--dx:-50px;--dy:-30px"></i>
+  </div>
+  <canvas class="fx-canvas" id="fx-hero" aria-hidden="true"></canvas>
   <div id="stars" hidden></div>
   <div class="wrap hero-grid">
     <div class="hero-content">
@@ -462,10 +553,19 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
         <div class="trust-item"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path stroke-linejoin="round" d="M8.5 12.5L10.5 14.5L15.5 9.5"/></g></svg>Cancel anytime</div>
       </div>
     </div>
-    <div class="hero-visual reveal from-right">
+    <div class="hero-visual-wrap reveal from-right">
+    <div class="hero-visual">
       <img class="photo img-cinematic" src="/hero-london-1600.jpg" srcset="/hero-london-800.jpg 800w, /hero-london-1600.jpg 1600w, /hero-london.jpg 2400w" sizes="(min-width:1024px) 45vw, 100vw" width="2400" height="1600" alt="The Shard and the City of London skyline at dusk" fetchpriority="high"/>
     </div>
+    <i class="chrome-blob" aria-hidden="true"></i><i class="chrome-blob small" aria-hidden="true"></i>
+    </div>
   </div>
+  <svg class="wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path fill="#f6f8fc" d="M0,70 C240,120 480,20 720,60 C960,100 1200,30 1440,70 L1440,120 L0,120 Z">
+      <animate attributeName="d" dur="16s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M0,70 C240,120 480,20 720,60 C960,100 1200,30 1440,70 L1440,120 L0,120 Z;M0,50 C240,10 480,110 720,70 C960,30 1200,110 1440,50 L1440,120 L0,120 Z;M0,70 C240,120 480,20 720,60 C960,100 1200,30 1440,70 L1440,120 L0,120 Z"/>
+    </path>
+  </svg>
 </section>
 
 <!-- ── WHAT YOU GET ── -->
@@ -487,6 +587,14 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
         <div class="check-item"><svg xmlns="http://www.w3.org/2000/svg" class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path stroke-linejoin="round" d="M8.5 12.5L10.5 14.5L15.5 9.5"/></g></svg><span>England &amp; Wales first, not US or generic sources</span></div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── KINETIC TICKER ── -->
+<section class="marquee-band" aria-hidden="true">
+  <div class="mq-skew" id="mq-skew">
+    <div class="mq-row"><span class="mq-fill">Draft<i class="mq-dot"></i></span><span class="mq-fill">Review<i class="mq-dot"></i></span><span class="mq-fill">Research<i class="mq-dot"></i></span><span class="mq-fill">Compare<i class="mq-dot"></i></span><span class="mq-fill">Ask a Doc<i class="mq-dot"></i></span><span class="mq-fill">Quick Tools<i class="mq-dot"></i></span><span class="mq-fill">Draft<i class="mq-dot"></i></span><span class="mq-fill">Review<i class="mq-dot"></i></span><span class="mq-fill">Research<i class="mq-dot"></i></span><span class="mq-fill">Compare<i class="mq-dot"></i></span><span class="mq-fill">Ask a Doc<i class="mq-dot"></i></span><span class="mq-fill">Quick Tools<i class="mq-dot"></i></span></div>
+    <div class="mq-row rev"><span class="mq-line">Draft<i class="mq-dot"></i></span><span class="mq-line">Review<i class="mq-dot"></i></span><span class="mq-line">Research<i class="mq-dot"></i></span><span class="mq-line">Compare<i class="mq-dot"></i></span><span class="mq-line">Ask a Doc<i class="mq-dot"></i></span><span class="mq-line">Quick Tools<i class="mq-dot"></i></span><span class="mq-line">Draft<i class="mq-dot"></i></span><span class="mq-line">Review<i class="mq-dot"></i></span><span class="mq-line">Research<i class="mq-dot"></i></span><span class="mq-line">Compare<i class="mq-dot"></i></span><span class="mq-line">Ask a Doc<i class="mq-dot"></i></span><span class="mq-line">Quick Tools<i class="mq-dot"></i></span></div>
   </div>
 </section>
 
@@ -513,7 +621,11 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 
 <!-- ── WHY ── -->
 <section class="sec why" id="why">
-  <div class="wrap why-grid">
+  <div class="blobs" aria-hidden="true">
+    <i class="blob" style="--s:520px;--x:-8%;--y:-24%;--c1:rgba(255,255,255,.55);--c2:rgba(207,224,255,.35);--o:.5;--d:18s;--d2:25s;--dx:80px;--dy:40px"></i>
+    <i class="blob" style="--s:420px;--x:70%;--y:48%;--c1:rgba(155,182,238,.6);--c2:rgba(53,88,168,.3);--o:.6;--d:16s;--d2:22s;--dx:-70px;--dy:-50px"></i>
+  </div>
+  <div class="wrap why-grid" style="position:relative;z-index:1">
     <div class="reveal from-left">
       <span class="sec-label">Why Dave.AI</span>
       <h2 class="sec-title font-playfair">A serious tool, built for how solicitors actually work</h2>
@@ -723,9 +835,14 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 
 <!-- ── CTA ── -->
 <section class="cta-section" id="cta">
+  <div class="blobs" aria-hidden="true">
+    <i class="blob" style="--s:520px;--x:-6%;--y:-30%;--c1:#4f72c4;--c2:#1c3a80;--o:.55;--d:18s;--d2:26s;--dx:90px;--dy:50px"></i>
+    <i class="blob" style="--s:420px;--x:62%;--y:30%;--c1:#6d93e6;--c2:#27479a;--o:.5;--d:15s;--d2:21s;--dx:-80px;--dy:-30px"></i>
+  </div>
+  <canvas class="fx-canvas" id="fx-cta" aria-hidden="true"></canvas>
   <div class="cta-bg"><img src="/img/thames-night.jpg" width="1800" height="1002" loading="lazy" alt=""/></div>
   <div class="reveal">
-    <p class="cta-title font-playfair">Try it on a real document.</p>
+    <h2 class="cta-title font-playfair">Try it on a real document.</h2>
     <p class="cta-sub">Start free — full access for 14 days, no card needed.</p>
     <div class="cta-btns">
       <button class="btn-light" onclick="openSignup()">Start your free trial</button>
@@ -1846,6 +1963,126 @@ window.addEventListener('hashchange', suCheckHash);
   b.addEventListener('click',function(){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); });
   v.addEventListener('play',function(){ b.hidden=true; });
   v.addEventListener('ended',function(){ b.hidden=false; });
+})();
+</script>
+<script>
+/* Effects: particles, kinetic type, ticker skew. Decorative only; fails safe. */
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fine   = window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches;
+  if (/[?&]fx=off\b/.test(location.search)) { document.documentElement.classList.add('fx-off'); return; }
+  var small = window.innerWidth < 640;
+
+  /* ---- Kinetic: section titles rise in word by word when revealed ---- */
+  document.querySelectorAll('.sec-title,.cta-title').forEach(function(el){
+    if (el.querySelector('.kw')) return;
+    var text = el.textContent.replace(/\s+/g,' ').trim(); if (!text) return;
+    var words = text.split(' ');
+    el.innerHTML = '<span class="sr">'+text.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>' +
+      words.map(function(w,i){ return '<span class="kw" aria-hidden="true" style="--i:'+i+'">'+w.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>'; }).join(' ');
+    if (!el.closest('.reveal')) el.classList.add('kw-in');   // never leave a title hidden
+  });
+
+  /* ---- Kinetic: hero letters lift and tilt near the cursor ---- */
+  var title = document.querySelector('.hero-title'), letters = [];
+  if (title) {
+    var label = title.textContent.replace(/\s+/g,' ').trim(), j = 0;
+    title.setAttribute('aria-label', label);
+    title.querySelectorAll('.w').forEach(function(w){
+      var t = w.textContent;
+      w.innerHTML = t.split('').map(function(c){ return '<span class="ch" aria-hidden="true" style="--j:'+(j++)+'">'+c+'</span>'; }).join('');
+    });
+    letters = Array.prototype.slice.call(title.querySelectorAll('.ch'));
+  }
+  var hero = document.querySelector('.hero');
+  if (hero && letters.length && fine && !reduce) {
+    var cache = [], mx = null, my = null, ticking = false, R = 130;
+    function measure(){ cache = letters.map(function(l){ var r=l.getBoundingClientRect(); return {el:l, x:r.left+r.width/2, y:r.top+r.height/2}; }); }
+    function frame(){
+      ticking = false;
+      for (var i=0;i<cache.length;i++){
+        var c = cache[i];
+        if (mx === null){ c.el.style.transform=''; continue; }
+        var dx = c.x-mx, dy = c.y-my, d = Math.sqrt(dx*dx+dy*dy);
+        if (d < R){ var t = 1-d/R; c.el.style.transform = 'translateY('+(-12*t).toFixed(1)+'px) rotate('+((dx>0?1:-1)*7*t).toFixed(1)+'deg) scale('+(1+.16*t).toFixed(3)+')'; }
+        else c.el.style.transform = '';
+      }
+    }
+    hero.addEventListener('mouseenter', measure);
+    hero.addEventListener('mousemove', function(e){
+      if (!cache.length) measure();
+      mx = e.clientX; my = e.clientY;
+      if (!ticking){ ticking = true; requestAnimationFrame(frame); }
+    });
+    hero.addEventListener('mouseleave', function(){ mx = null; my = null; requestAnimationFrame(frame); });
+    window.addEventListener('scroll', function(){ cache = []; }, {passive:true});
+    window.addEventListener('resize', function(){ cache = []; });
+  }
+
+  /* ---- Kinetic: the ticker skews with scroll speed ---- */
+  var sk = document.getElementById('mq-skew');
+  if (sk && !reduce) {
+    var lastY = window.scrollY, cur = 0, target = 0, run = false;
+    function loop(){
+      cur += (target - cur) * .12; target *= .88;
+      sk.style.transform = 'skewX(' + cur.toFixed(2) + 'deg)';
+      if (Math.abs(cur) > .02 || Math.abs(target) > .02) requestAnimationFrame(loop); else { run = false; sk.style.transform=''; }
+    }
+    window.addEventListener('scroll', function(){
+      var y = window.scrollY, v = y - lastY; lastY = y;
+      target = Math.max(-9, Math.min(9, v * -.35));
+      if (!run){ run = true; requestAnimationFrame(loop); }
+    }, {passive:true});
+  }
+
+  /* ---- Particles ---- */
+  function Particles(canvas, dotRGB, lineRGB, o){
+    var host = canvas.parentNode, ctx = canvas.getContext('2d'), dpr = Math.min(window.devicePixelRatio||1, 2),
+        W=0,H=0, pts=[], mouse={x:-9999,y:-9999}, raf=0, on=false, visible=false;
+    function make(){ return {x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28, r:Math.random()*1.5+.7}; }
+    function size(){
+      var r = host.getBoundingClientRect(); W = r.width; H = r.height; if (!W || !H) return;
+      canvas.width = W*dpr; canvas.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      var n = Math.min(o.max, Math.round(W*H/o.density)); while (pts.length<n) pts.push(make()); pts.length = n;
+      if (reduce) draw(false);
+    }
+    function draw(move){
+      ctx.clearRect(0,0,W,H);
+      for (var i=0;i<pts.length;i++){
+        var p = pts[i];
+        if (move){
+          p.x += p.vx; p.y += p.vy;
+          if (p.x<-10) p.x=W+10; else if (p.x>W+10) p.x=-10;
+          if (p.y<-10) p.y=H+10; else if (p.y>H+10) p.y=-10;
+          var dx=p.x-mouse.x, dy=p.y-mouse.y, d2=dx*dx+dy*dy;
+          if (d2 < 150*150){ var d=Math.sqrt(d2)||1, f=(1-d/150)*.9; p.x += dx/d*f; p.y += dy/d*f; }
+        }
+        ctx.fillStyle = 'rgba('+dotRGB+','+o.dot+')';
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.2832); ctx.fill();
+        for (var j=i+1;j<pts.length;j++){
+          var q=pts[j], ax=p.x-q.x, ay=p.y-q.y, dd=ax*ax+ay*ay, L=o.link;
+          if (dd < L*L){ ctx.strokeStyle='rgba('+lineRGB+','+((1-Math.sqrt(dd)/L)*o.line).toFixed(3)+')'; ctx.lineWidth=.8; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); }
+        }
+      }
+    }
+    function tick(){ if (!on) return; draw(true); raf = requestAnimationFrame(tick); }
+    function start(){ if (reduce || on || !visible || document.hidden) return; on = true; raf = requestAnimationFrame(tick); }
+    function stop(){ on = false; cancelAnimationFrame(raf); }
+    size();
+    window.addEventListener('resize', size);
+    host.addEventListener('mousemove', function(e){ var r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; });
+    host.addEventListener('mouseleave', function(){ mouse.x=mouse.y=-9999; });
+    document.addEventListener('visibilitychange', function(){ if (document.hidden) stop(); else start(); });
+    if ('IntersectionObserver' in window)
+      new IntersectionObserver(function(es){ visible = es[0].isIntersecting; if (visible) start(); else stop(); }, {threshold:0}).observe(host);
+    else { visible = true; start(); }
+  }
+  var hc = document.getElementById('fx-hero'), cc = document.getElementById('fx-cta');
+  if (hc) Particles(hc, '53,88,168', '79,114,196', {max: small?30:64, density: small?22000:15000, dot:.55, line:.3, link:small?95:120});
+  if (cc) Particles(cc, '255,255,255', '207,224,255', {max: small?26:54, density: small?20000:14000, dot:.7, line:.28, link:small?95:120});
+
+  /* ---- Liquid wave: honour reduced motion for the SVG animation ---- */
+  if (reduce) document.querySelectorAll('svg.wave').forEach(function(s){ if (s.pauseAnimations) s.pauseAnimations(); });
 })();
 </script>
 </body>
