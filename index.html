@@ -468,7 +468,8 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 .mq-row span{font-family:var(--serif);font-weight:800;font-size:clamp(2.6rem,7vw,5.2rem);line-height:1.08;letter-spacing:-.02em;white-space:nowrap;padding-right:.5em;display:inline-flex;align-items:center;gap:.5em;text-transform:uppercase;}
 .mq-fill{background:linear-gradient(180deg,#fff 0%,#dbe6fc 28%,#8fb0ee 47%,#3f66c4 50%,#a9c3f5 72%,#fff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
 .mq-line{-webkit-text-stroke:1.5px rgba(255,255,255,.5);color:transparent;-webkit-text-fill-color:transparent;}
-.mq-dot{display:inline-block;width:.34em;height:.34em;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 32% 28%,#fff,#a5c0f2 40%,#2e4f9c 75%);box-shadow:0 0 18px rgba(143,176,238,.55);}
+.mq-sep{font-style:normal;font-weight:400;opacity:.45;}
+.mq-dot-old{display:inline-block;width:.34em;height:.34em;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 32% 28%,#fff,#a5c0f2 40%,#2e4f9c 75%);box-shadow:0 0 18px rgba(143,176,238,.55);}
 @keyframes mqLeft{from{transform:translateX(0);}to{transform:translateX(-50%);}}
 @keyframes mqRight{from{transform:translateX(-50%);}to{transform:translateX(0);}}
 
@@ -557,7 +558,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
     <div class="hero-visual">
       <img class="photo img-cinematic" src="/hero-london-1600.jpg" srcset="/hero-london-800.jpg 800w, /hero-london-1600.jpg 1600w, /hero-london.jpg 2400w" sizes="(min-width:1024px) 45vw, 100vw" width="2400" height="1600" alt="The Shard and the City of London skyline at dusk" fetchpriority="high"/>
     </div>
-    <i class="chrome-blob" aria-hidden="true"></i><i class="chrome-blob small" aria-hidden="true"></i>
+    
     </div>
   </div>
   <svg class="wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -593,8 +594,8 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 <!-- ── KINETIC TICKER ── -->
 <section class="marquee-band" aria-hidden="true">
   <div class="mq-skew" id="mq-skew">
-    <div class="mq-row"><span class="mq-fill">Draft<i class="mq-dot"></i></span><span class="mq-fill">Review<i class="mq-dot"></i></span><span class="mq-fill">Research<i class="mq-dot"></i></span><span class="mq-fill">Compare<i class="mq-dot"></i></span><span class="mq-fill">Ask a Doc<i class="mq-dot"></i></span><span class="mq-fill">Quick Tools<i class="mq-dot"></i></span><span class="mq-fill">Draft<i class="mq-dot"></i></span><span class="mq-fill">Review<i class="mq-dot"></i></span><span class="mq-fill">Research<i class="mq-dot"></i></span><span class="mq-fill">Compare<i class="mq-dot"></i></span><span class="mq-fill">Ask a Doc<i class="mq-dot"></i></span><span class="mq-fill">Quick Tools<i class="mq-dot"></i></span></div>
-    <div class="mq-row rev"><span class="mq-line">Draft<i class="mq-dot"></i></span><span class="mq-line">Review<i class="mq-dot"></i></span><span class="mq-line">Research<i class="mq-dot"></i></span><span class="mq-line">Compare<i class="mq-dot"></i></span><span class="mq-line">Ask a Doc<i class="mq-dot"></i></span><span class="mq-line">Quick Tools<i class="mq-dot"></i></span><span class="mq-line">Draft<i class="mq-dot"></i></span><span class="mq-line">Review<i class="mq-dot"></i></span><span class="mq-line">Research<i class="mq-dot"></i></span><span class="mq-line">Compare<i class="mq-dot"></i></span><span class="mq-line">Ask a Doc<i class="mq-dot"></i></span><span class="mq-line">Quick Tools<i class="mq-dot"></i></span></div>
+    <div class="mq-row"><span class="mq-fill">Draft<i class="mq-sep">/</i></span><span class="mq-fill">Review<i class="mq-sep">/</i></span><span class="mq-fill">Research<i class="mq-sep">/</i></span><span class="mq-fill">Compare<i class="mq-sep">/</i></span><span class="mq-fill">Ask a Doc<i class="mq-sep">/</i></span><span class="mq-fill">Quick Tools<i class="mq-sep">/</i></span><span class="mq-fill">Draft<i class="mq-sep">/</i></span><span class="mq-fill">Review<i class="mq-sep">/</i></span><span class="mq-fill">Research<i class="mq-sep">/</i></span><span class="mq-fill">Compare<i class="mq-sep">/</i></span><span class="mq-fill">Ask a Doc<i class="mq-sep">/</i></span><span class="mq-fill">Quick Tools<i class="mq-sep">/</i></span></div>
+    <div class="mq-row rev"><span class="mq-line">Draft<i class="mq-sep">/</i></span><span class="mq-line">Review<i class="mq-sep">/</i></span><span class="mq-line">Research<i class="mq-sep">/</i></span><span class="mq-line">Compare<i class="mq-sep">/</i></span><span class="mq-line">Ask a Doc<i class="mq-sep">/</i></span><span class="mq-line">Quick Tools<i class="mq-sep">/</i></span><span class="mq-line">Draft<i class="mq-sep">/</i></span><span class="mq-line">Review<i class="mq-sep">/</i></span><span class="mq-line">Research<i class="mq-sep">/</i></span><span class="mq-line">Compare<i class="mq-sep">/</i></span><span class="mq-line">Ask a Doc<i class="mq-sep">/</i></span><span class="mq-line">Quick Tools<i class="mq-sep">/</i></span></div>
   </div>
 </section>
 
