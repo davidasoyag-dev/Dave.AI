@@ -140,7 +140,7 @@ _sb = supabase.createClient(
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet"/>
 <script>
 document.documentElement.className+=' js';
 setTimeout(function(){var c=document.querySelector('.hero-content');if(c&&!c.classList.contains('hero-in'))c.classList.add('hero-in');},2500);
@@ -458,20 +458,14 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 .kw{display:inline-block;opacity:0;transform:translateY(.55em) rotate(2.5deg);
   transition:opacity .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1);transition-delay:calc(var(--i)*70ms);}
 .visible .kw,.kw-in .kw{opacity:1;transform:none;}
-.marquee-band{position:relative;background:var(--navy);overflow:hidden;padding:30px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);}
-.marquee-band::before,.marquee-band::after{content:'';position:absolute;top:0;bottom:0;width:90px;z-index:2;pointer-events:none;}
+.marquee-band{position:relative;background:var(--navy);overflow:hidden;padding:22px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);}
+.marquee-band::before,.marquee-band::after{content:'';position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none;}
 .marquee-band::before{left:0;background:linear-gradient(90deg,var(--navy),transparent);}
 .marquee-band::after{right:0;background:linear-gradient(270deg,var(--navy),transparent);}
-.mq-skew{display:flex;flex-direction:column;gap:6px;will-change:transform;transform-origin:center;}
-.mq-row{display:flex;width:max-content;animation:mqLeft 46s linear infinite;}
-.mq-row.rev{animation-name:mqRight;animation-duration:58s;}
-.mq-row span{font-family:var(--serif);font-weight:800;font-size:clamp(2.6rem,7vw,5.2rem);line-height:1.08;letter-spacing:-.02em;white-space:nowrap;padding-right:.5em;display:inline-flex;align-items:center;gap:.5em;text-transform:uppercase;}
-.mq-fill{background:linear-gradient(180deg,#fff 0%,#dbe6fc 28%,#8fb0ee 47%,#3f66c4 50%,#a9c3f5 72%,#fff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
-.mq-line{-webkit-text-stroke:1.5px rgba(255,255,255,.5);color:transparent;-webkit-text-fill-color:transparent;}
-.mq-sep{font-style:normal;font-weight:400;opacity:.45;}
-.mq-dot-old{display:inline-block;width:.34em;height:.34em;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 32% 28%,#fff,#a5c0f2 40%,#2e4f9c 75%);box-shadow:0 0 18px rgba(143,176,238,.55);}
+.mq-row{display:flex;width:max-content;animation:mqLeft 70s linear infinite;}
+.mq-row span{font-family:'Newsreader',Georgia,'Times New Roman',serif;font-weight:400;font-style:italic;font-size:clamp(1.35rem,2.4vw,1.9rem);line-height:1.2;letter-spacing:.005em;color:rgba(255,255,255,.88);white-space:nowrap;display:inline-flex;align-items:center;gap:2.2rem;padding-right:2.2rem;}
+.mq-sep{display:inline-block;width:5px;height:5px;transform:rotate(45deg);background:#8fb0ee;opacity:.75;flex-shrink:0;}
 @keyframes mqLeft{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-@keyframes mqRight{from{transform:translateX(-50%);}to{transform:translateX(0);}}
 
 @media(max-width:480px){.chrome-blob{width:96px;height:96px;left:-14px;bottom:-22px;}.chrome-blob.small{width:58px;height:58px;right:-10px;top:24px;}.wave{height:60px;}.hero{padding-bottom:96px;}.marquee-band{padding:20px 0;}}
 @media(prefers-reduced-motion:reduce){
@@ -588,10 +582,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 
 <!-- ── KINETIC TICKER ── -->
 <section class="marquee-band" aria-hidden="true">
-  <div class="mq-skew" id="mq-skew">
-    <div class="mq-row"><span class="mq-fill">Draft.<i class="mq-sep">/</i></span><span class="mq-fill">Review.<i class="mq-sep">/</i></span><span class="mq-fill">Research.<i class="mq-sep">/</i></span><span class="mq-fill">Done.<i class="mq-sep">/</i></span><span class="mq-fill">Draft.<i class="mq-sep">/</i></span><span class="mq-fill">Review.<i class="mq-sep">/</i></span><span class="mq-fill">Research.<i class="mq-sep">/</i></span><span class="mq-fill">Done.<i class="mq-sep">/</i></span><span class="mq-fill">Draft.<i class="mq-sep">/</i></span><span class="mq-fill">Review.<i class="mq-sep">/</i></span><span class="mq-fill">Research.<i class="mq-sep">/</i></span><span class="mq-fill">Done.<i class="mq-sep">/</i></span><span class="mq-fill">Draft.<i class="mq-sep">/</i></span><span class="mq-fill">Review.<i class="mq-sep">/</i></span><span class="mq-fill">Research.<i class="mq-sep">/</i></span><span class="mq-fill">Done.<i class="mq-sep">/</i></span></div>
-    <div class="mq-row rev"><span class="mq-line">Draft.<i class="mq-sep">/</i></span><span class="mq-line">Review.<i class="mq-sep">/</i></span><span class="mq-line">Research.<i class="mq-sep">/</i></span><span class="mq-line">Done.<i class="mq-sep">/</i></span><span class="mq-line">Draft.<i class="mq-sep">/</i></span><span class="mq-line">Review.<i class="mq-sep">/</i></span><span class="mq-line">Research.<i class="mq-sep">/</i></span><span class="mq-line">Done.<i class="mq-sep">/</i></span><span class="mq-line">Draft.<i class="mq-sep">/</i></span><span class="mq-line">Review.<i class="mq-sep">/</i></span><span class="mq-line">Research.<i class="mq-sep">/</i></span><span class="mq-line">Done.<i class="mq-sep">/</i></span><span class="mq-line">Draft.<i class="mq-sep">/</i></span><span class="mq-line">Review.<i class="mq-sep">/</i></span><span class="mq-line">Research.<i class="mq-sep">/</i></span><span class="mq-line">Done.<i class="mq-sep">/</i></span></div>
-  </div>
+  <div class="mq-row"><span>Draft<i class="mq-sep"></i></span><span>Review<i class="mq-sep"></i></span><span>Research<i class="mq-sep"></i></span><span>Compare<i class="mq-sep"></i></span><span>Ask a document<i class="mq-sep"></i></span><span>Quick tools<i class="mq-sep"></i></span><span>Draft<i class="mq-sep"></i></span><span>Review<i class="mq-sep"></i></span><span>Research<i class="mq-sep"></i></span><span>Compare<i class="mq-sep"></i></span><span>Ask a document<i class="mq-sep"></i></span><span>Quick tools<i class="mq-sep"></i></span></div>
 </section>
 
 <!-- ── TOOLS ── -->
