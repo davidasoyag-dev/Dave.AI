@@ -462,7 +462,7 @@ body{background:#fff;font-family:var(--sans);overflow-x:hidden;color:var(--text)
 .marquee-band::before,.marquee-band::after{content:'';position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none;}
 .marquee-band::before{left:0;background:linear-gradient(90deg,var(--navy),transparent);}
 .marquee-band::after{right:0;background:linear-gradient(270deg,var(--navy),transparent);}
-.mq-row{display:flex;width:max-content;animation:mqLeft 70s linear infinite;}
+.mq-row{display:flex;width:max-content;animation:mqLeft 45s linear infinite;}
 .mq-row span{font-family:'Newsreader',Georgia,'Times New Roman',serif;font-weight:400;font-style:italic;font-size:clamp(1.35rem,2.4vw,1.9rem);line-height:1.2;letter-spacing:.005em;color:rgba(255,255,255,.88);white-space:nowrap;display:inline-flex;align-items:center;gap:2.2rem;padding-right:2.2rem;}
 .mq-sep{display:inline-block;width:5px;height:5px;transform:rotate(45deg);background:#8fb0ee;opacity:.75;flex-shrink:0;}
 @keyframes mqLeft{from{transform:translateX(0);}to{transform:translateX(-50%);}}
