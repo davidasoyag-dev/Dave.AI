@@ -7,50 +7,33 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Dave.AI — Payment Successful</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(79,114,196,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,114,196,0.04) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;}
-.bg-glow{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(79,114,196,0.1) 0%,transparent 65%);pointer-events:none;}
-.wrap{position:relative;z-index:1;text-align:center;padding:40px 24px;max-width:460px;animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both;}
+:root{--ink:#0f1f3d;--text:#4a5873;--muted:#5d6b8a;--blue:#3558a8;--line:#dbe3f1;--paper:#f6f8fc;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased;}
+.bg-grid{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,#fff,var(--paper));}
+.bg-glow{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:760px;height:760px;background:radial-gradient(circle,rgba(79,114,196,.12),transparent 66%);pointer-events:none;}
+.wrap{position:relative;z-index:1;text-align:center;padding:44px 32px;max-width:480px;background:#fff;border:1px solid var(--line);border-radius:2rem;box-shadow:0 30px 70px -34px rgba(15,31,61,.3);animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
-
-/* Icon */
-.icon-ring{width:96px;height:96px;border-radius:50%;background:rgba(60,180,100,0.1);border:1.5px solid rgba(60,180,100,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;animation:scaleIn .5s cubic-bezier(.34,1.56,.64,1) .1s both;}
+.icon-ring{width:96px;height:96px;border-radius:50%;background:#eaf6ee;border:1.5px solid #bfe3cb;display:flex;align-items:center;justify-content:center;margin:0 auto 26px;animation:scaleIn .5s cubic-bezier(.34,1.56,.64,1) .1s both;}
 @keyframes scaleIn{from{opacity:0;transform:scale(.5);}to{opacity:1;transform:scale(1);}}
-.icon-inner{width:64px;height:64px;background:linear-gradient(135deg,#3cb464,#4fd47a);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(60,180,100,0.45);}
-
-/* Text */
-.brand{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:rgba(200,216,255,0.4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;}
-.brand em{color:#7aaaf8;font-style:normal;}
-.title{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;}
-.title em{color:#7aaaf8;font-style:normal;}
-.sub{font-size:14px;color:rgba(200,216,255,0.55);line-height:1.7;max-width:340px;margin:0 auto 28px;}
-
-/* Checklist */
-.checks{display:flex;flex-direction:column;gap:10px;background:rgba(79,114,196,0.06);border:1px solid rgba(79,114,196,0.18);border-radius:14px;padding:18px 22px;margin-bottom:28px;text-align:left;}
-.check-row{display:flex;align-items:center;gap:11px;font-size:12px;color:rgba(200,216,255,0.75);}
-.check-icon{width:20px;height:20px;border-radius:50%;background:rgba(60,180,100,0.12);border:1px solid rgba(60,180,100,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-
-/* CTA */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:15px 36px;background:linear-gradient(135deg,#4f72c4,#5f85d4);color:#fff;border-radius:12px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s;margin-bottom:14px;}
-.btn:hover{background:linear-gradient(135deg,#3d60b8,#4f72c4);box-shadow:0 8px 26px rgba(79,114,196,0.45);transform:translateY(-1px);}
-.countdown{font-size:12px;color:rgba(200,216,255,0.35);margin-bottom:8px;}
-.note{font-size:10px;color:rgba(200,216,255,0.22);}
-
-/* ── Responsive ── */
-@media(max-width:480px){
-  .wrap{padding:28px 16px;}
-  .title{font-size:24px;}
-  .checks{padding:14px 16px;}
-  .btn{padding:13px 24px;font-size:13px;}
-}
-@media(min-width:1440px){
-  .wrap{max-width:520px;}
-  .title{font-size:38px;}
-  .sub{font-size:15px;}
-}
+.icon-inner{width:64px;height:64px;background:#237a3c;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px -8px rgba(35,122,60,.55);}
+.brand{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;}
+.brand em{color:var(--blue);font-style:normal;}
+.title{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;color:var(--ink);}
+.title em{color:var(--blue);font-style:normal;}
+.sub{font-size:15px;color:var(--text);line-height:1.7;max-width:340px;margin:0 auto 26px;}
+.checks{display:flex;flex-direction:column;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:1.25rem;padding:18px 22px;margin-bottom:26px;text-align:left;}
+.check-row{display:flex;align-items:center;gap:11px;font-size:14px;color:var(--ink);}
+.check-icon{width:22px;height:22px;border-radius:50%;background:#eaf6ee;border:1px solid #bfe3cb;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:15px 36px;background:var(--blue);color:#fff;border-radius:999px;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;border:none;font-family:'Space Grotesk',sans-serif;transition:all .2s;margin-bottom:14px;}
+.btn:hover{background:#2c4b93;box-shadow:0 12px 26px -10px rgba(53,88,168,.55);transform:translateY(-1px);}
+.countdown{font-size:13px;color:var(--muted);margin-bottom:8px;}
+.note{font-size:12px;color:var(--muted);}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+@media(max-width:480px){.wrap{padding:30px 18px;}.title{font-size:24px;}.checks{padding:14px 16px;}.btn{padding:13px 24px;font-size:14px;}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
@@ -73,25 +56,25 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
   <div class="checks">
     <div class="check-row">
       <div class="check-icon">
-        <svg width="10" height="10" fill="none" stroke="#3cb464" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="10" height="10" fill="none" stroke="#237a3c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       Membership activated — full access unlocked
     </div>
     <div class="check-row">
       <div class="check-icon">
-        <svg width="10" height="10" fill="none" stroke="#3cb464" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="10" height="10" fill="none" stroke="#237a3c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       Contract drafting, document review &amp; legal research
     </div>
     <div class="check-row">
       <div class="check-icon">
-        <svg width="10" height="10" fill="none" stroke="#3cb464" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="10" height="10" fill="none" stroke="#237a3c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       Confirmation email sent to your inbox
     </div>
     <div class="check-row">
       <div class="check-icon">
-        <svg width="10" height="10" fill="none" stroke="#3cb464" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="10" height="10" fill="none" stroke="#237a3c" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       Designed with UK GDPR in mind · Encrypted in transit and at rest
     </div>

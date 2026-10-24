@@ -10,53 +10,75 @@
 <link rel="canonical" href="https://daveai.law/terms.html"/>
 <meta name="description" content="Dave.AI Terms of Service. Legal terms governing use of our AI legal software platform for UK solicitors and law firms."/>
 <meta name="robots" content="index, follow"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff;min-height:100vh;padding:40px 20px 80px;}
-.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(79,114,196,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,114,196,0.04) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0;}
-.bg-glow{position:fixed;top:-180px;right:-180px;width:560px;height:560px;background:radial-gradient(circle,rgba(79,114,196,0.14) 0%,transparent 70%);pointer-events:none;z-index:0;}
+:root{--ink:#0f1f3d;--text:#4a5873;--muted:#5d6b8a;--blue:#3558a8;--line:#dbe3f1;--paper:#f6f8fc;}
+html{scroll-behavior:smooth;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);color:var(--text);min-height:100vh;padding:32px 20px 80px;-webkit-font-smoothing:antialiased;line-height:1.6;}
+::selection{background:#3558a8;color:#fff;}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(180deg,#fff 0%,var(--paper) 420px);}
+.bg-glow{position:fixed;top:-220px;right:-160px;width:640px;height:640px;background:radial-gradient(circle,rgba(79,114,196,.13),transparent 68%);pointer-events:none;z-index:0;}
 
-.nav{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:860px;margin:0 auto 48px;}
+.nav{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:860px;margin:0 auto 44px;}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-.logo-icon{width:38px;height:38px;background:#4f72c4;border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(79,114,196,0.45);}
-.logo-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#eef2ff;letter-spacing:-.02em;}
-.logo-name em{color:#7aaaf8;font-style:normal;}
-.back-link{font-size:12px;color:rgba(200,216,255,0.4);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color .15s;}
-.back-link:hover{color:#7aaaf8;}
+.logo-icon{width:38px;height:38px;background:var(--blue);border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 22px -8px rgba(53,88,168,.5);}
+.logo-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.02em;}
+.logo-name em{color:var(--blue);font-style:normal;}
+.back-link{font-size:13px;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .15s;}
+.back-link:hover{color:var(--blue);}
 
 .wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;}
-.page-label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#7aaaf8;margin-bottom:12px;}
-h1{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;}
-.updated{font-size:12px;color:rgba(200,216,255,0.35);margin-bottom:48px;}
+.page-label{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:12px;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,4.5vw,2.75rem);font-weight:800;letter-spacing:-.02em;margin-bottom:12px;color:var(--ink);line-height:1.1;}
+.updated{font-size:13px;color:var(--muted);margin-bottom:40px;}
+.sub{font-size:16px;color:var(--text);line-height:1.75;margin-bottom:44px;max-width:540px;}
 
-.section{margin-bottom:36px;padding:28px 32px;background:rgba(10,16,34,0.7);border:1px solid rgba(79,114,196,0.15);border-radius:16px;}
-.section h2{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#eef2ff;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
-.section h2::before{content:'';display:inline-block;width:3px;height:16px;background:#4f72c4;border-radius:2px;flex-shrink:0;}
-.section p{font-size:13.5px;color:rgba(200,216,255,0.72);line-height:1.8;margin-bottom:10px;}
+.section{margin-bottom:22px;padding:28px 32px;background:#fff;border:1px solid var(--line);border-radius:1.5rem;box-shadow:0 18px 40px -30px rgba(15,31,61,.25);}
+.section h2{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.section h2::before{content:'';display:inline-block;width:4px;height:18px;background:var(--blue);border-radius:2px;flex-shrink:0;}
+.section p{font-size:15px;color:var(--text);line-height:1.8;margin-bottom:10px;}
 .section p:last-child{margin-bottom:0;}
-.section ul{padding-left:18px;margin-top:6px;}
-.section ul li{font-size:13.5px;color:rgba(200,216,255,0.72);line-height:1.8;margin-bottom:4px;}
-.section a{color:#7aaaf8;text-decoration:none;}
-.section a:hover{text-decoration:underline;}
+.section ul{padding-left:20px;margin-top:6px;}
+.section ul li{font-size:15px;color:var(--text);line-height:1.8;margin-bottom:4px;}
+.section strong{color:var(--ink);}
+.section a{color:var(--blue);text-decoration:underline;text-underline-offset:2px;}
+.highlight{background:#eef3fc;border:1px solid #dce6f8;border-radius:1rem;padding:16px 20px;margin-top:12px;}
+.highlight p{color:var(--ink)!important;font-size:14px!important;}
 
-.highlight{background:rgba(79,114,196,0.08);border:1px solid rgba(79,114,196,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;}
-.highlight p{color:rgba(200,216,255,0.85) !important;font-size:13px !important;}
+/* contact */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+@media(max-width:640px){.grid{grid-template-columns:1fr;}}
+.info-item{display:flex;align-items:flex-start;gap:12px;padding:16px 0;border-bottom:1px solid var(--line);}
+.info-item:last-child{border-bottom:none;padding-bottom:0;}
+.info-icon{width:38px;height:38px;background:#eef3fc;border:1px solid #dce6f8;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.info-label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.info-val{font-size:15px;color:var(--ink);}
+.info-val a{color:var(--blue);text-decoration:underline;}
+.form-section{padding:28px 32px;background:#fff;border:1px solid var(--line);border-radius:1.5rem;box-shadow:0 18px 40px -30px rgba(15,31,61,.25);}
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:7px;}
+.inp{width:100%;padding:12px 15px;background:#fff;border:1.5px solid var(--line);border-radius:14px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;outline:none;transition:all .2s;}
+.inp::placeholder{color:#8a97b3;}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(53,88,168,.14);}
+textarea.inp{resize:vertical;line-height:1.6;}
+.btn{width:100%;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .2s;}
+.btn:hover:not(:disabled){background:#2c4b93;box-shadow:0 12px 26px -10px rgba(53,88,168,.55);transform:translateY(-1px);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.success-box{display:none;background:#eaf6ee;border:1px solid #bfe3cb;border-radius:1rem;padding:20px 24px;text-align:center;}
+.success-box svg{margin-bottom:10px;}
+.success-box b{display:block;font-size:15px;font-weight:600;color:#14471f;margin-bottom:4px;}
+.success-box span{font-size:13px;color:#1c5e2e;}
+.err-box{font-size:13px;color:#b3261e;margin-bottom:12px;text-align:center;padding:10px 14px;background:#fdeeec;border-radius:12px;border:1px solid #f5c6c1;display:none;}
 
-.warning{background:rgba(224,90,80,0.06);border:1px solid rgba(224,90,80,0.2);border-radius:10px;padding:16px 20px;margin-top:12px;}
-.warning p{color:rgba(240,180,180,0.85) !important;font-size:13px !important;}
-
-.footer{position:relative;z-index:1;max-width:860px;margin:48px auto 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:24px;border-top:1px solid rgba(79,114,196,0.1);}
-.footer p{font-size:11px;color:rgba(200,216,255,0.25);}
+.footer{position:relative;z-index:1;max-width:860px;margin:48px auto 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:24px;border-top:1px solid var(--line);}
+.footer p{font-size:13px;color:var(--muted);}
 .footer-links{display:flex;gap:20px;}
-.footer-links a{font-size:11px;color:rgba(200,216,255,0.3);text-decoration:none;transition:color .15s;}
-.footer-links a:hover{color:#7aaaf8;}
-
-@media(max-width:600px){
-  h1{font-size:26px;}
-  .section{padding:20px 18px;}
-  .nav{margin-bottom:32px;}
-}
+.footer-links a{font-size:13px;color:var(--text);text-decoration:none;transition:color .15s;}
+.footer-links a:hover{color:var(--blue);}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+@media(max-width:600px){.section,.form-section{padding:20px 18px;}.nav{margin-bottom:30px;}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}html{scroll-behavior:auto;}}
 </style>
 </head>
 <body>
@@ -67,12 +89,7 @@ h1{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;letter-spacing:-
   <nav class="nav">
     <a class="logo" href="index.html">
       <div class="logo-icon">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-          <rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/>
-          <rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/>
-          <rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/>
-          <path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-        </svg>
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="white" fill-rule="evenodd" d="M6 4.5h6.2c4.6 0 7.3 3 7.3 7.5s-2.7 7.5-7.3 7.5H6v-15zm3.1 2.7v9.6h2.9c2.5 0 4.2-1.7 4.2-4.8s-1.7-4.8-4.2-4.8H9.1z"/></svg>
       </div>
       <span class="logo-name">Dave<em>.AI</em></span>
     </a>

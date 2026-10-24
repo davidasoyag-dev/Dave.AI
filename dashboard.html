@@ -26,29 +26,29 @@ const _sb = supabase.createClient(
   'haBSneWo')
 );
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#f2f4f9;
+  --bg:#f6f8fc;
   --bg2:#ffffff;
   --card:#ffffff;
   --card2:#f4f7ff;
   --blue:#4f72c4;
   --blue2:#3558a8;
-  --border:rgba(79,114,196,0.13);
-  --border2:rgba(79,114,196,0.28);
-  --text:#1a2840;
-  --muted:#6674a0;
-  --dim:#5a6684;
+  --border:#dbe3f1;
+  --border2:#b9c6e0;
+  --text:#0f1f3d;
+  --muted:#4a5873;
+  --dim:#5d6b8a;
   --green:#237a3c;
   --red:#c0392b;
   --amber:#96620a;
-  --sidebar:224px;
-  --topbar:60px;
-  --font:'DM Sans',system-ui,sans-serif;
+  --sidebar:236px;
+  --topbar:64px;
+  --font:'Space Grotesk',system-ui,sans-serif;
   --display:'Syne',sans-serif;
-  --mono:'DM Mono',monospace;
+  --mono:ui-monospace,'SF Mono',Menlo,monospace;
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;}
 
@@ -313,6 +313,81 @@ select.inp{cursor:pointer;}
 .trial-expired-sub{font-size:clamp(12px,1.5vw,14px);color:var(--muted);margin-bottom:28px;line-height:1.7;}
 .trial-expired-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
 
+/* ══ Design refresh (blue & white): rounder, calmer, larger type ══ */
+.topbar{background:rgba(255,255,255,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+.tb-logo-name{font-size:18px;letter-spacing:.03em;}
+.tb-logo-icon{border-radius:11px;box-shadow:0 8px 18px -8px rgba(53,88,168,.55);}
+.tb-search{border-radius:999px;background:var(--bg);padding:9px 16px;}
+.tb-search input{font-size:13px;}
+.tb-plan-badge{font-size:11px;padding:5px 14px;}
+.tb-avatar{border-radius:50%;}
+.sidebar{padding:18px 12px;}
+.sb-sec{font-size:11px;letter-spacing:.12em;padding:14px 12px 6px;}
+.sb-item{border-radius:12px;padding:10px 12px;font-size:14px;gap:12px;}
+.sb-item:hover{background:rgba(53,88,168,.06);color:var(--text);}
+.sb-item.on{background:#eef3fc;color:var(--blue2);font-weight:600;}
+.sb-item.on::before{display:none;}
+.sb-badge{padding:2px 8px;font-size:10px;background:var(--blue2);}
+.sb-user{border-radius:14px;background:var(--bg);}
+.sb-user:hover{background:#eef3fc;}
+.sb-user-av{border-radius:50%;}
+.sb-user-name{font-size:13px;}
+.sb-user-role{font-size:11px;}
+.view{padding:36px 40px;}
+.view-head{margin-bottom:28px;}
+.view-title{font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px;}
+.view-sub{font-size:14px;color:var(--muted);line-height:1.6;max-width:44rem;}
+.card{border-radius:20px;padding:24px;box-shadow:0 18px 40px -32px rgba(15,31,61,.28);}
+.stat{border-left:1px solid var(--border);border-radius:18px;padding:20px;}
+.stat-lbl{font-size:11px;margin-bottom:12px;}
+.stat-val{font-size:30px;}
+.stat-sub{font-size:12px;}
+.qa{border-radius:18px;padding:18px;}
+.qa:hover{border-color:var(--blue);box-shadow:0 18px 36px -22px rgba(53,88,168,.4);transform:translateY(-3px);}
+.qa-icon{width:44px;height:44px;border-radius:14px;}
+.qa-label{font-size:14px;}
+.qa-desc{font-size:12px;}
+.btn{padding:10px 20px;border-radius:999px;font-size:13px;}
+.btn-p{background:var(--blue2);}
+.btn-p:hover{background:#2c4b93;box-shadow:0 12px 24px -10px rgba(53,88,168,.55);}
+.btn-g{color:var(--text);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--blue2);color:var(--blue2);}
+.field label{font-size:12px;font-weight:600;color:var(--muted);}
+.inp{padding:12px 15px;border-radius:14px;font-size:14px;background:#fff;}
+.inp:focus{background:#fff;box-shadow:0 0 0 3px rgba(53,88,168,.14);}
+.chat-inp{border-radius:999px;padding:12px 18px;font-size:14px;background:#fff;}
+.chat-inp:focus{box-shadow:0 0 0 3px rgba(53,88,168,.14);}
+.ai-out{font-family:var(--font);font-size:14px;line-height:1.75;border-radius:18px;padding:22px;background:#fff;}
+.risk{border-radius:12px;padding:13px 16px;}
+.risk-ttl{font-size:13px;}
+.risk-det{font-size:12.5px;}
+.msg-u{border-radius:18px 18px 4px 18px;font-size:14px;background:var(--blue2);}
+.msg-a{border-radius:18px 18px 18px 4px;font-size:14px;background:#fff;}
+.msg-a-lbl{font-size:10px;}
+.msg-copy{font-size:11px;border-radius:999px;padding:4px 11px;}
+.rs-hist-item{font-size:12.5px;padding:9px 12px;border-radius:10px;}
+.rs-blk-lbl{font-size:11px;}
+.rs-fu{font-size:13px;border-radius:12px;padding:10px 14px;}
+.rs-src{font-size:12px;border-radius:999px;padding:6px 12px;}
+.doc-row{border-radius:14px;padding:12px 14px;}
+.doc-icon{border-radius:12px;width:38px;height:38px;}
+.tag{font-size:11px;padding:3px 10px;}
+.empty-ttl{font-size:15px;}
+.empty-sub{font-size:13px;}
+.upload-zone{border-radius:20px;}
+.plan-card{border-radius:20px;}
+.tab{border-radius:999px;font-size:13px;padding:8px 16px;}
+.tab.on{background:#eef3fc;color:var(--blue2);border-color:#cdd9ef;}
+.act-text{font-size:13px;}
+.act-time{font-size:11px;}
+.membership-strip{border-radius:20px;}
+.ms-plan{border-radius:16px;}
+.ms-plan-btn{border-radius:999px;padding:8px;font-size:12px;}
+.btn-danger{border-radius:999px;padding:9px 18px;}
+.trial-expired-box{border-radius:28px;box-shadow:0 30px 80px -20px rgba(11,23,48,.5);}
+.welcome-banner{border-radius:20px;}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+
 /* ── Responsive ── */
 @media(max-width:1024px){
   :root{--sidebar:200px;}
@@ -412,18 +487,7 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
     </button>
     <a class="tb-logo" href="#" onclick="go('dash'); return false;">
       <div class="tb-logo-icon">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-          <rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/>
-          <rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/>
-          <rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/>
-          <path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <line x1="4" y1="8" x2="1.5" y2="8" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-          <circle cx="1.5" cy="8" r=".8" fill="white"/>
-          <line x1="4" y1="12" x2="1.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-          <circle cx="1.5" cy="12" r=".8" fill="white"/>
-          <circle cx="20.5" cy="12" r="1" fill="white"/>
-          <line x1="20.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="white" fill-rule="evenodd" d="M6 4.5h6.2c4.6 0 7.3 3 7.3 7.5s-2.7 7.5-7.3 7.5H6v-15zm3.1 2.7v9.6h2.9c2.5 0 4.2-1.7 4.2-4.8s-1.7-4.8-4.2-4.8H9.1z"/></svg>
       </div>
       <span class="tb-logo-name">Dave<em>.AI</em></span>
     </a>
@@ -2276,23 +2340,33 @@ async function doR(){
 // ══════════════════════════════════════════════
 //  HISTORY VIEW
 // ══════════════════════════════════════════════
+// How long saved documents are kept, by plan (must match the nightly purge in
+// supabase/migrations/2026-10-18-retention-starter-30d.sql and the privacy policy).
+function isStarterActive(){ return planActive && String(plan||'').toLowerCase()==='starter'; }
+function historyKeepNote(){ return isStarterActive() ? 'Kept for 30 days' : 'Kept until you delete them'; }
+function historyNotice(){
+  return isStarterActive()
+    ? '<div class="card" style="margin-bottom:14px;background:#fbf3e2;border-color:#ecd9a8;color:#7a560f;font-size:13px;line-height:1.6">Your Starter plan keeps documents for 30 days, then deletes them automatically. Download or copy anything you want to keep. Upgrade to Pro to keep your history without a time limit.</div>'
+    : '';
+}
 function vHistory(){
   return '<div class="view">' +
-    '<div class="view-head"><div><div class="view-title">History</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · Permanent</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    '<div class="view-head"><div><div class="view-title">History</div><div class="view-sub">'+docs.length+' document'+(docs.length!==1?'s':'')+' saved · Searchable · '+historyKeepNote()+'</div></div><button class="btn btn-g" onclick="go(\'draft\')">+ New draft</button></div>' +
+    historyNotice() +
     '<div class="card" style="margin-bottom:14px"><input class="inp" type="search" id="hs" aria-label="Search your saved documents by name or content" placeholder="Search by name or content…" oninput="filterDocs()" style="margin-bottom:0"/></div>' +
     '<div id="hl">'+renderDocs(docs)+'</div>' +
     // Document viewer modal
-    '<div id="doc-modal" role="dialog" aria-modal="true" aria-labelledby="doc-modal-title" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:20px">' +
-      '<div style="background:#0d1326;border:1px solid rgba(79,114,196,0.25);border-radius:18px;width:100%;max-width:760px;max-height:85vh;display:flex;flex-direction:column">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(79,114,196,0.12)">' +
-          '<div id="doc-modal-title" style="font-size:14px;font-weight:600"></div>' +
+    '<div id="doc-modal" role="dialog" aria-modal="true" aria-labelledby="doc-modal-title" style="display:none;position:fixed;inset:0;background:rgba(11,23,48,0.55);z-index:999;align-items:center;justify-content:center;padding:20px">' +
+      '<div style="background:#fff;border:1px solid #dbe3f1;border-radius:24px;box-shadow:0 40px 90px -20px rgba(11,23,48,.45);width:100%;max-width:760px;max-height:85vh;display:flex;flex-direction:column">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #dbe3f1">' +
+          '<div id="doc-modal-title" style="font-family:var(--display);font-size:16px;font-weight:700;color:var(--text)"></div>' +
           '<div style="display:flex;gap:8px">' +
-            '<button class="btn btn-g" style="font-size:11px" onclick="copyDocModal(this)">Copy</button>' +
+            '<button class="btn btn-g" style="font-size:12px" onclick="copyDocModal(this)">Copy</button>' +
             '<button class="btn btn-g" style="font-size:11px" onclick="dlDocModal()">Download</button>' +
             '<button class="btn btn-g" style="font-size:11px" id="doc-modal-close" onclick="closeDocModal()">✕ Close</button>' +
           '</div>' +
         '</div>' +
-        '<div id="doc-modal-body" style="padding:24px;overflow-y:auto;font-size:13px;line-height:1.8;color:rgba(200,216,255,0.85);white-space:pre-wrap;font-family:monospace"></div>' +
+        '<div id="doc-modal-body" style="padding:24px;overflow-y:auto;font-size:14px;line-height:1.8;color:#2b3a5a;white-space:pre-wrap;font-family:var(--font)"></div>' +
       '</div>' +
     '</div>' +
   '</div>';

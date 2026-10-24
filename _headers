@@ -34,6 +34,10 @@
 /*.jpg
   Cache-Control: public, max-age=604800
 
+# Teaser video: versioned filename (bump -v6 -> -v7 if re-exported), so a week of caching is safe.
+/video/dave-ai-teaser-v6.mp4
+  Cache-Control: public, max-age=604800
+
 /favicon*
   Cache-Control: public, max-age=604800
 

@@ -12,88 +12,78 @@
 <meta name="robots" content="noindex, follow"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(79,114,196,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,114,196,0.04) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0;}
-.bg-glow{position:fixed;top:-180px;right:-180px;width:560px;height:560px;background:radial-gradient(circle,rgba(79,114,196,0.14) 0%,transparent 70%);pointer-events:none;z-index:0;}
-.bg-glow2{position:fixed;bottom:-120px;left:-120px;width:400px;height:400px;background:radial-gradient(circle,rgba(122,170,248,0.07) 0%,transparent 70%);pointer-events:none;z-index:0;}
+:root{--ink:#0f1f3d;--text:#4a5873;--muted:#5d6b8a;--blue:#3558a8;--line:#dbe3f1;--paper:#f6f8fc;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased;}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(180deg,#fff 0%,var(--paper) 100%);}
+.bg-glow{position:fixed;top:-220px;right:-160px;width:640px;height:640px;background:radial-gradient(circle,rgba(79,114,196,.14),transparent 68%);pointer-events:none;z-index:0;}
+.bg-glow2{position:fixed;bottom:-200px;left:-160px;width:520px;height:520px;background:radial-gradient(circle,rgba(79,114,196,.09),transparent 70%);pointer-events:none;z-index:0;}
 .wrap{position:relative;z-index:1;width:100%;max-width:440px;}
+::selection{background:#3558a8;color:#fff;}
 
-/* Logo */
-.logo{display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:36px;}
-.logo-icon{width:46px;height:46px;background:#4f72c4;border-radius:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 22px rgba(79,114,196,0.5);}
-.logo-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#eef2ff;letter-spacing:-.02em;}
-.logo-name em{color:#7aaaf8;font-style:normal;}
+.logo{display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:32px;}
+.logo-icon{width:44px;height:44px;background:var(--blue);border-radius:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px -8px rgba(53,88,168,.55);}
+.logo-name{font-family:'Syne',sans-serif;font-size:25px;font-weight:800;color:var(--ink);letter-spacing:-.02em;}
+.logo-name em{color:var(--blue);font-style:normal;}
 
-/* Success badge */
-.success-badge{background:rgba(60,180,100,0.09);border:1px solid rgba(60,180,100,0.28);border-radius:13px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:24px;animation:fadeUp .4s cubic-bezier(.22,1,.36,1) both;}
+.success-badge{background:#eaf6ee;border:1px solid #bfe3cb;border-radius:16px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:24px;animation:fadeUp .4s cubic-bezier(.22,1,.36,1) both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
-.success-badge-text b{color:#5ae090;display:block;font-size:13px;margin-bottom:3px;}
-.success-badge-text span{font-size:12px;color:rgba(140,220,170,0.8);line-height:1.5;}
+.success-badge-text b{color:#14471f;display:block;font-size:14px;margin-bottom:3px;}
+.success-badge-text span{font-size:13px;color:#1c5e2e;line-height:1.5;}
 
-/* Card */
-.card{background:rgba(10,16,34,0.92);border:1px solid rgba(79,114,196,0.22);border-radius:22px;padding:40px 36px 34px;box-shadow:0 28px 72px rgba(0,0,0,0.55);backdrop-filter:blur(12px);}
-.card-title{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;text-align:center;margin-bottom:7px;letter-spacing:-.02em;}
-.card-sub{font-size:12px;color:rgba(200,216,255,0.6);text-align:center;margin-bottom:30px;line-height:1.65;}
+.card{background:#fff;border:1px solid var(--line);border-radius:2rem;padding:40px 36px 34px;box-shadow:0 30px 70px -34px rgba(15,31,61,.3);}
+.card-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.02em;color:var(--ink);}
+.card-sub{font-size:14px;color:var(--text);text-align:center;margin-bottom:28px;line-height:1.65;}
 
-/* Fields */
 .field{margin-bottom:18px;}
-.field label{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;color:rgba(200,216,255,0.75);text-transform:uppercase;margin-bottom:7px;}
-.inp{width:100%;padding:13px 15px;background:rgba(255,255,255,0.035);border:1.5px solid rgba(79,114,196,0.2);border-radius:11px;color:#eef2ff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:all .2s;}
-.inp::placeholder{color:rgba(200,216,255,0.22);}
-.inp:focus{border-color:#7aaaf8;background:rgba(79,114,196,0.06);box-shadow:0 0 0 3px rgba(79,114,196,0.13);}
-.inp.err-field{border-color:rgba(224,90,80,0.5);}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--text);text-transform:uppercase;margin-bottom:7px;}
+.inp{width:100%;padding:13px 16px;background:#fff;border:1.5px solid var(--line);border-radius:14px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;outline:none;transition:all .2s;}
+.inp::placeholder{color:#8a97b3;}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(53,88,168,.14);}
+.inp.err-field{border-color:#c0392b;}
 
-/* Error */
-.err-box{font-size:12px;color:#f08888;margin-bottom:12px;text-align:center;padding:10px 14px;background:rgba(224,90,80,0.07);border-radius:9px;border:1px solid rgba(224,90,80,0.18);display:none;}
+.err-box{font-size:13px;color:#b3261e;margin-bottom:12px;text-align:center;padding:10px 14px;background:#fdeeec;border-radius:12px;border:1px solid #f5c6c1;display:none;}
 
-/* Button */
-.btn{width:100%;padding:15px;background:linear-gradient(135deg,#4f72c4,#5f85d4);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:6px;letter-spacing:.01em;}
-.btn:hover:not(:disabled){background:linear-gradient(135deg,#3d60b8,#4f72c4);box-shadow:0 7px 22px rgba(79,114,196,0.45);transform:translateY(-1px);}
-.btn:disabled{opacity:.42;cursor:not-allowed;transform:none;}
+.btn{width:100%;padding:15px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .2s;margin-top:6px;}
+.btn:hover:not(:disabled){background:#2c4b93;box-shadow:0 12px 26px -10px rgba(53,88,168,.55);transform:translateY(-1px);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 
-/* Social sign-in */
-.soc-btn{width:100%;padding:12px;background:rgba(255,255,255,0.035);border:1.5px solid rgba(79,114,196,0.2);border-radius:11px;color:#eef2ff;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;margin-bottom:10px;}
-.soc-btn:hover{background:rgba(79,114,196,0.09);border-color:rgba(79,114,196,0.4);}
+.soc-btn{width:100%;padding:12px;background:#fff;border:1.5px solid var(--line);border-radius:999px;color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;margin-bottom:10px;}
+.soc-btn:hover{background:var(--paper);border-color:var(--blue);}
 .divider{display:flex;align-items:center;gap:10px;margin:20px 0;}
-.divider-line{flex:1;height:1px;background:rgba(79,114,196,0.18);}
-.divider-text{font-size:11px;color:rgba(200,216,255,0.6);white-space:nowrap;}
+.divider-line{flex:1;height:1px;background:var(--line);}
+.divider-text{font-size:12px;color:var(--muted);white-space:nowrap;}
 
-/* Footer links */
-.card-links{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
-.card-links a{font-size:11px;color:rgba(200,216,255,0.7);cursor:pointer;text-decoration:none;transition:color .15s;}
-.card-links a:hover{color:#7aaaf8;}
+.card-links{display:flex;justify-content:space-between;align-items:center;margin-top:20px;}
+.card-links a{font-size:13px;color:var(--blue);cursor:pointer;text-decoration:none;font-weight:500;transition:color .15s;}
+.card-links a:hover{text-decoration:underline;}
 
-/* Back */
-.back-link{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:22px;font-size:12px;color:rgba(200,216,255,0.7);text-decoration:none;transition:color .15s;}
-.back-link:hover{color:#7aaaf8;}
+.back-link{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:22px;font-size:13px;color:var(--text);text-decoration:none;transition:color .15s;}
+.back-link:hover{color:var(--blue);}
 .back-link svg{transition:transform .15s;}
 .back-link:hover svg{transform:translateX(-3px);}
 
-/* Secure note */
-.secure-note{font-size:10px;color:rgba(200,216,255,0.55);text-align:center;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.secure-note{font-size:12px;color:var(--muted);text-align:center;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px;}
 
-/* Keyboard focus */
-:focus-visible{outline:2px solid #7aaaf8;outline-offset:2px;}
-.terms-note{font-size:11px;color:rgba(200,216,255,0.6);text-align:center;margin-bottom:10px;line-height:1.5;}
-.terms-note a{color:#7aaaf8;}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+.terms-note{font-size:12px;color:var(--text);text-align:center;margin-bottom:10px;line-height:1.5;}
+.terms-note a{color:var(--blue);text-decoration:underline;}
 
-/* ── Responsive ── */
 @media(max-width:480px){
   .wrap{padding:0 4px;}
   .card{padding:28px 20px 24px;}
-  .card-title{font-size:19px;}
-  .logo-name{font-size:21px;}
-  .btn{font-size:13px;padding:13px;}
+  .card-title{font-size:22px;}
+  .logo-name{font-size:22px;}
+  .btn{font-size:14px;padding:13px;}
 }
 @media(min-width:1440px){
   .wrap{max-width:500px;}
   .card{padding:48px 44px 40px;}
-  .card-title{font-size:26px;}
-  .inp{font-size:14px;padding:15px 17px;}
+  .card-title{font-size:28px;}
 }
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
@@ -104,18 +94,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#06091a;color:#eef2ff
 <div class="wrap">
   <div class="logo">
     <div class="logo-icon">
-      <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-        <rect x="4" y="3" width="2.5" height="18" rx=".5" fill="white"/>
-        <rect x="4" y="3" width="8" height="2.5" rx=".5" fill="white"/>
-        <rect x="4" y="18.5" width="8" height="2.5" rx=".5" fill="white"/>
-        <path d="M12 3.5Q20.5 4 20.5 12Q20.5 20 12 20.5" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-        <line x1="4" y1="8" x2="1.5" y2="8" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-        <circle cx="1.5" cy="8" r=".8" fill="white"/>
-        <line x1="4" y1="12" x2="1.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-        <circle cx="1.5" cy="12" r=".8" fill="white"/>
-        <circle cx="20.5" cy="12" r="1" fill="white"/>
-        <line x1="20.5" y1="12" x2="22.5" y2="12" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="white" fill-rule="evenodd" d="M6 4.5h6.2c4.6 0 7.3 3 7.3 7.5s-2.7 7.5-7.3 7.5H6v-15zm3.1 2.7v9.6h2.9c2.5 0 4.2-1.7 4.2-4.8s-1.7-4.8-4.2-4.8H9.1z"/></svg>
     </div>
     <span class="logo-name">Dave<em>.AI</em></span>
   </div>
@@ -265,7 +244,7 @@ async function doSetPassword(){
   // Session expired — prompt a fresh sign-in
   if(qs.indexOf('expired=1') !== -1){
     var cs = document.getElementById('card-sub');
-    if(cs){ cs.textContent = 'Your session expired. Please sign in again to continue.'; cs.style.color = 'rgba(255,200,120,0.8)'; }
+    if(cs){ cs.textContent = 'Your session expired. Please sign in again to continue.'; cs.style.color = '#96620a'; }
     history.replaceState({}, '', window.location.pathname);
   }
 
@@ -284,7 +263,7 @@ async function doSetPassword(){
     showSetPassword(linkType);
   } else if(hp.get('error_code') || hp.get('error_description')){
     var es = document.getElementById('card-sub');
-    if(es){ es.textContent = 'That link has expired or was already used. Enter your email and use "Forgot password?" to get a new one.'; es.style.color = 'rgba(255,200,120,0.8)'; }
+    if(es){ es.textContent = 'That link has expired or was already used. Enter your email and use "Forgot password?" to get a new one.'; es.style.color = '#96620a'; }
     history.replaceState({}, '', window.location.pathname);
   }
 
@@ -341,7 +320,7 @@ async function doLogin(){
       var rs = document.createElement('button');
       rs.type = 'button';
       rs.textContent = 'Resend confirmation email';
-      rs.style.cssText = 'background:none;border:none;padding:0;color:#7aaaf8;text-decoration:underline;cursor:pointer;font:inherit';
+      rs.style.cssText = 'background:none;border:none;padding:0;color:#3558a8;text-decoration:underline;cursor:pointer;font:inherit';
       rs.onclick = async function(){
         rs.disabled = true; rs.textContent = 'Sending…';
         var r = await _sb.auth.resend({ type: 'signup', email: email });
@@ -414,8 +393,8 @@ async function showForgot(){
 
   // Show success message
   var sub = document.getElementById('card-sub');
-  sub.innerHTML = 'A password reset link has been sent to <strong style="color:#7aaaf8">' + email.replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }) + '</strong>. Check your inbox and follow the link to reset your password.';
-  sub.style.color = 'rgba(200,216,255,0.7)';
+  sub.innerHTML = 'A password reset link has been sent to <strong style="color:#3558a8">' + email.replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }) + '</strong>. Check your inbox and follow the link to reset your password.';
+  sub.style.color = '#4a5873';
 }
 </script>
 </body>
