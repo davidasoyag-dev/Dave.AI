@@ -1297,6 +1297,7 @@ async function callAIBuffered(sys, usr, maxTok, webSearch, history, opts){
           max_tokens: maxTok || 1200,
           messages: (history || []).concat([{ role: 'user', content: usr }]),
           web_search: webSearch || false,
+        latest_news: !!(opts && opts.latestNews),
           feature: opts && opts.feature,
           prompt: opts && opts.prompt,
           request_id: opts && opts.requestId
@@ -1438,6 +1439,7 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch, history, opts)
         max_tokens: maxTok || 1200,
         messages: (history || []).concat([{ role: 'user', content: usr }]),
         web_search: webSearch || false,
+        latest_news: !!(opts && opts.latestNews),
         feature: opts && opts.feature,
         prompt: opts && opts.prompt,
         request_id: opts && opts.requestId
@@ -2220,7 +2222,7 @@ function vResearch(){
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--muted);margin-top:10px;cursor:pointer"><input type="checkbox" id="r-news" style="margin-top:2px"'+(_rNews?' checked':'')+' onchange="_rNews=this.checked"/><span>Include recent news from the web. Only a few generic search terms are sent to Brave Search, never your question or any client details. Sources are always UK legislation and National Archives case law.</span></label><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
@@ -2284,6 +2286,8 @@ function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=d
 // One Research question at a time: a second Enter / follow-up click while an answer
 // is on its way would send a parallel paid request and mix up the answers.
 var _rBusy=false;
+// Opt-in: also look at recent web news (Brave Search, generic terms only). Off by default.
+var _rNews=false;
 async function doR(){
   if(_rBusy) return;
   var inp=document.getElementById('ri'); if(!inp)return;
@@ -2312,7 +2316,7 @@ async function doR(){
   while(rHist.length && rHistLen()>20000){ rHist.splice(0,2); }
   try{
     var target=document.getElementById('r-streaming');
-    var aiAct=aiAction('research');
+    var aiAct=aiAction('research'); aiAct.latestNews=_rNews;
     var a=await callAIStream(rSys, q, 2000, function(text){
       if(target){ target.innerHTML=mdToHtml(stripFollowups(text)); if(el) el.scrollTop=el.scrollHeight; }
     }, true, rHist, aiAct);
