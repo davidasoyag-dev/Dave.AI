@@ -1493,6 +1493,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
         <div class="su-divider"><div class="su-div-line"></div><span class="su-div-text">or sign in with email</span><div class="su-div-line"></div></div>
         <div class="su-field"><label class="su-label" for="li-email">Email</label><input class="su-input" type="email" id="li-email" placeholder="name@yourfirm.co.uk" autocomplete="email"/></div>
         <div class="su-field"><label class="su-label" for="li-pass">Password</label><input class="su-input" type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')landingLogin()"/></div>
+        <p class="su-footnote" style="margin:-4px 0 6px;text-align:right"><a href="/login.html">Forgot password?</a></p>
         <div id="li-err" role="alert" style="display:none;font-size:12px;color:#b3261e;margin:6px 0;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)"></div>
         <button class="su-btn" id="li-btn" style="margin-top:8px" onclick="landingLogin()">Sign in to Dave.AI →</button>
         <p class="su-footnote" style="margin-top:12px"><a href="#" onclick="suGoStep(1);return false;">← Back to sign up</a></p>
@@ -1708,30 +1709,53 @@ function entSubmit(){
     sent_at:     new Date().toLocaleString('en-GB')
   };
 
-  emailjs.send('Dave.AI', 'template_brei1gl', templateParams)
-    .then(function() {
-      // Show confirmation screen
-      document.getElementById('ent-sent-name').textContent  = first;
-      document.getElementById('ent-sent-firm').textContent  = firm;
-      document.getElementById('ent-sent-email').textContent = email;
-      ['su-s1','su-s2','su-s3','su-login','su-ent','su-ent-sent'].forEach(function(id){
-        document.getElementById(id).style.display = 'none';
+  function entFail(){
+    var eb = document.getElementById('ent-err');
+    if(!eb){
+      eb = document.createElement('div');
+      eb.id = 'ent-err';
+      eb.setAttribute('role','alert');
+      eb.style.cssText = 'font-size:12px;color:#b3261e;margin:8px 0;padding:8px 12px;background:rgba(224,90,80,0.07);border-radius:8px;border:1px solid rgba(224,90,80,0.18)';
+      btn.parentNode.insertBefore(eb, btn);
+    }
+    var body = 'Name: ' + first + ' ' + last + '\nEmail: ' + email + '\nFirm: ' + firm + '\nTeam size: ' + users + '\nUse case: ' + use + '\nNotes: ' + (notes || 'None provided');
+    var href = 'mailto:support@daveai.law?subject=' + encodeURIComponent('[Dave.AI] Enterprise enquiry') + '&body=' + encodeURIComponent(body);
+    eb.innerHTML = '';
+    eb.appendChild(document.createTextNode("We couldn't send this. Email "));
+    var ml = document.createElement('a');
+    ml.href = href;
+    ml.textContent = 'support@daveai.law';
+    ml.style.cssText = 'color:#1a4fb8;text-decoration:underline';
+    eb.appendChild(ml);
+    eb.appendChild(document.createTextNode('.'));
+    eb.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Request Enterprise quote \u2192';
+  }
+
+  try {
+    if(typeof emailjs === 'undefined' || !emailjs || typeof emailjs.send !== 'function'){ throw new Error('emailjs unavailable'); }
+    emailjs.send('Dave.AI', 'template_brei1gl', templateParams)
+      .then(function() {
+        var eb = document.getElementById('ent-err');
+        if(eb) eb.style.display = 'none';
+        document.getElementById('ent-sent-name').textContent  = first;
+        document.getElementById('ent-sent-firm').textContent  = firm;
+        document.getElementById('ent-sent-email').textContent = email;
+        ['su-s1','su-s2','su-s3','su-login','su-ent','su-ent-sent'].forEach(function(id){
+          document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById('su-steps').style.display = 'none';
+        suShow('su-ent-sent');
+      })
+      .catch(function(err) {
+        console.warn('EmailJS error:', err);
+        entFail();
       });
-      document.getElementById('su-steps').style.display = 'none';
-      suShow('su-ent-sent');
-    })
-    .catch(function(err) {
-      // Still show confirmation but log the error
-      console.warn('EmailJS error (enquiry still logged):', err);
-      document.getElementById('ent-sent-name').textContent  = first;
-      document.getElementById('ent-sent-firm').textContent  = firm;
-      document.getElementById('ent-sent-email').textContent = email;
-      ['su-s1','su-s2','su-s3','su-login','su-ent','su-ent-sent'].forEach(function(id){
-        document.getElementById(id).style.display = 'none';
-      });
-      document.getElementById('su-steps').style.display = 'none';
-      suShow('su-ent-sent');
-    });
+  } catch(e) {
+    console.warn('EmailJS unavailable:', e);
+    entFail();
+  }
 }
 
 async function suSocial(provider){
@@ -1766,7 +1790,7 @@ async function landingLogin(){
       var rs = document.createElement('button');
       rs.type = 'button';
       rs.textContent = 'Resend confirmation email';
-      rs.style.cssText = 'background:none;border:none;padding:0;color:#7aaaf8;text-decoration:underline;cursor:pointer;font:inherit';
+      rs.style.cssText = 'background:none;border:none;padding:0;color:#1a4fb8;text-decoration:underline;cursor:pointer;font:inherit';
       rs.onclick = async function(){
         rs.disabled = true; rs.textContent = 'Sending…';
         var r = await _sb.auth.resend({ type: 'signup', email: email });
