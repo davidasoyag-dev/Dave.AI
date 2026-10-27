@@ -303,27 +303,42 @@ function calcNotice(a){
 }
 
 function calcRedundancy(a){
-  const age = Math.floor(Number(a.age_at_dismissal)), pay = Number(a.weekly_pay);
-  const start = pd(a.start_date), end = pd(a.dismissal_date);
+  let age = Math.floor(Number(a.age_at_dismissal)), pay = Number(a.weekly_pay);
+  const start = pd(a.start_date), end0 = pd(a.dismissal_date), dob = a.date_of_birth ? pd(a.date_of_birth) : null;
   let cap = a.weekly_pay_cap === undefined || a.weekly_pay_cap === null || a.weekly_pay_cap === '' ? null : Number(a.weekly_pay_cap);
-  if(!isFinite(age) || age < 16 || age > 110 || !isFinite(pay) || pay <= 0 || !start || !end || end < start) return 'Give age_at_dismissal, start_date, dismissal_date (YYYY-MM-DD) and weekly_pay.';
+  if(a.date_of_birth && !dob) return 'date_of_birth must be YYYY-MM-DD.';
+  if(dob && end0 && !(age >= 16)) age = completeYears(dob, end0);
+  if(!isFinite(age) || age < 16 || age > 110 || !isFinite(pay) || pay <= 0 || !start || !end0 || end0 < start) return 'Give age_at_dismissal (or date_of_birth), start_date, dismissal_date (YYYY-MM-DD) and weekly_pay.';
   if(cap !== null && !(cap > 0)) cap = null;
-  const years = Math.min(20, completeYears(start, end));
-  if(years < 2) return 'CALCULATION: statutory redundancy pay\nThe employee has ' + completeYears(start, end) + ' complete year(s) of service. Statutory redundancy pay needs at least 2 years\' continuous service (Employment Rights Act 1996 s.155), so the statutory amount is £0.00.';
+  // s.145(5): if the employer's notice (or payment in lieu) was shorter than the s.86 minimum, the
+  // "relevant date" is the date the statutory minimum notice would have expired
+  let end = end0, ext = '';
+  if(a.payment_in_lieu === true || a.notice_shorter_than_statutory === true){
+    const yrs = completeYears(start, end0);
+    const w = addMonths(start, 1) > end0 ? 0 : (yrs < 2 ? 1 : Math.min(12, yrs));
+    const later = addDays(end0, w * 7);
+    if(w > 0 && later > end0){ end = later; ext = 'Relevant date moved from ' + iso(end0) + ' to ' + iso(end) + ' (s.145(5): the date the statutory minimum notice of ' + w + ' week(s) would have expired), for the purposes of s.155 and s.162(1).\n'; }
+  }
+  if(dob && end !== end0) age = completeYears(dob, end);
+  const totalYears = completeYears(start, end), years = Math.min(20, totalYears);
+  if(totalYears < 2) return 'CALCULATION: statutory redundancy pay\n' + ext + 'Service to the relevant date is ' + totalYears + ' complete year(s). Statutory redundancy pay needs at least 2 years\' continuous service (Employment Rights Act 1996 s.155), so the statutory amount is £0.00.';
   const rows = []; let weeks = 0;
   for(let i = 0; i < years; i++){
-    const a2 = age - i, m = a2 >= 41 ? 1.5 : (a2 >= 22 ? 1 : 0.5);
-    rows.push('  Year ' + (i + 1) + ' back from dismissal: age ' + a2 + ' -> ' + m + ' week(s)');
+    // A year counts at the band the employee was in for the WHOLE year, i.e. the age at its start (s.162(2))
+    const ys = addMonths(end, -12 * (i + 1));
+    const ageStart = dob ? completeYears(dob, ys) : age - (i + 1);
+    const m = ageStart >= 41 ? 1.5 : (ageStart >= 22 ? 1 : 0.5);
+    rows.push('  Year ' + (i + 1) + ' back (from ' + iso(ys) + '): age at start ' + ageStart + ' -> ' + m + ' week(s)');
     weeks += m;
   }
   const used = cap !== null ? Math.min(pay, cap) : pay;
-  return 'CALCULATION: statutory redundancy pay (Employment Rights Act 1996 s.162)\n' +
-    'Service: ' + iso(start) + ' to ' + iso(end) + ' = ' + completeYears(start, end) + ' complete year(s)' + (completeYears(start, end) > 20 ? ' (only the last 20 count)' : '') + '\n' +
-    'Rule applied (s.162): counting back from the dismissal date, 1.5 weeks\' pay for each year at age 41 or over, 1 week for each year at 22 to 40, 0.5 week for each year under 22; maximum 20 years.\n' +
+  return 'CALCULATION: statutory redundancy pay (Employment Rights Act 1996 s.162)\n' + ext +
+    'Service: ' + iso(start) + ' to the relevant date ' + iso(end) + ' = ' + totalYears + ' complete year(s)' + (totalYears > 20 ? ' (only the last 20 count, s.162(3))' : '') + '\n' +
+    'Rule applied (s.162(2)): reckoning back from the relevant date, 1.5 weeks\' pay for a year in which the employee was not below 41 throughout (age at the start of that year is 41 or more), 1 week for a year not below 22 throughout (and not within the 1.5 band), and half a week for any other year.\n' +
     rows.join('\n') + '\nTotal: ' + weeks + ' week(s)\n' +
     'Weekly pay: ' + money(pay) + (cap !== null ? '; statutory cap supplied: ' + money(cap) + (pay > cap ? ' (cap applies, so ' + money(cap) + ' is used)' : ' (not exceeded)') : '; NO statutory weekly cap was supplied, so none has been applied: check the current limit, which rises each April') + '\n' +
     'Statutory redundancy pay: ' + weeks + ' x ' + money(used) + ' = ' + money(weeks * used) + '\n' +
-    'Assumption: each year counted back is treated at the age the employee was at the end of that year (age at dismissal, then one year less for each earlier year). Check against the GOV.UK redundancy pay calculator.';
+    (dob ? 'Ages were worked out from the date of birth supplied.' : 'Age at the start of each year was taken as the age at the relevant date minus one for each year back (this does not depend on the exact birthday). With a date of birth it can be checked exactly.');
 }
 
 function calcTimeLimit(a){
@@ -402,7 +417,7 @@ function toolDefs(latestNews){
     { name: 'calc_notice', description: 'EXACT calculator: the statutory minimum notice an employer must give (ERA 1996 s.86) and the date it runs out. Use it instead of working this out yourself. Local, nothing is sent anywhere.',
       input_schema: { type: 'object', properties: { start_date: { type: 'string', description: 'start of continuous employment, YYYY-MM-DD' }, notice_given_date: { type: 'string', description: 'date notice is given, YYYY-MM-DD' } }, required: ['start_date', 'notice_given_date'] } },
     { name: 'calc_redundancy_pay', description: 'EXACT calculator: statutory redundancy pay (ERA 1996 s.155/s.162) with year-by-year working. Read the current statutory weekly pay cap first (latest Employment Rights (Increase of Limits) Order on legislation.gov.uk) and pass it as weekly_pay_cap.',
-      input_schema: { type: 'object', properties: { age_at_dismissal: { type: 'number' }, start_date: { type: 'string', description: 'YYYY-MM-DD' }, dismissal_date: { type: 'string', description: 'date employment ends, YYYY-MM-DD' }, weekly_pay: { type: 'number', description: 'gross weekly pay in pounds' }, weekly_pay_cap: { type: 'number', description: 'current statutory cap on a week\'s pay in pounds, from the legislation you read' } }, required: ['age_at_dismissal', 'start_date', 'dismissal_date', 'weekly_pay'] } },
+      input_schema: { type: 'object', properties: { age_at_dismissal: { type: 'number', description: 'age in whole years at the dismissal date (or give date_of_birth)' }, date_of_birth: { type: 'string', description: 'optional, YYYY-MM-DD, for an exact result' }, start_date: { type: 'string', description: 'start of continuous employment, YYYY-MM-DD' }, dismissal_date: { type: 'string', description: 'date employment ends, YYYY-MM-DD' }, payment_in_lieu: { type: 'boolean', description: 'true if the employee was dismissed without notice or with less than the statutory minimum notice (s.145(5) moves the relevant date later)' }, weekly_pay: { type: 'number', description: 'gross weekly pay in pounds' }, weekly_pay_cap: { type: 'number', description: 'current statutory cap on a week\'s pay in pounds, from the legislation you read' } }, required: ['start_date', 'dismissal_date', 'weekly_pay'] } },
     { name: 'calc_time_limit', description: 'EXACT calculator: the last day to bring a claim (default 3 months less a day) including the ACAS early conciliation extension (ERA 1996 s.207B).',
       input_schema: { type: 'object', properties: { event_date: { type: 'string', description: 'e.g. effective date of termination, YYYY-MM-DD' }, months: { type: 'number', description: 'the limit in months. Default 3, but set it from the CURRENT provision you read (e.g. s.111(2) ERA 1996): reforms such as the Employment Rights Act 2025 may change it' }, ec_day_a: { type: 'string', description: 'day ACAS received the early conciliation notification, YYYY-MM-DD' }, ec_day_b: { type: 'string', description: 'day the early conciliation certificate was received, YYYY-MM-DD' } }, required: ['event_date'] } },
     { name: 'calc_arithmetic', description: 'EXACT calculator for any other sum: numbers, + - * / ^ ( ) and min, max, round, floor, ceil, abs. Use it for every calculation not covered above.',
