@@ -92,19 +92,25 @@ async function officialSources(terms){
   return items;
 }
 
+// Only UK government sources are ever shown: gov.uk and its subdomains
+// (legislation.gov.uk, nationalarchives.gov.uk, www.gov.uk guidance, ...).
+function isGovUk(u){
+  try { const h = new URL(u).hostname.toLowerCase(); return h === 'gov.uk' || h.endsWith('.gov.uk'); } catch(e){ return false; }
+}
+
 async function braveNews(terms, braveKey){
   if(!braveKey) return [];
   try {
-    const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(terms.join(' ') + ' UK law update') +
-      '&count=4&country=gb&search_lang=en&freshness=pm';
+    const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(terms.join(' ') + ' site:gov.uk') +
+      '&count=20&country=gb&search_lang=en&freshness=py';
     const r = await fetch(url, {
       headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': braveKey },
       signal: AbortSignal.timeout(4000)
     });
     if(!r.ok) return [];
     const d = await r.json();
-    return ((d.web && d.web.results) || []).slice(0, 4).map(x => ({
-      kind: 'Recent web result', title: decode(x.title), url: x.url, summary: decode(x.description).slice(0, 220), date: String(x.page_age || x.age || '').slice(0, 10)
+    return ((d.web && d.web.results) || []).filter(x => x && isGovUk(x.url)).slice(0, 4).map(x => ({
+      kind: 'Recent UK government page (gov.uk)', title: decode(x.title), url: x.url, summary: decode(x.description).slice(0, 220), date: String(x.page_age || x.age || '').slice(0, 10)
     }));
   } catch(e){ return []; }
 }
@@ -126,4 +132,4 @@ async function researchSources(question, anthropicKey, braveKey, opts){
   ).join('\n\n');
 }
 
-module.exports = { researchSources, searchTerms, entries, cleanTerm, legislationPage };
+module.exports = { researchSources, searchTerms, entries, cleanTerm, legislationPage, isGovUk };
