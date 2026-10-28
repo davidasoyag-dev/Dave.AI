@@ -345,6 +345,10 @@ function calcTimeLimit(a){
   const edt = pd(a.event_date), months = a.months === undefined ? 3 : Math.floor(Number(a.months));
   if(!edt || !(months >= 1 && months <= 12)) return 'Give event_date as YYYY-MM-DD (and optionally months, default 3).';
   const primary = addDays(addMonths(edt, months), -1);
+  // Month-end edge case: the event date's day does not exist in the target month (e.g. 30 Nov + 3 months)
+  const tm = new Date(Date.UTC(edt.getUTCFullYear(), edt.getUTCMonth() + months, 1));
+  const lastOfTarget = new Date(Date.UTC(tm.getUTCFullYear(), tm.getUTCMonth() + 1, 0)).getUTCDate();
+  const edge = edt.getUTCDate() > lastOfTarget;
   let out = 'CALCULATION: time limit\nEvent date (e.g. effective date of termination): ' + human(edt) + '\n' +
     'Primary limit: ' + months + ' months beginning with that date, so the last day to present the claim is ' + human(primary) + ' (event date + ' + months + ' months - 1 day).';
   const A = a.ec_day_a ? pd(a.ec_day_a) : null, B = a.ec_day_b ? pd(a.ec_day_b) : null;
@@ -361,6 +365,7 @@ function calcTimeLimit(a){
         '\nExtended last day to present the claim: ' + human(fin) + '.';
     }
   } else out += '\nIf the claimant goes through ACAS early conciliation (required before most claims), provide ec_day_a and ec_day_b to extend the date (s.207B).';
+  if(edge) out += '\nMONTH-END EDGE CASE: the event date\'s day (' + edt.getUTCDate() + ') does not exist in the final month, so the exact last day is open to argument. The date above is the earlier, safer reading; treat it as the deadline unless advised otherwise.';
   return out + '\nThe tribunal may allow a late claim only in limited cases (reasonably practicable test); always confirm against the dates in the tribunal rules.';
 }
 
