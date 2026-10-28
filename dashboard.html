@@ -165,6 +165,29 @@ select.inp{cursor:pointer;}
 .msg-a-body strong{color:#1a2840;font-weight:700;}
 .msg-a-body code{background:rgba(79,114,196,0.1);padding:1px 5px;border-radius:4px;font-size:12px;font-family:var(--mono);}
 .msg-a-body a{color:var(--blue2);word-break:break-word;}
+
+/* Visual blocks in Research answers */
+.vz{margin:12px 0 16px;padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:14px;}
+.vz-title{font-weight:700;font-size:13px;color:var(--text);margin-bottom:8px;}
+.vz-svg{width:100%;max-width:640px;height:auto;display:block;}
+.vz-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);margin:6px 0;}
+.vz-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+.vz-data{margin-top:8px;font-size:11px;color:var(--muted);}
+.vz-data summary{cursor:pointer;}
+.vz-scroll{overflow-x:auto;}
+.vz-cmp th[scope=row]{background:#f6f8fc;white-space:nowrap;}
+.vz-pending{color:var(--muted);font-size:12px;font-style:italic;}
+.vz-tl{list-style:none;margin:6px 0 0;padding:0 0 0 18px;border-left:2px solid var(--border);}
+.vz-ev{position:relative;padding:0 0 14px 14px;}
+.vz-dot{position:absolute;left:-26px;top:3px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--blue);}
+.vz-ev.past .vz-dot{background:var(--blue2);border-color:var(--blue2);}
+.vz-ev.now .vz-dot{background:#fff;border-color:var(--blue2);box-shadow:0 0 0 4px rgba(79,114,196,.25);}
+.vz-date{font-size:11px;font-weight:700;color:var(--blue2);letter-spacing:.03em;}
+.vz-et{font-size:13px;font-weight:600;color:var(--text);}
+.vz-ed{font-size:12px;color:var(--muted);margin-top:2px;}
+.vz-steps{margin:4px 0 0;padding-left:20px;}
+.vz-steps li{margin:0 0 8px;font-size:13px;color:var(--text);}
+.vz-steps li span{display:block;font-size:12px;color:var(--muted);margin-top:1px;}
 .msg-a-body .md-table{width:100%;border-collapse:collapse;margin:4px 0 12px;font-size:12px;}
 .msg-a-body .md-table th{text-align:left;font-weight:700;color:#1a2840;background:#eef3fb;padding:7px 10px;border:1px solid rgba(79,114,196,0.18);}
 .msg-a-body .md-table td{padding:7px 10px;border:1px solid rgba(79,114,196,0.13);color:#344268;vertical-align:top;}
@@ -1297,6 +1320,7 @@ async function callAIBuffered(sys, usr, maxTok, webSearch, history, opts){
           max_tokens: maxTok || 1200,
           messages: (history || []).concat([{ role: 'user', content: usr }]),
           web_search: webSearch || false,
+        latest_news: !!(opts && opts.latestNews),
           feature: opts && opts.feature,
           prompt: opts && opts.prompt,
           request_id: opts && opts.requestId
@@ -1350,7 +1374,114 @@ async function callAIBuffered(sys, usr, maxTok, webSearch, history, opts){
 function escHtml(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // Lightweight Markdown -> HTML for chat answers (headings, lists, bold, code, links).
+
+// ── Visual blocks in answers: chart / timeline / compare / steps ──
+// The AI writes ```chart {json}``` etc. We validate the JSON and draw it ourselves
+// (inline SVG/HTML, every string escaped), never running anything the AI wrote.
+var VZ_COLORS = ['#3558a8','#e08a2e','#2e9e8f','#8fb0ee','#0f1f3d','#b9cdf5'];
+function vzStr(x, n){ return escHtml(String(x == null ? '' : x).slice(0, n || 200)); }
+function vzNum(x){ x = Number(x); return isFinite(x) ? x : null; }
+function vzFmt(n){ return Math.abs(n) >= 1000 ? Math.round(n).toLocaleString('en-GB') : String(Math.round(n * 100) / 100); }
+function vzWrap(title, inner, label){
+  return '<div class="vz" role="group" aria-label="' + vzStr(label || title || 'Visual', 120) + '">' + (title ? '<div class="vz-title">' + vzStr(title, 140) + '</div>' : '') + inner + '</div>';
+}
+function vzChart(j){
+  var labels = (j.labels || []).slice(0, 12).map(function(l){ return String(l).slice(0, 24); });
+  var series = (j.series || []).slice(0, 4).map(function(s){
+    return { name: String((s && s.name) || ''), values: labels.map(function(_, i){ var v = vzNum(s && s.values && s.values[i]); return v === null ? 0 : v; }) };
+  });
+  if(!labels.length || !series.length) return '';
+  var type = (j.type === 'line' || j.type === 'pie') ? j.type : 'bar', unit = vzStr(j.unit || '', 20), W = 640, H = 300, svg = '';
+  if(type === 'pie'){
+    var vals = series[0].values.map(function(v){ return Math.max(0, v); }), tot = vals.reduce(function(a, b){ return a + b; }, 0);
+    if(!tot) return '';
+    var cx = 150, cy = 150, r = 120, ang = -Math.PI / 2, paths = '', leg = '';
+    vals.forEach(function(v, i){
+      var a2 = ang + (v / tot) * Math.PI * 2, large = (a2 - ang) > Math.PI ? 1 : 0, col = VZ_COLORS[i % VZ_COLORS.length];
+      if(vals.filter(function(x){ return x > 0; }).length === 1){ paths += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + col + '"/>'; }
+      else if(v > 0){ paths += '<path d="M' + cx + ' ' + cy + ' L' + (cx + r * Math.cos(ang)).toFixed(1) + ' ' + (cy + r * Math.sin(ang)).toFixed(1) + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + (cx + r * Math.cos(a2)).toFixed(1) + ' ' + (cy + r * Math.sin(a2)).toFixed(1) + ' Z" fill="' + col + '" stroke="#fff" stroke-width="2"/>'; }
+      ang = a2;
+      leg += '<g transform="translate(330,' + (40 + i * 24) + ')"><rect width="12" height="12" rx="3" fill="' + col + '"/><text x="20" y="11" font-size="13" fill="#0f1f3d">' + vzStr(labels[i], 24) + ' (' + Math.round(v / tot * 100) + '%)</text></g>';
+    });
+    svg = '<svg viewBox="0 0 ' + W + ' 300" class="vz-svg" role="img" aria-label="' + vzStr(j.title || 'Pie chart', 100) + '">' + paths + leg + '</svg>';
+  } else {
+    var L = 46, R = 14, T = 16, B = 46, pw = W - L - R, ph = H - T - B;
+    var all = []; series.forEach(function(s){ all = all.concat(s.values); });
+    var max = Math.max.apply(null, all.concat([0])), min = Math.min.apply(null, all.concat([0]));
+    if(max === min) max = min + 1;
+    var span = max - min, step = Math.pow(10, Math.floor(Math.log10(span))), nice = [1, 2, 2.5, 5, 10].map(function(m){ return m * step; }).find(function(s){ return span / s <= 5; }) || step * 10;
+    var top = Math.ceil(max / nice) * nice, bot = Math.floor(min / nice) * nice;
+    function y(v){ return T + ph - (v - bot) / (top - bot) * ph; }
+    var grid = '';
+    for(var g = bot; g <= top + 1e-9; g += nice){ grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g).toFixed(1) + '" y2="' + y(g).toFixed(1) + '" stroke="#dbe3f1"/><text x="' + (L - 6) + '" y="' + (y(g) + 4).toFixed(1) + '" font-size="11" text-anchor="end" fill="#4a5873">' + vzFmt(g) + '</text>'; }
+    var n = labels.length, band = pw / n, xl = '', body = '';
+    labels.forEach(function(lb, i){ xl += '<text x="' + (L + band * (i + .5)).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="11" text-anchor="middle" fill="#4a5873">' + vzStr(lb, 14) + '</text>'; });
+    if(type === 'bar'){
+      var bw = Math.min(54, band / (series.length + .6));
+      series.forEach(function(s, si){
+        s.values.forEach(function(v, i){
+          var x = L + band * i + (band - bw * series.length) / 2 + bw * si, yy = Math.min(y(v), y(0)), hh = Math.abs(y(v) - y(0));
+          body += '<rect x="' + x.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + (bw - 2).toFixed(1) + '" height="' + Math.max(1, hh).toFixed(1) + '" rx="3" fill="' + VZ_COLORS[si % VZ_COLORS.length] + '"/>';
+          if(n <= 8) body += '<text x="' + (x + (bw - 2) / 2).toFixed(1) + '" y="' + (yy - 4).toFixed(1) + '" font-size="11" text-anchor="middle" fill="#0f1f3d">' + vzFmt(v) + '</text>';
+        });
+      });
+    } else {
+      series.forEach(function(s, si){
+        var pts = s.values.map(function(v, i){ return (L + band * (i + .5)).toFixed(1) + ',' + y(v).toFixed(1); });
+        body += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + VZ_COLORS[si % VZ_COLORS.length] + '" stroke-width="2.5" stroke-linejoin="round"/>';
+        s.values.forEach(function(v, i){ body += '<circle cx="' + (L + band * (i + .5)).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="3.5" fill="' + VZ_COLORS[si % VZ_COLORS.length] + '"/>'; });
+      });
+    }
+    svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="vz-svg" role="img" aria-label="' + vzStr(j.title || 'Chart', 100) + '">' + grid + body + xl + (unit ? '<text x="' + L + '" y="10" font-size="11" fill="#4a5873">' + unit + '</text>' : '') + '</svg>';
+  }
+  var legend = (series.length > 1 && type !== 'pie') ? '<div class="vz-legend">' + series.map(function(s, i){ return '<span><i style="background:' + VZ_COLORS[i % VZ_COLORS.length] + '"></i>' + vzStr(s.name, 30) + '</span>'; }).join('') + '</div>' : '';
+  var tbl = '<details class="vz-data"><summary>View the data</summary><table class="md-table"><thead><tr><th></th>' + series.map(function(s){ return '<th>' + vzStr(s.name || 'Value', 30) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    labels.map(function(lb, i){ return '<tr><td>' + vzStr(lb, 30) + '</td>' + series.map(function(s){ return '<td>' + vzFmt(s.values[i]) + (unit ? ' ' + unit : '') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></details>';
+  return vzWrap(j.title, svg + legend + tbl, 'Chart: ' + (j.title || ''));
+}
+function vzTimeline(j){
+  var ev = (j.events || []).slice(0, 12); if(!ev.length) return '';
+  var h = ev.map(function(e){
+    var st = (e && (e.status === 'past' || e.status === 'now' || e.status === 'future')) ? e.status : 'future';
+    return '<li class="vz-ev ' + st + '"><span class="vz-dot"></span><div class="vz-date">' + vzStr(e && e.date, 40) + '</div><div class="vz-et">' + vzStr(e && e.title, 120) + '</div>' + (e && e.detail ? '<div class="vz-ed">' + vzStr(e.detail, 300) + '</div>' : '') + '</li>';
+  }).join('');
+  return vzWrap(j.title, '<ol class="vz-tl">' + h + '</ol>', 'Timeline: ' + (j.title || ''));
+}
+function vzCompare(j){
+  var cols = (j.columns || []).slice(0, 5), rows = (j.rows || []).slice(0, 8); if(!cols.length || !rows.length) return '';
+  var h = '<div class="vz-scroll"><table class="md-table vz-cmp"><thead><tr><th></th>' + cols.map(function(c){ return '<th>' + vzStr(c, 40) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    rows.map(function(r){ return '<tr><th scope="row">' + vzStr(r && r.label, 60) + '</th>' + cols.map(function(_, i){ return '<td>' + vzStr(r && r.values && r.values[i], 200) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  return vzWrap(j.title, h, 'Comparison: ' + (j.title || ''));
+}
+function vzSteps(j){
+  var st = (j.steps || []).slice(0, 10); if(!st.length) return '';
+  return vzWrap(j.title, '<ol class="vz-steps">' + st.map(function(s){ return '<li><b>' + vzStr(s && s.title, 100) + '</b>' + (s && s.detail ? '<span>' + vzStr(s.detail, 260) + '</span>' : '') + '</li>'; }).join('') + '</ol>', 'Steps: ' + (j.title || ''));
+}
+var VZ_RE = /```(chart|timeline|compare|steps)\s*([\s\S]*?)```/g;
+function renderVisual(kind, raw){
+  try {
+    var j = JSON.parse(String(raw).trim());
+    if(!j || typeof j !== 'object') return '';
+    var f = { chart: vzChart, timeline: vzTimeline, compare: vzCompare, steps: vzSteps }[kind];
+    return f ? f(j) : '';
+  } catch(e){ return ''; }
+}
 function mdToHtml(src){
+  if(!src) return '';
+  var out = '', last = 0, m;
+  VZ_RE.lastIndex = 0;
+  while((m = VZ_RE.exec(src))){
+    out += mdToHtmlBase(src.slice(last, m.index)) + renderVisual(m[1], m[2]);
+    last = m.index + m[0].length;
+  }
+  var rest = src.slice(last);
+  // A visual still being written while the answer streams: show a placeholder, not raw JSON
+  var open = rest.search(/```(chart|timeline|compare|steps)\b/);
+  if(open !== -1) return out + mdToHtmlBase(rest.slice(0, open)) + '<div class="vz vz-pending">Preparing visual…</div>';
+  return out + mdToHtmlBase(rest);
+}
+
+function mdToHtmlBase(src){
   if(!src) return '';
   var s = escHtml(src);
   var lines = s.split('\n');
@@ -1405,6 +1536,16 @@ function mdToHtml(src){
 
 // Markdown -> clean plain text (for copy/download): strips symbols, keeps structure.
 function mdToPlain(src){
+  src = (src||'').replace(/```(chart|timeline|compare|steps)\s*([\s\S]*?)```/g, function(_, kind, raw){
+    try {
+      var j = JSON.parse(raw.trim()), t = (j.title ? j.title + '\n' : '');
+      if(kind === 'chart') (j.labels||[]).forEach(function(l,i){ t += '- ' + l + ': ' + (j.series||[]).map(function(s){ return s.values[i]; }).join(' / ') + (j.unit ? ' ' + j.unit : '') + '\n'; });
+      if(kind === 'timeline') (j.events||[]).forEach(function(e){ t += '- ' + e.date + ': ' + e.title + (e.detail ? ' (' + e.detail + ')' : '') + '\n'; });
+      if(kind === 'compare') (j.rows||[]).forEach(function(r){ t += '- ' + r.label + ': ' + (j.columns||[]).map(function(c,i){ return c + ' = ' + (r.values||[])[i]; }).join('; ') + '\n'; });
+      if(kind === 'steps') (j.steps||[]).forEach(function(s,i){ t += (i+1) + '. ' + s.title + (s.detail ? ': ' + s.detail : '') + '\n'; });
+      return t;
+    } catch(e){ return ''; }
+  });
   return (src||'')
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -1450,6 +1591,7 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch, history, opts)
         max_tokens: maxTok || 1200,
         messages: (history || []).concat([{ role: 'user', content: usr }]),
         web_search: webSearch || false,
+        latest_news: !!(opts && opts.latestNews),
         feature: opts && opts.feature,
         prompt: opts && opts.prompt,
         request_id: opts && opts.requestId
@@ -2247,7 +2389,7 @@ function vResearch(){
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--muted);margin-top:10px;cursor:pointer"><input type="checkbox" id="r-news" style="margin-top:2px"'+(_rNews?' checked':'')+' onchange="_rNews=this.checked"/><span>Also check recent gov.uk pages (Brave Search). Only a few generic search terms are sent, never your question or client details. Sources are only UK legislation, National Archives case law and gov.uk.</span></label><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
@@ -2255,7 +2397,7 @@ function renderChat(){
   var el=document.getElementById('cmsgs'); if(!el)return;
   el.innerHTML=chatMsgs.map(function(m,idx){
     if(m.role==='user') return '<div class="msg-u">'+escHtml(m.content)+'</div>';
-    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div>'+buildSources(m.content)+buildFollowups(m.followups)+'</div>';
+    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div>'+buildFollowups(m.followups)+'</div>';
   }).join('');
   el.scrollTop=el.scrollHeight;
 }
@@ -2311,6 +2453,8 @@ function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=d
 // One Research question at a time: a second Enter / follow-up click while an answer
 // is on its way would send a parallel paid request and mix up the answers.
 var _rBusy=false;
+// Opt-in: also look at recent web news (Brave Search, generic terms only). Off by default.
+var _rNews=false;
 async function doR(){
   if(_rBusy) return;
   var inp=document.getElementById('ri'); if(!inp)return;
@@ -2339,11 +2483,11 @@ async function doR(){
   while(rHist.length && rHistLen()>20000){ rHist.splice(0,2); }
   try{
     var target=document.getElementById('r-streaming');
-    var aiAct=aiAction('research');
-    var a=await callAIStream(rSys, q, 2000, function(text){
+    var aiAct=aiAction('research'); aiAct.latestNews=_rNews;
+    var a=await callAIStream(rSys, q, 2800, function(text){
       if(target){ target.innerHTML=mdToHtml(stripFollowups(text)); if(el) el.scrollTop=el.scrollHeight; }
     }, true, rHist, aiAct);
-    if(a===null){ a=await callAI(rSys, q, 2000, true, rHist, aiAct); }
+    if(a===null){ a=await callAI(rSys, q, 2800, true, rHist, aiAct); }
     if(aiOk(a)){
       var rPartial=a.indexOf(AI_PARTIAL_NOTE)!==-1; // checked before FOLLOWUPS stripping
       if(target) target.innerHTML=mdToHtml(stripFollowups(a));
