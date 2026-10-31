@@ -31,4 +31,16 @@ has(c.calcTimeLimit({ event_date: '2026-11-30' }), 'MONTH-END EDGE CASE');
 // Arithmetic
 has(c.calcArithmetic({ expression: 'min(620, 700) * 13' }), '= 8060');
 has(c.calcArithmetic({ expression: 'process.exit()' }), 'Could not');
+// Court level labels and the approved-source allowlist
+has(c.courtLevel('uksc/2011/58'), 'Supreme Court');
+has(c.courtLevel('ewca/civ/2019/704'), 'Court of Appeal');
+has(c.courtLevel('eat/2026/146'), 'Employment Appeal Tribunal');
+assert.ok(c.isApproved('https://www.gov.uk/foo') && c.isApproved('https://ico.org.uk/x') && c.isApproved('https://www.judiciary.uk/y'));
+assert.ok(!c.isApproved('https://www.bailii.org/x') && !c.isApproved('https://www.davidsonmorris.com/x') && !c.isApproved('https://evilgov.uk.example.com/'));
+// Court level labels and the approved-source allowlist
+has(c.courtLevel('uksc/2011/58'), 'Supreme Court');
+has(c.courtLevel('ewca/civ/2019/704'), 'Court of Appeal');
+has(c.courtLevel('eat/2026/146'), 'Employment Appeal Tribunal');
+assert.ok(c.isApproved('https://www.gov.uk/foo') && c.isApproved('https://ico.org.uk/x') && c.isApproved('https://www.judiciary.uk/y'));
+assert.ok(!c.isApproved('https://www.bailii.org/x') && !c.isApproved('https://www.davidsonmorris.com/x') && !c.isApproved('https://evilgov.uk.example.com/'));
 console.log('all calculator tests passed');

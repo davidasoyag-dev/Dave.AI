@@ -94,6 +94,22 @@ function legislationPage(u){
 const EXTENT = { 'E': 'England', 'W': 'Wales', 'S': 'Scotland', 'N.I.': 'Northern Ireland' };
 const extentLabel = e => (e ? e.split('+').map(x => EXTENT[x] || x).join(', ') : '');
 
+// Court level from a Find Case Law path, so the AI can rank authority properly
+function courtLevel(path){
+  const p = String(path || '').toLowerCase();
+  if(/^uksc\//.test(p)) return 'UK Supreme Court (binding on all lower courts)';
+  if(/^ukpc\//.test(p)) return 'Privy Council (persuasive in England and Wales)';
+  if(/^ukhl\//.test(p)) return 'House of Lords (predecessor of the Supreme Court; binding)';
+  if(/^ewca\/civ\//.test(p)) return 'Court of Appeal, Civil Division (binding on the High Court and lower courts)';
+  if(/^ewca\/crim\//.test(p)) return 'Court of Appeal, Criminal Division';
+  if(/^ewhc\//.test(p)) return 'High Court (binding on lower courts; persuasive for other High Court judges)';
+  if(/^(eat|ukeat)\//.test(p)) return 'Employment Appeal Tribunal (binding on employment tribunals)';
+  if(/^ukut\//.test(p)) return 'Upper Tribunal';
+  if(/^ukftt\//.test(p)) return 'First-tier Tribunal (not binding)';
+  if(/^ewfc\/|^ewcop\//.test(p)) return 'Family Court / Court of Protection';
+  return 'court level not identified from the citation';
+}
+
 // ───────────────────────── tool implementations ─────────────────────────
 async function tSearchLegislation(a, clock){
   const q = cleanQuery(a.query);
@@ -200,7 +216,7 @@ async function tSearchCases(a, clock){
   if(q.length < 3) return 'Give a search query of at least 3 characters.';
   const r = await getText(TNA + '/atom.xml?query=' + encodeURIComponent(q) + '&per_page=8&order=relevance', 'application/atom+xml', clock.left(5000));
   const rows = entries(r.text).slice(0, 8).filter(e => e.slug).map(e =>
-    '- ' + e.title + (e.cite ? ' ' + e.cite : '') + ' (' + e.date + ') [path: ' + e.slug + ']' + (e.summary ? ' - ' + e.summary : ''));
+    '- ' + e.title + (e.cite ? ' ' + e.cite : '') + ' (' + e.date + ') [' + courtLevel(e.slug) + '] [path: ' + e.slug + ']' + (e.summary ? ' - ' + e.summary : ''));
   return rows.length ? 'Judgments matching "' + q + '" (National Archives Find Case Law):\n' + rows.join('\n') : 'No judgments found for "' + q + '".';
 }
 
@@ -232,30 +248,41 @@ async function tReadJudgment(a, clock){
     chosen = ranked.map(x => x.p);
     if(!chosen.length) chosen = paras.slice(0, 10);
   } else chosen = paras.slice(0, 12);
-  return name + (date ? ' (' + date + ')' : '') + ' [' + path + ']; ' + paras.length + ' paragraphs.\n' +
+  return name + (date ? ' (' + date + ')' : '') + ' [' + path + '] [' + courtLevel(path) + ']; ' + paras.length + ' paragraphs.\n' +
     (headnote ? 'SUMMARY/HEADNOTE: ' + headnote + '\n' : '') + 'EXTRACT' + (focus.length ? ' (paragraphs mentioning ' + focus.join(', ') + ')' : ' (opening paragraphs)') + ':\n' +
     cap(chosen.join('\n'), RESULT_CHARS - 1500);
 }
 
-function isGovUk(u){
-  try { const h = new URL(u).hostname.toLowerCase(); return h === 'gov.uk' || h.endsWith('.gov.uk'); } catch(e){ return false; }
+// Approved UK official sources for the optional open-web step. BAILII is deliberately NOT here:
+// its terms restrict automated retrieval without permission.
+const APPROVED_HOSTS = ['gov.uk', 'judiciary.uk', 'supremecourt.uk', 'parliament.uk', 'ico.org.uk', 'fca.org.uk', 'sra.org.uk', 'lawsociety.org.uk', 'barstandardsboard.org.uk', 'bsb.org.uk'];
+function isApproved(u){
+  try { const h = new URL(u).hostname.toLowerCase(); return APPROVED_HOSTS.some(x => h === x || h.endsWith('.' + x)); } catch(e){ return false; }
 }
-async function tGovNews(a, clock, braveKey){
-  const q = cleanQuery(a.query);
-  if(!braveKey || q.length < 3) return 'gov.uk news search is not available.';
+const isGovUk = isApproved;
+async function braveQuery(q, braveKey, clock){
   try {
-    const r = await fetch('https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(q + ' site:gov.uk') + '&count=20&country=gb&search_lang=en&freshness=py', {
+    const r = await fetch('https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(q) + '&count=20&country=gb&search_lang=en&freshness=py', {
       headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': braveKey },
       signal: AbortSignal.timeout(clock.left(4000))
     });
-    if(!r.ok) return 'gov.uk news search failed.';
+    if(!r.ok) return [];
     const d = await r.json();
-    const rows = ((d.web && d.web.results) || []).filter(x => x && isGovUk(x.url)).slice(0, 5).map(x =>
-      '- ' + decode(x.title) + (x.page_age || x.age ? ' (' + String(x.page_age || x.age).slice(0, 10) + ')' : '') + ': ' + decode(x.description).slice(0, 240));
-    return rows.length ? 'Recent gov.uk pages:\n' + rows.join('\n') : 'No recent gov.uk pages found.';
-  } catch(e){ return 'gov.uk news search failed.'; }
+    return ((d.web && d.web.results) || []).filter(x => x && isApproved(x.url));
+  } catch(e){ return []; }
 }
-
+async function tGovNews(a, clock, braveKey){
+  const q = cleanQuery(a.query);
+  if(!braveKey || q.length < 3) return 'Official web search is not available.';
+  const [gov, regs] = await Promise.all([
+    braveQuery(q + ' site:gov.uk', braveKey, clock),
+    braveQuery(q + ' UK regulator guidance judiciary parliament', braveKey, clock)
+  ]);
+  const seen = {}, rows = [];
+  gov.concat(regs).forEach(x => { if(seen[x.url]) return; seen[x.url] = 1;
+    rows.push('- ' + decode(x.title) + (x.page_age || x.age ? ' (' + String(x.page_age || x.age).slice(0, 10) + ')' : '') + ': ' + decode(x.description).slice(0, 240)); });
+  return rows.length ? 'Recent pages from approved UK official bodies:\n' + rows.slice(0, 6).join('\n') : 'No recent official pages found.';
+}
 
 // ───────────────────────── calculators (run locally, exact) ─────────────────────────
 // Dates are ISO "YYYY-MM-DD". These never leave the server; only numbers and dates from
@@ -428,7 +455,7 @@ function toolDefs(latestNews){
     { name: 'calc_arithmetic', description: 'EXACT calculator for any other sum: numbers, + - * / ^ ( ) and min, max, round, floor, ceil, abs. Use it for every calculation not covered above.',
       input_schema: { type: 'object', properties: { expression: { type: 'string', description: 'e.g. min(620, 700) * 13.5' } }, required: ['expression'] } }
   );
-  if(latestNews) t.push({ name: 'search_govuk', description: 'Search recent gov.uk pages (guidance, announcements) for the latest developments.',
+  if(latestNews) t.push({ name: 'search_govuk', description: 'Search recent pages from approved UK official bodies only (gov.uk, judiciary.uk, parliament.uk, regulators such as the ICO, FCA and SRA) for the latest developments and official guidance.',
     input_schema: { type: 'object', properties: { query: { type: 'string', description: 'generic topic words' } }, required: ['query'] } });
   return t;
 }
@@ -459,6 +486,8 @@ const AGENT_SYSTEM =
   '3. READ the current wording of every provision that governs the question with read_legislation: the operative section, its definitions, exceptions, time limits and any commencement or transitional provisions. Do not rely on memory for what the law says. Read several provisions in the same round.\n' +
   '4. Check whether the area has changed recently (recent_legislation) and note any provision flagged as not yet in force.\n' +
   '5. Find the leading authorities (search_case_law) and read the relevant paragraphs of the most important judgments (read_judgment with focus words). Prefer recent appellate authority.\n' +
+  'JURISDICTION: decide whether the question concerns England and Wales, Scotland or Northern Ireland and never treat them as interchangeable. England and Wales is the default. For Scotland look for Acts of the Scottish Parliament (asp) and Scottish statutory instruments (ssi); for Northern Ireland look for NI legislation (nia, nisi). read_legislation shows the nations each provision applies in; check it matches. The case-law tool covers England and Wales and the UK-wide courts; it does not fully cover Scottish or Northern Irish courts, so say that when it matters.\n' +
+  'RANKING: weigh authorities by court level (Supreme Court over Court of Appeal over High Court over tribunals), jurisdiction and legal relevance, not by how recent they are. A newer lower-court decision does not displace a binding higher-court one. Prefer to read the top-level binding authorities.\n' +
   '6. CALCULATIONS: whenever the answer needs a figure or date to be worked out (notice, redundancy pay, deadlines, any sum), you MUST use the calc_ tools; never leave the maths to the answering model. Read the governing provision and any current limit first (for example the latest Employment Rights (Increase of Limits) Order for the cap on a week\'s pay) and pass those figures in. If a needed fact is missing from the question, do not guess: calculate with what you have and say what was missing in your tool inputs where possible, or skip the calculation.\n' +
   '7. Stop when you have what is needed. You have at most ' + MAX_ROUNDS + ' rounds of tool calls, so request several tools at once and be efficient. When finished, reply with just the word DONE.\n\n' +
   'PRIVACY RULE: inputs to the lookup tools (search_*, legislation_*, read_*, recent_*) must be generic law only (the calc_ tools run locally and may use the numbers and dates from the question): Act titles, section numbers, legal concepts. NEVER put names of people or companies, places, addresses, dates, amounts or any facts about the people involved into the inputs of the lookup tools. ' +
@@ -500,8 +529,9 @@ async function researchSources(messages, anthropicKey, braveKey, opts){
   const conv = agentMessages(messages);
   if(!conv.length) return '';
   const tools = toolDefs(!!(o.latestNews && braveKey));
-  const dossier = []; let used = 0;
+  const dossier = [], limits = []; let used = 0;
   const seen = {};
+  const started = new Date();
 
   for(let round = 0; round < MAX_ROUNDS; round++){
     const resp = await callAgent(conv, tools, anthropicKey, clock);
@@ -519,6 +549,7 @@ async function researchSources(messages, anthropicKey, braveKey, opts){
     const answered = {}; results.forEach(r => { answered[r.u.id] = true; });
     conv.push({ role: 'user', content: uses.map(u => ({ type: 'tool_result', tool_use_id: u.id, content: answered[u.id] ? results.find(r => r.u.id === u.id).text : 'Skipped: too many tool calls in one round.' })) });
     results.forEach(r => {
+      if(/^(Could not|Judgment not found|No (legislation|judgments|recent|official)|Invalid|Official web search is not|Skipped|That lookup failed|Unknown tool)/.test(r.text)) limits.push(r.u.name + ': ' + r.text.slice(0, 140).replace(/\n/g, ' '));
       if(used >= DOSSIER_CHARS) return;
       const t = cap(r.text, DOSSIER_CHARS - used);
       used += t.length;
@@ -526,7 +557,11 @@ async function researchSources(messages, anthropicKey, braveKey, opts){
     });
     if(clock.over()) break;
   }
-  return dossier.length ? dossier.join('\n\n---\n\n') : '';
+  if(!dossier.length) return '';
+  const cutoff = started.toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+  return 'RESEARCH CUT-OFF: material retrieved live on ' + cutoff + ' from legislation.gov.uk and the National Archives Find Case Law' + (tools.some(t => t.name === 'search_govuk') ? ' and approved UK official bodies' : '') + '. Anything published or changed after that is not reflected.\n' +
+    (limits.length ? 'RESEARCH LIMITATIONS (these lookups did not succeed; do not claim they were checked):\n' + limits.slice(0, 8).map(l => '- ' + l).join('\n') + '\n' : '') +
+    '\n' + dossier.join('\n\n---\n\n');
 }
 
-module.exports = { calcNotice, calcRedundancy, calcTimeLimit, calcArithmetic, runTool, makeClock, researchSources, provisionFromXml, entries, legId, cleanQuery, legislationPage, isGovUk, toolDefs, agentMessages };
+module.exports = { courtLevel, isApproved, calcNotice, calcRedundancy, calcTimeLimit, calcArithmetic, runTool, makeClock, researchSources, provisionFromXml, entries, legId, cleanQuery, legislationPage, isGovUk, toolDefs, agentMessages };
