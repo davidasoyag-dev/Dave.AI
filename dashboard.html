@@ -1506,7 +1506,13 @@ function mdToHtmlBase(src){
   }
   for(var i = 0; i < lines.length; i++){
     var t = lines[i].trim();
-    if(t === ''){ closeList(); continue; }
+    if(t === ''){
+      // a blank line between list items must not restart the numbering
+      var nx = i + 1; while(nx < lines.length && lines[nx].trim() === '') nx++;
+      var nt = nx < lines.length ? lines[nx].trim() : '';
+      if(!(list === 'ol' && /^\d+[.)]\s+/.test(nt)) && !(list === 'ul' && /^[-*•]\s+/.test(nt))) closeList();
+      continue;
+    }
     // Table: header row + |---| separator + body rows
     if(t.indexOf('|') === 0 && i+1 < lines.length && /^\|[\s:|-]*-[\s:|-]*\|?$/.test(lines[i+1].trim())){
       closeList();
@@ -1520,7 +1526,7 @@ function mdToHtmlBase(src){
     var h = t.match(/^(#{1,6})\s+(.*)$/);
     if(h){ closeList(); var lvl = Math.min(h[1].length + 2, 6); out += '<h' + lvl + '>' + inline(h[2]) + '</h' + lvl + '>'; continue; }
     var ol = t.match(/^\d+[.)]\s+(.*)$/);
-    if(ol){ if(list !== 'ol'){ closeList(); out += '<ol>'; list = 'ol'; } out += '<li>' + inline(ol[1]) + '</li>'; continue; }
+    if(ol){ if(list !== 'ol'){ closeList(); var sn = parseInt(t, 10); out += (sn > 1 ? '<ol start="' + sn + '">' : '<ol>'); list = 'ol'; } out += '<li>' + inline(ol[1]) + '</li>'; continue; }
     var ul = t.match(/^[-*•]\s+(.*)$/);
     if(ul){ if(list !== 'ul'){ closeList(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(ul[1]) + '</li>'; continue; }
     // Disclaimer / note line -> styled caveat box
@@ -2370,13 +2376,26 @@ function renderChat(){
   var el=document.getElementById('cmsgs'); if(!el)return;
   el.innerHTML=chatMsgs.map(function(m,idx){
     if(m.role==='user') return '<div class="msg-u">'+escHtml(m.content)+'</div>';
-    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div>'+buildFollowups(m.followups)+'</div>';
+    return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI Legal Research</div><button class="msg-copy" onclick="copyResearch('+idx+',this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(rClean(m.content))+'</div>'+buildFollowups(m.followups)+'</div>';
   }).join('');
   el.scrollTop=el.scrollHeight;
 }
+
+// Research answers never show links, a Sources list or [n] markers (the evidence stays server-side).
+function rClean(md){
+  if(!md) return '';
+  var s = String(md);
+  // drop a trailing "Sources" block (heading, bold or plain line) up to the Note:/FOLLOWUPS lines
+  s = s.replace(/(^|\n)[ \t]*(?:#{1,6}[ \t]*)?\**[ \t]*(?:Sources?|References?|Bibliography|Further reading|Links?)[ \t]*:?[ \t]*\**[ \t]*(?:\n(?![ \t]*(?:Note[ \t]*:|FOLLOWUPS[ \t]*:))[^\n]*)*/gi, '$1');
+  s = s.replace(/\[(?:https?:\/\/[^\]\s]+)\]\((?:https?:\/\/[^)\s]+)\)/g, '');                 // [url](url)
+  s = s.replace(/\[([^\]]+)\]\((?:https?:\/\/|www\.)[^)\s]*\)/g, '$1');                     // [text](url) -> text
+  s = s.replace(/\(?\bhttps?:\/\/[^\s)<>\]]+\)?/g, '');                                        // bare URLs
+  s = s.replace(/\s?\[\d{1,2}(?:\s*[,\u2013-]\s*\d{1,2})*\](?!\()/g, '');                         // [1] [2,3] markers
+  return s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+}
 function copyResearch(i, btn){
   var m=chatMsgs[i]; if(!m) return;
-  copyText(mdToPlain(m.content), btn);
+  copyText(mdToPlain(rClean(m.content)), btn);
 }
 function escAttr(x){ return (x||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 // Ask a new research question programmatically
@@ -2458,12 +2477,12 @@ async function doR(){
     var target=document.getElementById('r-streaming');
     var aiAct=aiAction('research'); aiAct.latestNews=_rNews;
     var a=await callAIStream(rSys, q, 2800, function(text){
-      if(target){ target.innerHTML=mdToHtml(stripFollowups(text)); if(el) el.scrollTop=el.scrollHeight; }
+      if(target){ target.innerHTML=mdToHtml(rClean(stripFollowups(text))); if(el) el.scrollTop=el.scrollHeight; }
     }, true, rHist, aiAct);
     if(a===null){ a=await callAI(rSys, q, 2800, true, rHist, aiAct); }
     if(aiOk(a)){
       var rPartial=a.indexOf(AI_PARTIAL_NOTE)!==-1; // checked before FOLLOWUPS stripping
-      if(target) target.innerHTML=mdToHtml(stripFollowups(a));
+      if(target) target.innerHTML=mdToHtml(rClean(stripFollowups(a)));
       // Split out the follow-up questions
       var followups=[];
       var fm=a.match(/\n*FOLLOWUPS:\s*([^\n]+)\s*$/i);
