@@ -1236,6 +1236,7 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
 .su-plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
 .su-pc{border:1.5px solid #dbe3f1;border-radius:16px;padding:14px 14px 12px;cursor:pointer;transition:all .2s;position:relative;background:#fff;}
 .su-pc:hover{border-color:#4f72c4;background:#f6f8fc;}
+.su-pc:focus-visible{outline:3px solid #3558a8;outline-offset:2px;}
 .su-pc.sel{border-color:#3558a8;background:#eef3fc;box-shadow:0 0 0 3px rgba(53,88,168,.12);}
 .su-pc.popular::after{content:'Popular';position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#3558a8;color:#fff;font-size:9px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.04em;}
 .su-pc-radio{position:absolute;top:11px;right:11px;width:16px;height:16px;border-radius:50%;border:1.5px solid #b9c6e0;display:flex;align-items:center;justify-content:center;transition:all .2s;}
@@ -1357,11 +1358,11 @@ document.querySelectorAll('.faq-q').forEach(function(q) {
       <div id="su-s1" class="su-panel">
         <h2 class="su-title">Start your free trial</h2>
         <p class="su-sub">14 days free. No card required. Pick the plan that fits your firm.</p>
-        <div class="su-plan-grid">
-          <div class="su-pc" id="su-pc-starter" onclick="suPick('starter')"><div class="su-pc-radio" id="su-pr-starter"></div><div class="su-pc-name">Starter</div><div class="su-pc-price">£49<sub>/mo</sub></div><div class="su-pc-users">1 user</div></div>
-          <div class="su-pc popular" id="su-pc-pro" onclick="suPick('pro')"><div class="su-pc-radio" id="su-pr-pro"></div><div class="su-pc-name">Pro</div><div class="su-pc-price">£149<sub>/mo</sub></div><div class="su-pc-users">Up to 5 users</div></div>
-          <div class="su-pc" id="su-pc-firm" onclick="suPick('firm')"><div class="su-pc-radio" id="su-pr-firm"></div><div class="su-pc-name">Firm</div><div class="su-pc-price">£299<sub>/mo</sub></div><div class="su-pc-users">Up to 10 users</div></div>
-          <div class="su-pc" id="su-pc-enterprise" onclick="suPick('enterprise')"><div class="su-pc-radio" id="su-pr-enterprise"></div><div class="su-pc-name">Enterprise</div><div class="su-pc-price" style="font-size:16px;padding-top:4px">Custom</div><div class="su-pc-users">10+ users</div></div>
+        <div class="su-plan-grid" role="radiogroup" aria-label="Choose a plan">
+          <div class="su-pc" id="su-pc-starter" role="radio" aria-checked="false" tabindex="-1" onclick="suPick('starter')" onkeydown="suCardKey(event,'starter')"><div class="su-pc-radio" id="su-pr-starter"></div><div class="su-pc-name">Starter</div><div class="su-pc-price">£49<sub>/mo</sub></div><div class="su-pc-users">1 user</div></div>
+          <div class="su-pc popular" id="su-pc-pro" role="radio" aria-checked="false" tabindex="0" onclick="suPick('pro')" onkeydown="suCardKey(event,'pro')"><div class="su-pc-radio" id="su-pr-pro"></div><div class="su-pc-name">Pro</div><div class="su-pc-price">£149<sub>/mo</sub></div><div class="su-pc-users">Up to 5 users</div></div>
+          <div class="su-pc" id="su-pc-firm" role="radio" aria-checked="false" tabindex="-1" onclick="suPick('firm')" onkeydown="suCardKey(event,'firm')"><div class="su-pc-radio" id="su-pr-firm"></div><div class="su-pc-name">Firm</div><div class="su-pc-price">£299<sub>/mo</sub></div><div class="su-pc-users">Up to 10 users</div></div>
+          <div class="su-pc" id="su-pc-enterprise" role="radio" aria-checked="false" tabindex="-1" onclick="suPick('enterprise')" onkeydown="suCardKey(event,'enterprise')"><div class="su-pc-radio" id="su-pr-enterprise"></div><div class="su-pc-name">Enterprise</div><div class="su-pc-price" style="font-size:16px;padding-top:4px">Custom</div><div class="su-pc-users">10+ users</div></div>
         </div>
         <button class="su-btn" id="su-s1-btn" onclick="suGoStep(2)" style="margin-top:8px">Continue <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
         <p class="su-footnote">All plans include a 14-day free trial · No credit card required</p>
@@ -1584,12 +1585,25 @@ document.addEventListener('keydown', function(e){
   if (e.key === 'Escape' && document.getElementById('su-overlay').classList.contains('open')) closeSignup();
 });
 
+function suCardKey(e, k) {
+  var keys = Object.keys(suPlans), i = keys.indexOf(k), n = -1;
+  if(e.key===' ' || e.key==='Enter'){ e.preventDefault(); suPick(k); return; }
+  if(e.key==='ArrowRight' || e.key==='ArrowDown') n = (i+1)%keys.length;
+  else if(e.key==='ArrowLeft' || e.key==='ArrowUp') n = (i-1+keys.length)%keys.length;
+  if(n<0) return;
+  e.preventDefault();
+  suPick(keys[n]);
+  var c = document.getElementById('su-pc-'+keys[n]); if(c) c.focus();
+}
+
 function suPick(p) {
   suCurPlan = p;
   Object.keys(suPlans).forEach(function(k){
     var card = document.getElementById('su-pc-'+k);
     var radio = document.getElementById('su-pr-'+k);
     if(!card) return;
+    card.setAttribute('aria-checked', k===p ? 'true' : 'false');
+    card.tabIndex = (k===p) ? 0 : -1;
     if(k===p){ card.classList.add('sel'); radio.innerHTML='<svg width="8" height="8" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'; }
     else { card.classList.remove('sel'); radio.innerHTML=''; }
   });
