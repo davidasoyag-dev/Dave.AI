@@ -1665,7 +1665,7 @@ function vDraft(){
         '<div class="card" style="background:rgba(79,114,196,.04);border-color:rgba(79,114,196,.12)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:10px;letter-spacing:.04em">Drafting tips</div><ul style="list-style:none;font-size:11px;color:var(--muted);line-height:1.9;padding:0"><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Include both party names and company numbers</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Specify the governing law (default: English law)</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Mention key terms: duration, payment, termination</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Add any special clauses you need</li></ul></div>' +
       '</div>' +
       '<div>' +
-        '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px">'+draftOutHtml()+'</div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="copyText(mdToPlain(window._lastDraftText||document.getElementById(\'dout\').textContent),this)">Copy</button></div></div>' +
+        '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px">'+draftOutHtml()+'</div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="if(window._lastDraftText){copyText(mdToPlain(window._lastDraftText),this);}else{showNotice(\'Generate a draft first.\', \'alert\', {id:\'validate\'});}">Copy</button></div></div>' +
         '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save"'+(saveLbl==='Save to History'?'':' disabled')+'>'+saveLbl+'</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="dlDocWord()">Download .doc (Word)</button></div>' +
         '<div id="draft-refine" style="display:'+(hasDraft&&!_dBusy?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px"><input class="chat-inp" id="dref" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" onkeydown="if(event.key===\'Enter\'){event.preventDefault();doRefineDraft();}"/><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
       '</div>' +
@@ -1682,6 +1682,9 @@ async function doDraft(){
   _dBusy = true;
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
   var rf0=document.getElementById('draft-refine'); if(rf0) rf0.style.display='none';
+  // A new request starts: the previous draft must not stay reachable by Copy / Download / Save if this one fails
+  window._lastDraftText = ''; window._draft = null;
+  var sb0=document.getElementById('dbtn-save'); if(sb0){ sb0.disabled=true; sb0.textContent='Save to History'; }
   var out = document.getElementById('dout');
   out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
   var sys = null; // system prompt is set by the server (feature 'draft')
@@ -1704,7 +1707,10 @@ async function doDraft(){
     _dBusy = false;
     out = document.getElementById('dout') || out; // the view may have been re-rendered meanwhile
     btn = document.getElementById('dbtn') || btn;
-    if(aiOk(r)){
+    if(aiOk(r) && r.indexOf(AI_PARTIAL_NOTE) !== -1){
+      // Cut off: show what arrived with a warning, but never offer it as a finished document
+      out.innerHTML='<div role="alert" style="font-family:var(--font);white-space:normal;font-size:12px;color:var(--red);background:rgba(224,90,80,.06);border:1px solid rgba(224,90,80,.25);border-radius:8px;padding:8px 12px;margin-bottom:12px">Draft was cut off. Click Generate again.</div><div class="msg-a-body">'+mdToHtml(r.split(AI_PARTIAL_NOTE).join(''))+'</div>';
+    } else if(aiOk(r)){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
       // Only a real answer is saved + counted (failures return null/false, never text)
       window._lastDraftText = r;
@@ -1755,7 +1761,8 @@ function saveBlob(blob, name){
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
 }
 function dlDoc(){
-  var txt=mdToPlain(window._lastDraftText||document.getElementById('dout').textContent);
+  if(!window._lastDraftText){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
+  var txt=mdToPlain(window._lastDraftText);
   saveBlob(new Blob([txt],{type:'text/plain;charset=utf-8'}), draftFileName()+'.txt');
 }
 // Word download without a new library: an HTML document saved as .doc, which Word opens
@@ -1775,6 +1782,7 @@ function refineFailed(out, cur, msg){
 // Refine the current draft with a follow-up instruction (edits the same document, doesn't count as new)
 async function doRefineDraft(){
   var cur=window._lastDraftText; if(!cur){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
+  cur=cur.split(AI_PARTIAL_NOTE).join('');
   var inp=document.getElementById('dref'); var instr=inp?inp.value.trim():''; if(!instr) return;
   if(_dBusy) return;
   if(!checkUsageLimit('refine')) return;
@@ -1792,7 +1800,9 @@ async function doRefineDraft(){
     _dBusy=false;
     // The user may have left the Draft view and come back meanwhile
     out=document.getElementById('dout')||out; btn=document.getElementById('drefbtn')||btn; inp=document.getElementById('dref')||inp;
-    if(aiOk(r)){
+    if(aiOk(r) && r.indexOf(AI_PARTIAL_NOTE) !== -1){
+      refineFailed(out, cur, 'The revised document was cut off.');
+    } else if(aiOk(r)){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
       window._lastDraftText=r;
       var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
@@ -1830,7 +1840,7 @@ function vDocChat(){
 }
 function dcTab(t,btn){ document.querySelectorAll('#dc-upload,#dc-paste').forEach(function(e){e.style.display='none';}); document.getElementById('dc-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
 function dcDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) dcFile(e.dataTransfer.files[0]); }
-function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(){ if(fn)fn.textContent='Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
+function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(err){ if(fn)fn.textContent=(err && err.message===FILE_TYPE_MSG)?FILE_TYPE_MSG:'Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
 function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){showNotice('Paste some text first.', 'alert', {id:'validate'});return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
 function dcReset(){ if(_dcBusy) return; dcDoc=''; dcName=''; dcMsgs=[]; go('docchat'); }
 function renderDcChat(){ var el=document.getElementById('dcmsgs'); if(!el)return; el.innerHTML=dcMsgs.map(function(m,idx){ if(m.role==='user')return '<div class="msg-u">'+escHtml(m.content)+'</div>'; return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI</div><button class="msg-copy" onclick="copyText(mdToPlain(dcMsgs['+idx+'].content),this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>'; }).join(''); el.scrollTop=el.scrollHeight; }
@@ -2007,8 +2017,10 @@ function loadScript(src){
 
 // Universal text extractor — handles TXT, PDF and Word (.docx). Returns a Promise<string>.
 // PDF / Word libraries are loaded on demand before reading.
+var FILE_TYPE_MSG = 'Dave.AI can read PDF, .docx and .txt. Open the file in Word and use Save As .docx, then upload it again.';
 function extractFileText(file){
   var name = (file.name||'').toLowerCase();
+  if(!/\.(txt|pdf|docx)$/.test(name)) return Promise.reject(new Error(FILE_TYPE_MSG));
   var lib = name.endsWith('.pdf') ? 'vendor/pdf.min.js' : (name.endsWith('.docx') ? 'vendor/mammoth.browser.min.js' : null);
   return (lib ? loadScript(lib) : Promise.resolve()).then(function(){ return readFileText(file); });
 }
@@ -2050,7 +2062,13 @@ function readFileText(file){
         fr2.readAsArrayBuffer(file);
       } else {
         var fr3 = new FileReader();
-        fr3.onload = function(e){ resolve(e.target.result); };
+        fr3.onload = function(e){
+          var t = e.target.result || '', bad = 0, i;
+          if(t.indexOf('\u00d0\u00cf\u0011\u00e0') === 0 || t.indexOf('\u0000') !== -1) { reject(new Error(FILE_TYPE_MSG)); return; } // legacy Office / binary
+          for(i=0;i<t.length;i++){ var c=t.charCodeAt(i); if(c===0xFFFD || (c<32 && c!==9 && c!==10 && c!==13 && c!==12)) bad++; }
+          if(t.length && bad/t.length > 0.05){ reject(new Error(FILE_TYPE_MSG)); return; }
+          resolve(t);
+        };
         fr3.onerror = reject;
         fr3.readAsText(file);
       }
@@ -2071,7 +2089,7 @@ function rvLoad(f){
     }
   }).catch(function(err){
     rvFileText = '';
-    if(fn){ fn.textContent = 'Could not read ' + f.name + '. Try a TXT, PDF or .docx file, or paste the text instead.'; }
+    if(fn){ fn.textContent = (err && err.message === FILE_TYPE_MSG) ? FILE_TYPE_MSG : 'Could not read ' + f.name + '. Try a TXT, PDF or .docx file, or paste the text instead.'; }
   });
 }
 // Plain-text version of a review (result screen Copy/Download and the History viewer)
@@ -2294,15 +2312,15 @@ function renderResearchHistory(){
   var rs=docs.filter(function(d){ return d.type==='Research'; });
   if(!rs.length) return '<div style="font-size:11px;color:var(--dim);line-height:1.6">Your past research questions will appear here.</div>';
   return rs.slice(0,40).map(function(d){
-    var idx=docs.indexOf(d);
+    var idx=docKey(d);
     var qn=(d.name||'').replace(/^Research —\s*/,'');
     return '<div class="rs-hist-item" role="button" tabindex="0" title="'+escAttr(qn)+'" onclick="loadResearch('+idx+')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();loadResearch('+idx+');}">'+escHtml(qn)+'</div>';
   }).join('');
 }
 // Load a saved Q&A back into the chat
-function loadResearch(idx){
+function loadResearch(k){
   if(_rBusy) return; // wait for the answer in progress
-  var d=docs[idx]; if(!d) return;
+  var d=docs[docIndex(k)]; if(!d) return;
   var c=d.content||''; var mm=c.match(/^Q:\s*([\s\S]*?)\n\nA:\s*([\s\S]*)$/);
   if(mm){ chatMsgs=[{role:'user',content:mm[1].trim()},{role:'assistant',content:mm[2].trim(),followups:[]}]; }
   go('research');
