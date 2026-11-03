@@ -442,6 +442,13 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
 .rs-mob-hist[open] summary{margin-bottom:6px;}
 @media(max-width:860px){.rs-mob-hist{display:block;}}
 @media(max-width:768px){
+  .grid4{grid-template-columns:repeat(2,1fr);}
+  .inp,.chat-inp,.su-input,.tb-search input,select,textarea{font-size:16px;}
+}
+@media(max-width:380px){.grid4{grid-template-columns:1fr;}}
+.msg-a-body{overflow-x:auto;}
+.msg-a-body .md-table{display:block;overflow-x:auto;}
+@media(max-width:768px){
   .sidebar.open ~ .nav-scrim{display:block;position:fixed;top:var(--topbar);left:0;right:0;bottom:0;background:rgba(20,30,60,.35);z-index:59;}
   .notice-stack{left:16px;right:16px;bottom:16px;max-width:none;}
 }
@@ -1375,7 +1382,12 @@ function mdToHtml(src){
   }
   for(var i = 0; i < lines.length; i++){
     var t = lines[i].trim();
-    if(t === ''){ closeList(); continue; }
+    if(t === ''){
+      // keep a numbered list open across blank lines when the next non-empty line is another numbered item
+      var nx = i + 1; while(nx < lines.length && lines[nx].trim() === '') nx++;
+      if(!(list === 'ol' && nx < lines.length && /^\d+[.)]\s+/.test(lines[nx].trim()))) closeList();
+      continue;
+    }
     // Table: header row + |---| separator + body rows
     if(t.indexOf('|') === 0 && i+1 < lines.length && /^\|[\s:|-]*-[\s:|-]*\|?$/.test(lines[i+1].trim())){
       closeList();
@@ -1388,8 +1400,8 @@ function mdToHtml(src){
     }
     var h = t.match(/^(#{1,6})\s+(.*)$/);
     if(h){ closeList(); var lvl = Math.min(h[1].length + 2, 6); out += '<h' + lvl + '>' + inline(h[2]) + '</h' + lvl + '>'; continue; }
-    var ol = t.match(/^\d+[.)]\s+(.*)$/);
-    if(ol){ if(list !== 'ol'){ closeList(); out += '<ol>'; list = 'ol'; } out += '<li>' + inline(ol[1]) + '</li>'; continue; }
+    var ol = t.match(/^(\d+)[.)]\s+(.*)$/);
+    if(ol){ if(list !== 'ol'){ closeList(); var olN = parseInt(ol[1], 10); out += (olN > 1 ? '<ol start="' + olN + '">' : '<ol>'); list = 'ol'; } out += '<li>' + inline(ol[2]) + '</li>'; continue; }
     var ul = t.match(/^[-*•]\s+(.*)$/);
     if(ul){ if(list !== 'ul'){ closeList(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(ul[1]) + '</li>'; continue; }
     // Disclaimer / note line -> styled caveat box
