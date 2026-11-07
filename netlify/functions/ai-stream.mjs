@@ -331,6 +331,7 @@ async function braveSearch(query){
 }
 
 export default async (req) => {
+  const startedAt = Date.now();
   const cors = corsHeaders(req.headers.get('origin') || '');
 
   if (req.method === 'OPTIONS') {
@@ -415,17 +416,29 @@ export default async (req) => {
     }
   }
 
+  // One short server-side retry on a brief Anthropic overload (529, or 429 with a
+  // Retry-After of 3s or less) before we refund and report "busy" (F-20261107-2).
+  const sendUpstream = () => fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(outBody)
+  });
   let upstream;
   try {
-    upstream = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify(outBody)
-    });
+    upstream = await sendUpstream();
+    if (upstream.status === 529 || upstream.status === 429) {
+      const ra = parseFloat(upstream.headers.get('retry-after') || '');
+      const waitMs = upstream.status === 429 ? (isFinite(ra) ? ra * 1000 : Infinity) : 1500;
+      if (waitMs <= 3000) {
+        await upstream.text().catch(() => '');
+        await new Promise(r => setTimeout(r, Math.max(1000, waitMs)));
+        upstream = await sendUpstream();
+      }
+    }
   } catch (e) {
     await refundAiAction(token, built.requestId, usage);
     return new Response(JSON.stringify({ error: 'Could not reach the AI service. Please try again.' }), {
@@ -449,8 +462,37 @@ export default async (req) => {
     });
   }
 
+  // Wall-clock guard (F-20261017-8): the function is killed at 30s, so at ~27s end
+  // the stream cleanly with an SSE error event. The client already treats an
+  // error event / missing message_stop as "cut off" and flags the text as incomplete.
+  const remaining = Math.max(1000, 27000 - (Date.now() - startedAt));
+  const reader = upstream.body.getReader();
+  let guardTimer;
+  const guarded = new ReadableStream({
+    start(controller) {
+      guardTimer = setTimeout(() => {
+        try {
+          controller.enqueue(new TextEncoder().encode('\n\nevent: error\ndata: {"type":"error","error":{"type":"timeout_error","message":"Response took too long"}}\n\n'));
+          controller.close();
+        } catch (e) {}
+        reader.cancel().catch(() => {});
+      }, remaining);
+    },
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) { clearTimeout(guardTimer); try { controller.close(); } catch (e) {} return; }
+        try { controller.enqueue(value); } catch (e) {}
+      } catch (e) {
+        clearTimeout(guardTimer);
+        try { controller.error(e); } catch (e2) {}
+      }
+    },
+    cancel() { clearTimeout(guardTimer); return reader.cancel().catch(() => {}); }
+  });
+
   // Stream the SSE response straight through to the client
-  return new Response(upstream.body, {
+  return new Response(guarded, {
     status: 200,
     headers: {
       ...cors,
