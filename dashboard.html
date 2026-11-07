@@ -357,6 +357,7 @@ select.inp{cursor:pointer;}
 .inp:focus{background:#fff;box-shadow:0 0 0 3px rgba(53,88,168,.14);}
 .chat-inp{border-radius:999px;padding:12px 18px;font-size:14px;background:#fff;}
 .chat-inp:focus{box-shadow:0 0 0 3px rgba(53,88,168,.14);}
+textarea.chat-inp{resize:none;line-height:1.45;max-height:200px;overflow-y:auto;border-radius:18px;box-sizing:border-box;}
 .ai-out{font-family:var(--font);font-size:14px;line-height:1.75;border-radius:18px;padding:22px;background:#fff;}
 .risk{border-radius:12px;padding:13px 16px;}
 .risk-ttl{font-size:13px;}
@@ -1180,6 +1181,8 @@ function updateUsageBadge(){
 // so unsupported browsers simply never see the mic button.
 var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 var _voiceRec = null;
+// Grows a multi-line chat box with its content (about 8 rows max, then scrolls)
+function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight+2,200)+'px'; }
 function micBtn(inputId, btnId){
   if(!SpeechRec) return '';
   return '<button type="button" class="btn btn-g mic-btn" id="'+btnId+'" title="Speak your question" aria-label="Speak your question" aria-pressed="false" onclick="toggleVoice(\''+inputId+'\',\''+btnId+'\')">' +
@@ -1198,7 +1201,7 @@ function toggleVoice(inputId, btnId){
   rec.onresult = function(e){
     var text = '';
     for(var i = 0; i < e.results.length; i++){ text += e.results[i][0].transcript; }
-    input.value = base + text;
+    input.value = base + text; autoGrow(input);
   };
   rec.onerror = function(){ /* mic denied / no speech detected — fail quietly, onend still fires */ };
   rec.onend = function(){ _voiceRec = null; if(btn){ btn.classList.remove('mic-on'); btn.setAttribute('aria-pressed','false'); } };
@@ -1667,7 +1670,7 @@ function vDraft(){
       '<div>' +
         '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px">'+draftOutHtml()+'</div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="copyText(mdToPlain(window._lastDraftText||document.getElementById(\'dout\').textContent),this)">Copy</button></div></div>' +
         '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save"'+(saveLbl==='Save to History'?'':' disabled')+'>'+saveLbl+'</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="dlDocWord()">Download .doc (Word)</button></div>' +
-        '<div id="draft-refine" style="display:'+(hasDraft&&!_dBusy?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px"><input class="chat-inp" id="dref" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" onkeydown="if(event.key===\'Enter\'){event.preventDefault();doRefineDraft();}"/><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
+        '<div id="draft-refine" style="display:'+(hasDraft&&!_dBusy?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px;align-items:flex-end"><textarea class="chat-inp" id="dref" rows="2" aria-label="Refine this draft" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" oninput="autoGrow(this)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doRefineDraft();}"></textarea><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -1798,7 +1801,7 @@ async function doRefineDraft(){
       var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
       window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
       var sb=document.getElementById('dbtn-save'); if(sb){ sb.disabled=false; sb.textContent='Save to History'; }
-      if(inp) inp.value='';
+      if(inp){ inp.value=''; autoGrow(inp); inp.style.height=''; }
     } else {
       refineFailed(out, cur, aiErrText(r));
     }
@@ -1820,7 +1823,7 @@ function vDocChat(){
     (loaded
       ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
         '<div class="chat-msgs" id="dcmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
-        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" aria-label="Ask about this document" placeholder="'+(_dcBusy?'Working on your question…':'Ask about this document… e.g. what is the notice period?')+'"'+(_dcBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"'+(_dcBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
+        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px;align-items:flex-end"><textarea class="chat-inp" id="dci" rows="2" aria-label="Ask about this document" placeholder="'+(_dcBusy?'Working on your question…':'Ask about this document… e.g. what is the notice period?')+'"'+(_dcBusy?' disabled':'')+' oninput="autoGrow(this)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"></textarea>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"'+(_dcBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
       : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="dc-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a document (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'dc-file\')" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
         '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
@@ -2247,7 +2250,7 @@ function vResearch(){
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px;align-items:flex-end"><textarea class="chat-inp" id="ri" rows="2" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' oninput="autoGrow(this)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"></textarea>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
@@ -2265,7 +2268,7 @@ function copyResearch(i, btn){
 }
 function escAttr(x){ return (x||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 // Ask a new research question programmatically
-function askResearch(q){ if(_rBusy) return; var i=document.getElementById('ri'); if(i){ i.value=q; } doR(); }
+function askResearch(q){ if(_rBusy) return; var i=document.getElementById('ri'); if(i){ i.value=q; autoGrow(i); } doR(); }
 // Clicking a highlighted citation asks the AI about it
 function askCite(text){ if(text) askResearch('Explain ' + text.trim() + ' and how it applies in practice under UK law.'); }
 // Follow-up question chips under the latest answer
@@ -2307,7 +2310,7 @@ function loadResearch(idx){
   if(mm){ chatMsgs=[{role:'user',content:mm[1].trim()},{role:'assistant',content:mm[2].trim(),followups:[]}]; }
   go('research');
 }
-function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
+function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;autoGrow(i);doR();}},50); }
 // One Research question at a time: a second Enter / follow-up click while an answer
 // is on its way would send a parallel paid request and mix up the answers.
 var _rBusy=false;
