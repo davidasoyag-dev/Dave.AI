@@ -380,6 +380,7 @@ select.inp{cursor:pointer;}
 .inp:focus{background:#fff;box-shadow:0 0 0 3px rgba(53,88,168,.14);}
 .chat-inp{border-radius:999px;padding:12px 18px;font-size:14px;background:#fff;}
 .chat-inp:focus{box-shadow:0 0 0 3px rgba(53,88,168,.14);}
+textarea.chat-inp{resize:none;line-height:1.45;max-height:200px;overflow-y:auto;border-radius:18px;box-sizing:border-box;}
 .ai-out{font-family:var(--font);font-size:14px;line-height:1.75;border-radius:18px;padding:22px;background:#fff;}
 .risk{border-radius:12px;padding:13px 16px;}
 .risk-ttl{font-size:13px;}
@@ -410,6 +411,10 @@ select.inp{cursor:pointer;}
 .trial-expired-box{border-radius:28px;box-shadow:0 30px 80px -20px rgba(11,23,48,.5);}
 .welcome-banner{border-radius:20px;}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+
+/* Confidentiality notice (added for F-20261103-4) */
+.conf-note{font-size:12px;line-height:1.5;color:var(--muted);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:12px;}
+.conf-note a{color:var(--blue2);text-decoration:underline;}
 
 /* ── Responsive ── */
 @media(max-width:1024px){
@@ -465,6 +470,13 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
 .rs-mob-hist[open] summary{margin-bottom:6px;}
 @media(max-width:860px){.rs-mob-hist{display:block;}}
 @media(max-width:768px){
+  .grid4{grid-template-columns:repeat(2,1fr);}
+  .inp,.chat-inp,.su-input,.tb-search input,select,textarea{font-size:16px;}
+}
+@media(max-width:380px){.grid4{grid-template-columns:1fr;}}
+.msg-a-body{overflow-x:auto;}
+.msg-a-body .md-table{display:block;overflow-x:auto;}
+@media(max-width:768px){
   .sidebar.open ~ .nav-scrim{display:block;position:fixed;top:var(--topbar);left:0;right:0;bottom:0;background:rgba(20,30,60,.35);z-index:59;}
   .notice-stack{left:16px;right:16px;bottom:16px;max-width:none;}
 }
@@ -490,7 +502,7 @@ button.qa{font:inherit;text-align:inherit;color:inherit;width:100%;margin:0;-web
       <svg aria-hidden="true" width="28" height="28" fill="none" stroke="#c8963c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2.5"/><circle cx="12" cy="16" r=".8" fill="#c8963c"/></svg>
     </div>
     <h2 class="trial-expired-title" id="teo-title" tabindex="-1">Your free trial has ended</h2>
-    <div class="trial-expired-sub">Your 14-day trial is up. Choose a plan below to keep full access to Dave.AI — contract drafting, document review and AI legal research.</div>
+    <div class="trial-expired-sub" id="teo-sub">Your 14-day trial is up. Choose a plan below to keep full access to Dave.AI — contract drafting, document review and AI legal research.</div>
     <div class="trial-expired-plans" id="teo-plans"></div>
     <div class="teo-actions">
       <button type="button" class="btn btn-g" onclick="downloadMyDocs()">Download my documents</button>
@@ -608,12 +620,16 @@ var STRIPE = {
   firm:    'https://buy.stripe.com/test_8x27sLaKhfCNbBk2du8bS02'
 };
 
+// Short neutral notice shown above the Draft, Review and Ask a Doc inputs (no legal claims)
+function confNoticeHtml(){
+  return '<div class="conf-note">Don\'t include client names or privileged material unless your firm has approved Dave.AI. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></div>';
+}
 var PAYMENTS_LIVE = false; // set to true when Stripe live payments are switched on
 
 // Entry point for every upgrade / choose-plan button.
 function goToCheckout(key){
   if(!PAYMENTS_LIVE){
-    alert('Paid plans are launching soon. We\'ll email you before anything is charged. Questions? support@daveai.law');
+    showNotice('Paid plans are launching soon. We\'ll email you before anything is charged. Questions? support@daveai.law', 'status', {id:'checkout'});
     return;
   }
   window.location.href = stripeUrl(key);
@@ -831,19 +847,38 @@ function applyTrialState(forceExpired){
         +'<div class="ms-plan-name">'+p.name+'</div>'
         +'<div class="ms-plan-price">'+p.price+'<sub>/mo</sub></div>'
         +'<div class="ms-plan-users">'+p.users+'</div>'
-        +'<button class="ms-plan-btn" onclick="goToCheckout(\''+p.key+'\')">Activate '+p.name+' →</button>'
+        +(PAYMENTS_LIVE
+          ? '<button class="ms-plan-btn" onclick="goToCheckout(\''+p.key+'\')">Activate '+p.name+' →</button>'
+          : '<a class="ms-plan-btn" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="mailto:support@daveai.law?subject='+encodeURIComponent('Notify me when '+p.name+' opens')+'">Notify me when '+p.name+' opens</a>')
         +'</div>';
     }).join('');
+    var tsub = document.getElementById('teo-sub');
+    if(tsub) tsub.textContent = PAYMENTS_LIVE
+      ? 'Your 14-day trial is up. Choose a plan below to keep full access to Dave.AI — contract drafting, document review and AI legal research.'
+      : 'Your 14-day trial is up. Paid plans are launching soon and payments aren\'t live yet, so nothing can be charged. You can still download your documents below, or ask us to let you know when a plan opens.';
     var tf = document.getElementById('teo-foot');
     if(tf) tf.textContent = PAYMENTS_LIVE
       ? 'Secure checkout · Cancel anytime · Designed with UK GDPR in mind'
       : 'Paid plans are launching soon — email support@daveai.law to continue';
     var wasHidden = ov.style.display === 'none';
     ov.style.display = 'flex';
+    setBgInert(true);
     if(wasHidden){ var th = document.getElementById('teo-title'); if(th) th.focus(); }
   } else {
     ov.style.display = 'none';
+    setBgInert(false);
   }
+}
+// Make the page behind a modal dialog unreachable by keyboard / screen reader.
+// Never applied to the dialog itself. Safe where `inert` is unsupported (no-op).
+function setBgInert(on, onlyChrome){
+  ['main','sidebar'].forEach(function(id){
+    if(onlyChrome && id === 'main') return;
+    var el = document.getElementById(id); if(!el) return;
+    if(on) el.setAttribute('inert',''); else el.removeAttribute('inert');
+  });
+  var tb = document.querySelector('.topbar');
+  if(tb){ if(on) tb.setAttribute('inert',''); else tb.removeAttribute('inert'); }
 }
 
 // Export the user's saved documents as one plain-text file (used from the
@@ -1203,6 +1238,8 @@ function updateUsageBadge(){
 // so unsupported browsers simply never see the mic button.
 var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 var _voiceRec = null;
+// Grows a multi-line chat box with its content (about 8 rows max, then scrolls)
+function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight+2,200)+'px'; }
 function micBtn(inputId, btnId){
   if(!SpeechRec) return '';
   return '<button type="button" class="btn btn-g mic-btn" id="'+btnId+'" title="Speak your question" aria-label="Speak your question" aria-pressed="false" onclick="toggleVoice(\''+inputId+'\',\''+btnId+'\')">' +
@@ -1221,7 +1258,7 @@ function toggleVoice(inputId, btnId){
   rec.onresult = function(e){
     var text = '';
     for(var i = 0; i < e.results.length; i++){ text += e.results[i][0].transcript; }
-    input.value = base + text;
+    input.value = base + text; autoGrow(input);
   };
   rec.onerror = function(){ /* mic denied / no speech detected — fail quietly, onend still fires */ };
   rec.onend = function(){ _voiceRec = null; if(btn){ btn.classList.remove('mic-on'); btn.setAttribute('aria-pressed','false'); } };
@@ -1507,10 +1544,9 @@ function mdToHtmlBase(src){
   for(var i = 0; i < lines.length; i++){
     var t = lines[i].trim();
     if(t === ''){
-      // a blank line between list items must not restart the numbering
+      // keep a numbered list open across blank lines when the next non-empty line is another numbered item
       var nx = i + 1; while(nx < lines.length && lines[nx].trim() === '') nx++;
-      var nt = nx < lines.length ? lines[nx].trim() : '';
-      if(!(list === 'ol' && /^\d+[.)]\s+/.test(nt)) && !(list === 'ul' && /^[-*•]\s+/.test(nt))) closeList();
+      if(!(list === 'ol' && nx < lines.length && /^\d+[.)]\s+/.test(lines[nx].trim()))) closeList();
       continue;
     }
     // Table: header row + |---| separator + body rows
@@ -1525,8 +1561,8 @@ function mdToHtmlBase(src){
     }
     var h = t.match(/^(#{1,6})\s+(.*)$/);
     if(h){ closeList(); var lvl = Math.min(h[1].length + 2, 6); out += '<h' + lvl + '>' + inline(h[2]) + '</h' + lvl + '>'; continue; }
-    var ol = t.match(/^\d+[.)]\s+(.*)$/);
-    if(ol){ if(list !== 'ol'){ closeList(); var sn = parseInt(t, 10); out += (sn > 1 ? '<ol start="' + sn + '">' : '<ol>'); list = 'ol'; } out += '<li>' + inline(ol[1]) + '</li>'; continue; }
+    var ol = t.match(/^(\d+)[.)]\s+(.*)$/);
+    if(ol){ if(list !== 'ol'){ closeList(); var olN = parseInt(ol[1], 10); out += (olN > 1 ? '<ol start="' + olN + '">' : '<ol>'); list = 'ol'; } out += '<li>' + inline(ol[2]) + '</li>'; continue; }
     var ul = t.match(/^[-*•]\s+(.*)$/);
     if(ul){ if(list !== 'ul'){ closeList(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(ul[1]) + '</li>'; continue; }
     // Disclaimer / note line -> styled caveat box
@@ -1565,6 +1601,12 @@ function mdToPlain(src){
 // stop (no plan / limit reached / model refused; show aiErrText(), don't fall
 // back), or the partial text ending in AI_PARTIAL_NOTE if the answer was cut off
 // (stream broke, hit max_tokens, SSE error, or no message_stop after some text).
+// Shows 'Dave.AI is busy, retrying...' while waiting before the one overload retry.
+async function _aiBusyWait(ms){
+  showNotice('Dave.AI is busy, retrying...', 'status', { id:'ai-progress', sticky:true });
+  try { await new Promise(function(res){ setTimeout(res, ms); }); }
+  finally { showNotice('', 'status', { id:'ai-progress' }); }
+}
 async function callAIStream(sys, usr, maxTok, onChunk, webSearch, history, opts){
   _aiErr = '';
   var full = '';
@@ -1575,6 +1617,12 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch, history, opts)
   function armIdle(){ clearTimeout(idle); idle = setTimeout(function(){ controller.abort(); }, 25000); }
   try {
     var _h = await _aiHeaders();
+    // Overloaded (429/529, or an in-stream overloaded_error) before any text has
+    // arrived: wait once, then re-issue the same request (same request_id so the
+    // server counts the action once). Single retry only, no model fallback.
+    for(var attempt = 0; attempt < 2; attempt++){
+    var raMs = 0;
+    stopReason = ''; sawStop = false; streamErr = '';
     armIdle();
     var r = await fetch('/.netlify/functions/ai-stream', {
       method: 'POST',
@@ -1598,7 +1646,16 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch, history, opts)
     if(r.status === 401) return null;
     var stop = await _aiStopText(r);
     if(stop){ _aiErr = stop; return false; }
-    if(r.status === 429 || r.status === 529){ _aiErr = AI_BUSY_MSG; return false; }
+    if(r.status === 429 || r.status === 529){
+      if(attempt === 0 && !full){
+        var ra = parseFloat(r.headers.get('retry-after'));
+        raMs = (ra > 0 ? Math.min(ra, 10) * 1000 : 3000) + Math.floor(Math.random() * 1000);
+        try { if(r.body) r.body.cancel(); } catch(eC){}
+        await _aiBusyWait(raMs);
+        continue;
+      }
+      _aiErr = AI_BUSY_MSG; return false;
+    }
     if(!r.ok || !r.body) throw new Error('HTTP ' + r.status);
 
     var reader = r.body.getReader();
@@ -1633,6 +1690,12 @@ async function callAIStream(sys, usr, maxTok, onChunk, webSearch, history, opts)
     }
     // The model refused: final, don't fall back (that would bill a second attempt)
     if(stopReason === 'refusal'){ _aiErr = AI_REFUSAL_MSG; return false; }
+    if(!full && streamErr === 'overloaded_error' && attempt === 0){
+      await _aiBusyWait(3000 + Math.floor(Math.random() * 1000));
+      continue;
+    }
+    break;
+    } // end single-retry loop
     if(!full){
       if(streamErr === 'overloaded_error'){ _aiErr = AI_BUSY_MSG; return false; }
       return null;               // nothing streamed — let caller fall back
@@ -1699,20 +1762,20 @@ function vDash(){
       '<div class="ms-plan">' +
         '<div class="ms-plan-name">Starter</div>' +
         '<div class="ms-plan-price">£49<sub>/mo</sub></div>' +
-        '<div class="ms-plan-users">1 user · 20 docs/month</div>' +
+        '<div class="ms-plan-users">1 user · 20 AI actions/month (Research not counted)</div>' +
         '<button class="ms-plan-btn" onclick="goToCheckout(\'starter\')">Select Starter</button>' +
       '</div>' +
       '<div class="ms-plan popular">' +
         '<div class="ms-popular-tag">Most popular</div>' +
         '<div class="ms-plan-name">Pro</div>' +
         '<div class="ms-plan-price">£149<sub>/mo</sub></div>' +
-        '<div class="ms-plan-users">Up to 5 users · Unlimited docs (fair use)</div>' +
+        '<div class="ms-plan-users">Up to 5 users · Fair use: 300 AI actions per user/month (max 100/day)</div>' +
         '<button class="ms-plan-btn" onclick="goToCheckout(\'pro\')">Select Pro</button>' +
       '</div>' +
       '<div class="ms-plan">' +
         '<div class="ms-plan-name">Firm</div>' +
         '<div class="ms-plan-price">£299<sub>/mo</sub></div>' +
-        '<div class="ms-plan-users">Up to 10 users · Unlimited docs (fair use)</div>' +
+        '<div class="ms-plan-users">Up to 10 users · Fair use: 300 AI actions per user/month (max 100/day)</div>' +
         '<button class="ms-plan-btn" onclick="goToCheckout(\'firm\')">Select Firm</button>' +
       '</div>' +
     '</div>' +
@@ -1779,16 +1842,17 @@ function vDraft(){
     '<div class="grid2">' +
       '<div class="no-print">' +
         '<div class="card" style="margin-bottom:14px">' +
-          '<div class="field"><label>Document type</label><select class="inp" id="dt" onchange="draftForm.type=this.value">'+DRAFT_TYPES.map(function(t){ return '<option'+(t===draftForm.type?' selected':'')+'>'+escHtml(t)+'</option>'; }).join('')+'</select></div>' +
-          '<div class="field"><label>Requirements</label><textarea class="inp" id="dp" rows="6" oninput="draftForm.prompt=this.value" placeholder="e.g. Mutual NDA between Acme Ltd and Beta Co. 24 month term. English law. Include non-solicitation clause…">'+escHtml(draftForm.prompt)+'</textarea></div>' +
+          confNoticeHtml() +
+          '<div class="field"><label for="dt">Document type</label><select class="inp" id="dt" onchange="draftForm.type=this.value">'+DRAFT_TYPES.map(function(t){ return '<option'+(t===draftForm.type?' selected':'')+'>'+escHtml(t)+'</option>'; }).join('')+'</select></div>' +
+          '<div class="field"><label for="dp">Requirements</label><textarea class="inp" id="dp" rows="6" oninput="draftForm.prompt=this.value" placeholder="e.g. Mutual NDA between Acme Ltd and Beta Co. 24 month term. English law. Include non-solicitation clause…">'+escHtml(draftForm.prompt)+'</textarea></div>' +
           '<div style="display:flex;gap:10px"><button class="btn btn-p" onclick="doDraft()" id="dbtn" style="white-space:nowrap"'+(_dBusy?' disabled':'')+'>'+(_dBusy?'Generating…':'Generate document')+'</button><button class="btn btn-g" onclick="document.getElementById(\'dp\').value=\'\';draftForm.prompt=\'\'">Clear</button><button class="btn btn-g" onclick="draftExample()">Try an example</button></div>' +
         '</div>' +
         '<div class="card" style="background:rgba(79,114,196,.04);border-color:rgba(79,114,196,.12)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:10px;letter-spacing:.04em">Drafting tips</div><ul style="list-style:none;font-size:11px;color:var(--muted);line-height:1.9;padding:0"><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Include both party names and company numbers</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Specify the governing law (default: English law)</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Mention key terms: duration, payment, termination</li><li style="display:flex;gap:8px"><span style="color:var(--blue2);flex-shrink:0">—</span>Add any special clauses you need</li></ul></div>' +
       '</div>' +
       '<div>' +
-        '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px">'+draftOutHtml()+'</div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="copyText(mdToPlain(window._lastDraftText||document.getElementById(\'dout\').textContent),this)">Copy</button></div></div>' +
+        '<div style="position:relative"><div class="ai-out" id="dout" aria-live="polite" style="min-height:360px">'+draftOutHtml()+'</div><div style="position:absolute;top:10px;right:10px"><button class="btn btn-g" style="font-size:11px;padding:6px 11px" onclick="if(window._lastDraftText){copyText(mdToPlain(window._lastDraftText),this);}else{showNotice(\'Generate a draft first.\', \'alert\', {id:\'validate\'});}">Copy</button></div></div>' +
         '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="font-size:11px" onclick="saveDoc()" id="dbtn-save"'+(saveLbl==='Save to History'?'':' disabled')+'>'+saveLbl+'</button><button class="btn btn-g" style="font-size:11px" onclick="dlDoc()">Download .txt</button><button class="btn btn-g" style="font-size:11px" onclick="dlDocWord()">Download .doc (Word)</button></div>' +
-        '<div id="draft-refine" style="display:'+(hasDraft&&!_dBusy?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px"><input class="chat-inp" id="dref" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" onkeydown="if(event.key===\'Enter\'){event.preventDefault();doRefineDraft();}"/><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
+        '<div id="draft-refine" style="display:'+(hasDraft&&!_dBusy?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--blue2);margin-bottom:8px;letter-spacing:.04em">Refine this draft</div><div style="display:flex;gap:8px;align-items:flex-end"><textarea class="chat-inp" id="dref" rows="2" aria-label="Refine this draft" placeholder="e.g. add a 6-month non-compete · make clause 4 stronger · shorten it" oninput="autoGrow(this)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doRefineDraft();}"></textarea><button class="btn btn-p" onclick="doRefineDraft()" id="drefbtn" style="white-space:nowrap">Refine</button></div></div>' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -1803,6 +1867,9 @@ async function doDraft(){
   _dBusy = true;
   var btn = document.getElementById('dbtn'); btn.disabled=true; btn.textContent='Generating…';
   var rf0=document.getElementById('draft-refine'); if(rf0) rf0.style.display='none';
+  // A new request starts: the previous draft must not stay reachable by Copy / Download / Save if this one fails
+  window._lastDraftText = ''; window._draft = null;
+  var sb0=document.getElementById('dbtn-save'); if(sb0){ sb0.disabled=true; sb0.textContent='Save to History'; }
   var out = document.getElementById('dout');
   out.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
   var sys = null; // system prompt is set by the server (feature 'draft')
@@ -1825,7 +1892,10 @@ async function doDraft(){
     _dBusy = false;
     out = document.getElementById('dout') || out; // the view may have been re-rendered meanwhile
     btn = document.getElementById('dbtn') || btn;
-    if(aiOk(r)){
+    if(aiOk(r) && r.indexOf(AI_PARTIAL_NOTE) !== -1){
+      // Cut off: show what arrived with a warning, but never offer it as a finished document
+      out.innerHTML='<div role="alert" style="font-family:var(--font);white-space:normal;font-size:12px;color:var(--red);background:rgba(224,90,80,.06);border:1px solid rgba(224,90,80,.25);border-radius:8px;padding:8px 12px;margin-bottom:12px">Draft was cut off. Click Generate again.</div><div class="msg-a-body">'+mdToHtml(r.split(AI_PARTIAL_NOTE).join(''))+'</div>';
+    } else if(aiOk(r)){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
       // Only a real answer is saved + counted (failures return null/false, never text)
       window._lastDraftText = r;
@@ -1876,7 +1946,8 @@ function saveBlob(blob, name){
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
 }
 function dlDoc(){
-  var txt=mdToPlain(window._lastDraftText||document.getElementById('dout').textContent);
+  if(!window._lastDraftText){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
+  var txt=mdToPlain(window._lastDraftText);
   saveBlob(new Blob([txt],{type:'text/plain;charset=utf-8'}), draftFileName()+'.txt');
 }
 // Word download without a new library: an HTML document saved as .doc, which Word opens
@@ -1896,6 +1967,7 @@ function refineFailed(out, cur, msg){
 // Refine the current draft with a follow-up instruction (edits the same document, doesn't count as new)
 async function doRefineDraft(){
   var cur=window._lastDraftText; if(!cur){ showNotice('Generate a draft first.', 'alert', {id:'validate'}); return; }
+  cur=cur.split(AI_PARTIAL_NOTE).join('');
   var inp=document.getElementById('dref'); var instr=inp?inp.value.trim():''; if(!instr) return;
   if(_dBusy) return;
   if(!checkUsageLimit('refine')) return;
@@ -1913,13 +1985,15 @@ async function doRefineDraft(){
     _dBusy=false;
     // The user may have left the Draft view and come back meanwhile
     out=document.getElementById('dout')||out; btn=document.getElementById('drefbtn')||btn; inp=document.getElementById('dref')||inp;
-    if(aiOk(r)){
+    if(aiOk(r) && r.indexOf(AI_PARTIAL_NOTE) !== -1){
+      refineFailed(out, cur, 'The revised document was cut off.');
+    } else if(aiOk(r)){
       out.innerHTML='<div class="msg-a-body">'+mdToHtml(r)+'</div>';
       window._lastDraftText=r;
       var ty=document.getElementById('dt'); var tn=ty?ty.value:'Document';
       window._draft={name:tn+' (revised) — '+new Date().toLocaleDateString('en-GB'),type:'Draft',date:new Date().toLocaleDateString('en-GB'),content:r};
       var sb=document.getElementById('dbtn-save'); if(sb){ sb.disabled=false; sb.textContent='Save to History'; }
-      if(inp) inp.value='';
+      if(inp){ inp.value=''; autoGrow(inp); inp.style.height=''; }
     } else {
       refineFailed(out, cur, aiErrText(r));
     }
@@ -1941,17 +2015,17 @@ function vDocChat(){
     (loaded
       ? '<div style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px"><svg width="14" height="14" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><strong style="color:var(--text)">'+escHtml(dcName||'Document')+'</strong> · '+dcDoc.length.toLocaleString()+' characters loaded</div>' +
         '<div class="chat-msgs" id="dcmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>' +
-        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px"><input class="chat-inp" id="dci" aria-label="Ask about this document" placeholder="'+(_dcBusy?'Working on your question…':'Ask about this document… e.g. what is the notice period?')+'"'+(_dcBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"/>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"'+(_dcBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
-      : '<div class="card"><div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
+        '<div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;gap:8px;align-items:flex-end"><textarea class="chat-inp" id="dci" rows="2" aria-label="Ask about this document" placeholder="'+(_dcBusy?'Working on your question…':'Ask about this document… e.g. what is the notice period?')+'"'+(_dcBusy?' disabled':'')+' oninput="autoGrow(this)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doDocChat();}"></textarea>'+micBtn('dci','dc-mic')+'<button class="btn btn-p" onclick="doDocChat()" id="dcbtn" aria-label="Send question"'+(_dcBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>'
+      : '<div class="card">' + confNoticeHtml() + '<div class="tabs"><button class="tab on" onclick="dcTab(\'upload\',this)">Upload file</button><button class="tab" onclick="dcTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="dc-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a document (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'dc-file\')" onclick="document.getElementById(\'dc-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dcDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop a document here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="dc-file" style="display:none" accept=".txt,.pdf,.docx" onchange="if(this.files[0])dcFile(this.files[0])"/></div><div id="dc-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
-        '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
+        '<div id="dc-paste" style="display:none"><textarea class="inp" id="dc-text" aria-label="Document text" rows="8" placeholder="Paste the document text here…"></textarea><button class="btn btn-p" style="margin-top:12px" onclick="dcLoadPaste()">Load document</button></div>' +
         '</div>'
     ) +
   '</div>';
 }
 function dcTab(t,btn){ document.querySelectorAll('#dc-upload,#dc-paste').forEach(function(e){e.style.display='none';}); document.getElementById('dc-'+t).style.display=''; document.querySelectorAll('.tabs .tab').forEach(function(b){b.classList.remove('on');}); btn.classList.add('on'); }
 function dcDrop(e){ e.preventDefault(); if(e.dataTransfer.files[0]) dcFile(e.dataTransfer.files[0]); }
-function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(){ if(fn)fn.textContent='Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
+function dcFile(f){ var fn=document.getElementById('dc-fname'); if(fn){fn.textContent='Reading '+f.name+'…';fn.style.display='block';} extractFileText(f).then(function(t){ t=(t||'').trim(); if(!t){ if(fn)fn.textContent='No readable text found in '+f.name+' (is it a scanned image?)'; return;} dcDoc=t; dcName=f.name; dcMsgs=[]; go('docchat'); }).catch(function(err){ if(fn)fn.textContent=(err && err.message===FILE_TYPE_MSG)?FILE_TYPE_MSG:'Could not read '+f.name+'. Try TXT/PDF/.docx or paste the text.'; }); }
 function dcLoadPaste(){ var t=document.getElementById('dc-text'); var v=t?t.value.trim():''; if(!v){showNotice('Paste some text first.', 'alert', {id:'validate'});return;} dcDoc=v; dcName='Pasted document'; dcMsgs=[]; go('docchat'); }
 function dcReset(){ if(_dcBusy) return; dcDoc=''; dcName=''; dcMsgs=[]; go('docchat'); }
 function renderDcChat(){ var el=document.getElementById('dcmsgs'); if(!el)return; el.innerHTML=dcMsgs.map(function(m,idx){ if(m.role==='user')return '<div class="msg-u">'+escHtml(m.content)+'</div>'; return '<div class="msg-a"><div class="msg-a-top"><div class="msg-a-lbl">Dave.AI</div><button class="msg-copy" onclick="copyText(mdToPlain(dcMsgs['+idx+'].content),this)">Copy</button></div><div class="msg-a-body">'+mdToHtml(m.content)+'</div></div>'; }).join(''); el.scrollTop=el.scrollHeight; }
@@ -2009,8 +2083,8 @@ function vCompare(){
   return '<div class="view">' +
     '<div class="view-head"><div><div class="view-title">Compare</div><div class="view-sub">Paste two versions of a contract. Dave.AI highlights what changed and who each change favours.</div></div></div>' +
     '<div class="grid2">' +
-      '<div class="card"><div class="field" style="margin-bottom:0"><label>Version A — e.g. original / their draft</label><textarea class="inp" id="cmpA" rows="12" placeholder="Paste the first version…"></textarea></div></div>' +
-      '<div class="card"><div class="field" style="margin-bottom:0"><label>Version B — e.g. revised / your draft</label><textarea class="inp" id="cmpB" rows="12" placeholder="Paste the second version…"></textarea></div></div>' +
+      '<div class="card"><div class="field" style="margin-bottom:0"><label for="cmpA">Version A — e.g. original / their draft</label><textarea class="inp" id="cmpA" aria-label="Version A" rows="12" placeholder="Paste the first version…"></textarea></div></div>' +
+      '<div class="card"><div class="field" style="margin-bottom:0"><label for="cmpB">Version B — e.g. revised / your draft</label><textarea class="inp" id="cmpB" aria-label="Version B" rows="12" placeholder="Paste the second version…"></textarea></div></div>' +
     '</div>' +
     '<div style="margin-top:14px;display:flex;gap:10px"><button class="btn btn-p" onclick="doCompare()" id="cmpbtn">Compare versions</button><button class="btn btn-g" onclick="cmpOut=\'\';document.getElementById(\'cmpA\').value=\'\';document.getElementById(\'cmpB\').value=\'\';document.getElementById(\'cmp-res\').innerHTML=\'\'">Clear</button></div>' +
     '<div id="cmp-res" aria-live="polite" style="margin-top:18px">'+(cmpOut||'')+'</div>' +
@@ -2046,8 +2120,8 @@ function vTools(){
   return '<div class="view">' +
     '<div class="view-head"><div><div class="view-title">Quick Tools</div><div class="view-sub">Fast helpers for everyday legal writing.</div></div></div>' +
     '<div class="grid2">' +
-      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" aria-live="polite" style="margin-top:14px"></div></div>' +
-      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" aria-live="polite" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Explain in plain English</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste a clause or legal wording and get a clear, plain-English explanation.</div><textarea class="inp" id="expIn" aria-label="Clause or legal wording to explain" rows="6" placeholder="Paste a clause or piece of legalese…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doExplain()" id="expbtn">Explain it</button><div id="expOut" aria-live="polite" style="margin-top:14px"></div></div>' +
+      '<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Make it formal</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn plain notes into professional, legally-worded text.</div><textarea class="inp" id="fmlIn" aria-label="Notes to turn into formal wording" rows="6" placeholder="e.g. they must give 3 months notice and cannot work for competitors for 6 months…"></textarea><button class="btn btn-p" style="margin-top:10px" onclick="doFormalise()" id="fmlbtn">Formalise it</button><div id="fmlOut" aria-live="polite" style="margin-top:14px"></div></div>' +
     '</div>' +
   '</div>';
 }
@@ -2090,9 +2164,10 @@ function vReview(){
     '<div class="view-head"><div><div class="view-title">Review</div><div class="view-sub">Paste or upload a contract to identify risks, flag clauses and receive suggested amendments.</div></div></div>' +
     '<div class="grid2">' +
       '<div class="no-print"><div class="card">' +
+        confNoticeHtml() +
         '<div class="tabs"><button class="tab on" onclick="rvTab(\'upload\',this)">Upload file</button><button class="tab" onclick="rvTab(\'paste\',this)">Paste text</button></div>' +
         '<div id="rv-upload"><div class="upload-zone" role="button" tabindex="0" aria-label="Upload a contract (PDF, DOCX or TXT)" onkeydown="uzKey(event,\'rv-file\')" onclick="document.getElementById(\'rv-file\').click()" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="rvDrop(event)"><div class="upload-icon"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop your contract here</div><div style="font-size:11px;color:var(--muted)">or click to browse · PDF, DOCX, TXT</div><input type="file" id="rv-file" style="display:none" accept=".txt,.pdf,.docx" onchange="rvFileSelect(this)"/></div><div id="rv-fname" style="display:none;margin-top:10px;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--blue2)"></div></div>' +
-        '<div id="rv-paste" style="display:none"><textarea class="inp" id="rv-text" rows="8" placeholder="Paste the contract text here…"></textarea></div>' +
+        '<div id="rv-paste" style="display:none"><textarea class="inp" id="rv-text" aria-label="Contract text to review" rows="8" placeholder="Paste the contract text here…"></textarea></div>' +
         '<button class="btn btn-p" style="margin-top:14px;width:100%" onclick="doReview()" id="rvbtn"'+(_rvBusy?' disabled':'')+'>'+(_rvBusy?'Analysing…':'Analyse document')+'</button>' +
         '<button class="btn btn-g" style="margin-top:8px;width:100%;justify-content:center" onclick="rvExample()">Try a sample contract</button>' +
       '</div></div>' +
@@ -2128,8 +2203,10 @@ function loadScript(src){
 
 // Universal text extractor — handles TXT, PDF and Word (.docx). Returns a Promise<string>.
 // PDF / Word libraries are loaded on demand before reading.
+var FILE_TYPE_MSG = 'Dave.AI can read PDF, .docx and .txt. Open the file in Word and use Save As .docx, then upload it again.';
 function extractFileText(file){
   var name = (file.name||'').toLowerCase();
+  if(!/\.(txt|pdf|docx)$/.test(name)) return Promise.reject(new Error(FILE_TYPE_MSG));
   var lib = name.endsWith('.pdf') ? 'vendor/pdf.min.js' : (name.endsWith('.docx') ? 'vendor/mammoth.browser.min.js' : null);
   return (lib ? loadScript(lib) : Promise.resolve()).then(function(){ return readFileText(file); });
 }
@@ -2171,7 +2248,13 @@ function readFileText(file){
         fr2.readAsArrayBuffer(file);
       } else {
         var fr3 = new FileReader();
-        fr3.onload = function(e){ resolve(e.target.result); };
+        fr3.onload = function(e){
+          var t = e.target.result || '', bad = 0, i;
+          if(t.indexOf('\u00d0\u00cf\u0011\u00e0') === 0 || t.indexOf('\u0000') !== -1) { reject(new Error(FILE_TYPE_MSG)); return; } // legacy Office / binary
+          for(i=0;i<t.length;i++){ var c=t.charCodeAt(i); if(c===0xFFFD || (c<32 && c!==9 && c!==10 && c!==13 && c!==12)) bad++; }
+          if(t.length && bad/t.length > 0.05){ reject(new Error(FILE_TYPE_MSG)); return; }
+          resolve(t);
+        };
         fr3.onerror = reject;
         fr3.readAsText(file);
       }
@@ -2192,7 +2275,7 @@ function rvLoad(f){
     }
   }).catch(function(err){
     rvFileText = '';
-    if(fn){ fn.textContent = 'Could not read ' + f.name + '. Try a TXT, PDF or .docx file, or paste the text instead.'; }
+    if(fn){ fn.textContent = (err && err.message === FILE_TYPE_MSG) ? FILE_TYPE_MSG : 'Could not read ' + f.name + '. Try a TXT, PDF or .docx file, or paste the text instead.'; }
   });
 }
 // Plain-text version of a review (result screen Copy/Download and the History viewer)
@@ -2368,7 +2451,7 @@ function vResearch(){
       ? '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:52px;height:52px;background:rgba(79,114,196,.12);border:1px solid var(--border2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="22" height="22" fill="none" stroke="var(--blue2)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-size:15px;font-weight:600;margin-bottom:6px">What would you like to research?</div><div style="font-size:12px;color:var(--muted);margin-bottom:24px">Cited answers from UK statutes and case law</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px">'+sugg.map(function(s){return '<div style="padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.color=\'var(--text)\';this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border)\'" onclick="rSuggest(\''+s.replace(/'/g,"&#39;")+'\')">'+ s +'</div>';}).join('')+'</div></div>'
       : '<div class="chat-msgs" id="cmsgs" aria-live="polite" style="flex:1;overflow-y:auto;padding-bottom:10px"></div>'
     ) +
-    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px"><input class="chat-inp" id="ri" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"/>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--muted);margin-top:10px;cursor:pointer"><input type="checkbox" id="r-news" style="margin-top:2px"'+(_rNews?' checked':'')+' onchange="_rNews=this.checked"/><span>Also check recent gov.uk pages (Brave Search). Only a few generic search terms are sent, never your question or client details. Sources are only UK legislation, National Archives case law and gov.uk.</span></label><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
+    '<div style="flex-shrink:0;padding-top:14px;border-top:1px solid var(--border);margin-top:14px"><div style="display:flex;gap:8px;align-items:flex-end"><textarea class="chat-inp" id="ri" rows="2" aria-label="Ask a UK law question" placeholder="'+(_rBusy?'Working on your question…':'Ask a UK law question…')+'"'+(_rBusy?' disabled':'')+' oninput="autoGrow(this)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();doR();}"></textarea>'+micBtn('ri','r-mic')+'<button class="btn btn-p" onclick="doR()" id="rbtn" aria-label="Send question"'+(_rBusy?' disabled':'')+'><svg aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div><label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--muted);margin-top:10px;cursor:pointer"><input type="checkbox" id="r-news" style="margin-top:2px"'+(_rNews?' checked':'')+' onchange="_rNews=this.checked"/><span>Also check recent gov.uk pages (Brave Search). Only a few generic search terms are sent, never your question or client details. Sources are only UK legislation, National Archives case law and gov.uk.</span></label><div style="font-size:10px;color:var(--dim);margin-top:8px;text-align:center">Citations are AI-generated, so check each one before relying on it · Always verify with a qualified solicitor</div></div>' +
     '</div>' +
   '</div>';
 }
@@ -2399,7 +2482,7 @@ function copyResearch(i, btn){
 }
 function escAttr(x){ return (x||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 // Ask a new research question programmatically
-function askResearch(q){ if(_rBusy) return; var i=document.getElementById('ri'); if(i){ i.value=q; } doR(); }
+function askResearch(q){ if(_rBusy) return; var i=document.getElementById('ri'); if(i){ i.value=q; autoGrow(i); } doR(); }
 // Clicking a highlighted citation asks the AI about it
 function askCite(text){ if(text) askResearch('Explain ' + text.trim() + ' and how it applies in practice under UK law.'); }
 // Follow-up question chips under the latest answer
@@ -2428,20 +2511,20 @@ function renderResearchHistory(){
   var rs=docs.filter(function(d){ return d.type==='Research'; });
   if(!rs.length) return '<div style="font-size:11px;color:var(--dim);line-height:1.6">Your past research questions will appear here.</div>';
   return rs.slice(0,40).map(function(d){
-    var idx=docs.indexOf(d);
+    var idx=docKey(d);
     var qn=(d.name||'').replace(/^Research —\s*/,'');
     return '<div class="rs-hist-item" role="button" tabindex="0" title="'+escAttr(qn)+'" onclick="loadResearch('+idx+')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();loadResearch('+idx+');}">'+escHtml(qn)+'</div>';
   }).join('');
 }
 // Load a saved Q&A back into the chat
-function loadResearch(idx){
+function loadResearch(k){
   if(_rBusy) return; // wait for the answer in progress
-  var d=docs[idx]; if(!d) return;
+  var d=docs[docIndex(k)]; if(!d) return;
   var c=d.content||''; var mm=c.match(/^Q:\s*([\s\S]*?)\n\nA:\s*([\s\S]*)$/);
   if(mm){ chatMsgs=[{role:'user',content:mm[1].trim()},{role:'assistant',content:mm[2].trim(),followups:[]}]; }
   go('research');
 }
-function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;doR();}},50); }
+function rSuggest(q){ chatMsgs=[]; go('research'); setTimeout(function(){var i=document.getElementById('ri');if(i){i.value=q;autoGrow(i);doR();}},50); }
 // One Research question at a time: a second Enter / follow-up click while an answer
 // is on its way would send a parallel paid request and mix up the answers.
 var _rBusy=false;
@@ -2567,17 +2650,29 @@ function viewDoc(k, opener){
   }
   document.getElementById('doc-modal-body').textContent = body;
   document.getElementById('doc-modal').style.display = 'flex';
+  setBgInert(true, true);
   var cb = document.getElementById('doc-modal-close'); if(cb) cb.focus();
 }
 function closeDocModal(){
   var m = document.getElementById('doc-modal'); if(m) m.style.display = 'none';
+  var ov = document.getElementById('trial-expired-overlay');
+  if(!ov || ov.style.display === 'none') setBgInert(false);
   var r = _docModalReturn; _docModalReturn = null;
   if(r && document.body.contains(r) && r.focus) r.focus();
 }
 document.addEventListener('keydown', function(e){
-  if(e.key !== 'Escape') return;
   var m = document.getElementById('doc-modal');
-  if(m && m.style.display === 'flex'){ e.preventDefault(); closeDocModal(); }
+  var open = m && m.style.display === 'flex';
+  if(!open) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeDocModal(); return; }
+  if(e.key !== 'Tab') return;
+  // Keep Tab / Shift+Tab inside the dialog (the page behind it is also inert)
+  var f = Array.prototype.filter.call(m.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'), function(x){ return !x.disabled && x.offsetParent !== null; });
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(!m.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+  else if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
 });
 // Upload zones: Enter/Space opens the hidden file input (keyboard access)
 function uzKey(e, id){
@@ -2627,18 +2722,18 @@ function vSettings(){
       '<div>' +
         '<div class="card" style="margin-bottom:14px">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:16px">Account details</div>' +
-          '<div class="field"><label>First name</label><input class="inp" id="s-first" value="'+escHtml(firstName)+'"/></div>' +
-          '<div class="field"><label>Last name</label><input class="inp" id="s-last" value="'+escHtml(lastName)+'"/></div>' +
-          '<div class="field"><label>Work email</label><input class="inp" type="email" value="'+escHtml(email)+'" disabled/></div>' +
-          '<div class="field"><label>Firm / organisation</label><input class="inp" id="s-firm" value="'+escHtml(firm||'')+'"/></div>' +
+          '<div class="field"><label for="s-first">First name</label><input class="inp" id="s-first" value="'+escHtml(firstName)+'"/></div>' +
+          '<div class="field"><label for="s-last">Last name</label><input class="inp" id="s-last" value="'+escHtml(lastName)+'"/></div>' +
+          '<div class="field"><label for="s-email">Work email</label><input class="inp" id="s-email" type="email" value="'+escHtml(email)+'" disabled/></div>' +
+          '<div class="field"><label for="s-firm">Firm / organisation</label><input class="inp" id="s-firm" value="'+escHtml(firm||'')+'"/></div>' +
           '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-p" id="s-account-btn" onclick="saveAccountSettings()">Save changes</button><span style="font-size:12px;color:var(--muted)" id="s-account-status"></span></div>' +
         '</div>' +
         '<div class="card">' +
           '<div style="font-size:13px;font-weight:600;margin-bottom:4px">Security</div>' +
           '<div id="s-sec-body">' +
           '<div style="font-size:11px;color:var(--muted);margin-bottom:16px">Update your password</div>' +
-          '<div class="field"><label>Current password</label><input class="inp" type="password" id="s-curpass" autocomplete="current-password" placeholder="••••••••"/></div>' +
-          '<div class="field"><label>New password</label><input class="inp" type="password" id="s-newpass" autocomplete="new-password" placeholder="••••••••"/></div>' +
+          '<div class="field"><label for="s-curpass">Current password</label><input class="inp" type="password" id="s-curpass" autocomplete="current-password" placeholder="••••••••"/></div>' +
+          '<div class="field"><label for="s-newpass">New password</label><input class="inp" type="password" id="s-newpass" autocomplete="new-password" placeholder="••••••••"/></div>' +
           '<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-g" id="s-pass-btn" onclick="updatePassword()">Update password</button><span style="font-size:12px;color:var(--muted)" id="s-pass-status" role="status"></span></div>' +
           '</div>' +
         '</div>' +

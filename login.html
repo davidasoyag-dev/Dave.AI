@@ -40,7 +40,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);co
 .field{margin-bottom:18px;}
 .field label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--text);text-transform:uppercase;margin-bottom:7px;}
 .inp{width:100%;padding:13px 16px;background:#fff;border:1.5px solid var(--line);border-radius:14px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;outline:none;transition:all .2s;}
-.inp::placeholder{color:#8a97b3;}
+.inp::placeholder{color:#667593;}
 .inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(53,88,168,.14);}
 .inp.err-field{border-color:#c0392b;}
 
@@ -78,6 +78,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);co
   .logo-name{font-size:22px;}
   .btn{font-size:14px;padding:13px;}
 }
+@media(max-width:768px){.inp,.su-input,input,select,textarea{font-size:16px;}}
 @media(min-width:1440px){
   .wrap{max-width:500px;}
   .card{padding:48px 44px 40px;}
